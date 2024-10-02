@@ -1,0 +1,62 @@
+package forth
+
+import "fmt"
+
+// The structure for stacks.
+type Stack struct {
+	stack []Cell
+}
+
+func (s Stack) String() string {
+	return fmt.Sprintf("%s", s.stack)
+}
+
+// Set up the stack.
+func (s *Stack) Setup() error {
+	s.stack = make([]Cell, 0)
+	return nil
+}
+
+// Push a cell onto the stack.
+func (s *Stack) Push(c Cell) error {
+	s.stack = append(s.stack, c)
+	return nil
+}
+
+// Pop a cell from the stack.
+func (s *Stack) Pop() (Cell, error) {
+	last := len(s.stack) - 1
+	if last < 0 {
+		return nil, fmt.Errorf("Attempted to pop empty stack.")
+	}
+	c := s.stack[last]
+	s.stack = s.stack[:last]
+	return c, nil
+}
+
+// Pop a number from the stack.
+func (s *Stack) PopNumber() (uint16, error) {
+	cell, err := s.Pop()
+	if err != nil {
+		return 0, err
+	}
+	cellNumber, ok := cell.(CellNumber)
+	if !ok {
+		return 0, fmt.Errorf("Could not convert cell to number: %s", cell)
+	}
+	return cellNumber.Number, nil
+}
+
+// Get the current depth of the stack.
+func (s *Stack) Depth() int {
+	return len(s.stack)
+}
+
+// Set the stack depth. Must not be greater than current depth.
+func (s *Stack) SetDepth(depth int) error {
+	if depth > len(s.stack) {
+		return fmt.Errorf("Cannot arbitrarily increase stack depth.")
+	}
+	s.stack = s.stack[:depth]
+	return nil
+}
