@@ -109,41 +109,23 @@ func (vm *VirtualMachine) Repl() error {
 
 // Execute the given bytes.
 func (vm *VirtualMachine) execute(bytes []byte) error {
-	// trim starting whitespace
-	startIndex := -1
-	for i, b := range bytes {
-		if !isWhitespace(b) {
-			startIndex = i
-			break
-		}
-	}
-	if startIndex == -1 { // if it's all whitespace
-		return nil // then exit early
-	}
-	// find the end of the word, default to end of the bytes
-	endIndex := len(bytes)
-	for i := startIndex; i < len(bytes); i++ {
-		if isWhitespace(bytes[i]) {
-			endIndex = i
-			break
-		}
-	}
-	nameBytes := bytes[startIndex:endIndex] // isolate the name
-	name := string(nameBytes)               // create a string with it
-	err := vm.executeName(name)             // execute that string
+	err := vm.ParseArea.Fill(bytes)
 	if err != nil {
 		return err
 	}
-	remaining := bytes[endIndex:] // get the remaining bytes
-	return vm.execute(remaining)  // and process them
-}
-
-func isWhitespace(b byte) bool {
-	switch b {
-	case ' ', '\r', '\n', '\t':
-		return true
-	default:
-		return false
+	for {
+		word, err := vm.ParseArea.Word()
+		if err != nil {
+			return err
+		}
+		if len(word) == 0 {
+			return nil
+		}
+		name := string(word)
+		err = vm.executeName(name)
+		if err != nil {
+			return err
+		}
 	}
 }
 

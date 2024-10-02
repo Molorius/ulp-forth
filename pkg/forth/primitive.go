@@ -35,6 +35,10 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: primitiveFuncWords,
 		},
 		{
+			name:   "\\",
+			goFunc: primitiveFuncBackslash,
+		},
+		{
 			name:   "+",
 			goFunc: primitiveFuncPlus,
 			ulpAsm: PrimitiveUlp{
@@ -80,6 +84,14 @@ func primitiveFuncWords(vm *VirtualMachine, entry *DictionaryEntry) error {
 			fmt.Print(name)
 			fmt.Print(" ")
 		}
+	}
+	return nil
+}
+
+func primitiveFuncBackslash(vm *VirtualMachine, entry *DictionaryEntry) error {
+	err := vm.ParseArea.Fill(nil)
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s error while clearing parse area", entry), err)
 	}
 	return nil
 }
