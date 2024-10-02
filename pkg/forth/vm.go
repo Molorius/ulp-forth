@@ -3,6 +3,7 @@ package forth
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -56,9 +57,35 @@ func (vm *VirtualMachine) Setup() error {
 	return nil
 }
 
+// writerNoNewline is an io.Writer that does not print newlines.
+// Forth implementations usually don't have a newline immediately after
+// user input, this lets us do the same.
+type writerNoNewline struct {
+}
+
+func (w writerNoNewline) Write(p []byte) (int, error) {
+	pCopy := make([]byte, 0, len(p)) // create a new slice length 0, capacity same as input
+	newlines := 0                    // number of newlines
+
+	for _, c := range p {
+		switch c {
+		case '\n':
+			newlines += 1 // add to the list
+		default:
+			pCopy = pCopy[:len(pCopy)+1] // extend the length of our slice
+			pCopy[len(pCopy)-1] = c      // put in the character
+		}
+	}
+	n, err := os.Stdout.Write(pCopy) // write to stdout
+	return n + newlines, err         // tell the higher function that we printed the newlines
+}
+
 // Start up a read-eval-print loop.
 func (vm *VirtualMachine) Repl() error {
 	rl, err := readline.New("")
+	cfg := readline.Config{
+		Stdout: writerNoNewline{},
+	}
 	if err != nil {
 		return errors.Join(fmt.Errorf("Unable to start readline, please file a bug report."), err)
 	}
@@ -66,16 +93,17 @@ func (vm *VirtualMachine) Repl() error {
 
 	fmt.Println("ulp-forth")
 	for {
-		line, err := rl.ReadSlice()
+		line, err := rl.ReadLineWithConfig(&cfg)
 		if err != nil {
 			return err
 		}
-		err = vm.execute(line)
+		fmt.Print(" ")
+		err = vm.execute([]byte(line))
 		if err != nil {
 			fmt.Println("")
 			return err
 		}
-		fmt.Println("  ok")
+		fmt.Println(" ok")
 	}
 }
 
