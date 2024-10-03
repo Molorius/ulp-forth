@@ -20,7 +20,7 @@ func (p *ParseArea) Fill(bytes []byte) error {
 	return nil
 }
 
-func (p *ParseArea) Word() ([]byte, error) {
+func (p *ParseArea) Word(delimiter byte) ([]byte, error) {
 	// trim starting whitespace
 	startIndex := p.index
 	for ; startIndex < len(p.area); startIndex++ {
@@ -35,13 +35,22 @@ func (p *ParseArea) Word() ([]byte, error) {
 		p.index = endIndex
 		return nil, nil
 	}
+L:
 	for ; endIndex < len(p.area); endIndex++ {
-		if isWhitespace(p.area[endIndex]) {
-			break
+		c := p.area[endIndex]
+		switch delimiter {
+		case ' ':
+			if isWhitespace(c) {
+				break L
+			}
+		default:
+			if c == delimiter {
+				break L
+			}
 		}
 	}
 	name := p.area[startIndex:endIndex]
-	p.index = endIndex
+	p.index = endIndex + 1
 	return name, nil
 }
 

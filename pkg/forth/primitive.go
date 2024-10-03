@@ -89,9 +89,9 @@ func primitiveFuncWords(vm *VirtualMachine, entry *DictionaryEntry) error {
 }
 
 func primitiveFuncBackslash(vm *VirtualMachine, entry *DictionaryEntry) error {
-	err := vm.ParseArea.Fill(nil)
+	_, err := vm.ParseArea.Word('\n')
 	if err != nil {
-		return errors.Join(fmt.Errorf("%s error while clearing parse area", entry), err)
+		return errors.Join(fmt.Errorf("%s error while skipping through newline.", entry), err)
 	}
 	return nil
 }
