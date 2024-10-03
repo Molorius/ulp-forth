@@ -33,7 +33,7 @@ func (m *State) Setup(vm *VirtualMachine) error {
 	var entry DictionaryEntry
 	entry = DictionaryEntry{
 		Name: "STATE",
-		Word: WordMemory{
+		Word: &WordMemory{
 			Memory: []Cell{
 				CellNumber{uint16(StateInterpret)},
 			},
@@ -58,7 +58,7 @@ func (m *State) getCell() (CellNumber, error) {
 		return CellNumber{}, fmt.Errorf("State not initialized, please file a bug report.")
 	}
 	word := m.entry.Word
-	memory, ok := word.(WordMemory)
+	memory, ok := word.(*WordMemory)
 	if !ok {
 		return CellNumber{}, fmt.Errorf("State is not a memory region, please file a bug report.")
 	}
@@ -82,7 +82,7 @@ func (m *State) Set(stateType StateType) error {
 		return err
 	}
 	cell.Number = uint16(stateType)
-	word, ok := m.entry.Word.(WordMemory)
+	word, ok := m.entry.Word.(*WordMemory)
 	if !ok { // we already checked this but want to stay safe
 		return fmt.Errorf("State memory is not a number while trying to set, please file a bug report.")
 	}

@@ -1,8 +1,10 @@
 package forth
 
 import (
+	"embed"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -54,6 +56,42 @@ func (vm *VirtualMachine) Setup() error {
 		return err
 	}
 
+	err = vm.Builtin()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//go:embed builtin/*.f
+var builtins embed.FS
+
+func (vm *VirtualMachine) Builtin() error {
+	base := "builtin"
+	dirEntries, err := builtins.ReadDir(base)
+	if err != nil {
+		return errors.Join(fmt.Errorf("Error while opening embedded directory."), err)
+	}
+	for _, entry := range dirEntries {
+		// don't look in subdirectories (for now)
+		if !entry.IsDir() {
+			name := entry.Name()
+			file, err := builtins.Open(base + "/" + name)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+			data, err := io.ReadAll(file)
+			if err != nil {
+				return err
+			}
+			err = vm.execute(data)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 

@@ -16,7 +16,7 @@ type WordForth struct {
 	Entry *DictionaryEntry // The associated dictionary entry.
 }
 
-func (w WordForth) Execute(vm *VirtualMachine) error {
+func (w *WordForth) Execute(vm *VirtualMachine) error {
 	// push the instruction pointer onto the return stack
 	startDepth := vm.ReturnStack.Depth()
 	previous := vm.IP // keep the previous address for error popping
@@ -54,7 +54,7 @@ func (w WordForth) Execute(vm *VirtualMachine) error {
 		vm.ReturnStack.SetDepth(startDepth) // attempt to reset the stack depth to "fix" part of the problem
 		return fmt.Errorf("%s instruction pointer not correct on exit", w.Entry)
 	}
-	if vm.Stack.Depth() != startDepth {
+	if vm.ReturnStack.Depth() != startDepth {
 		vm.ReturnStack.SetDepth(startDepth) // attempt to reset the stack depth to "fix" part of the problem
 		return fmt.Errorf("%s return stack wrong size on exit", w.Entry)
 	}
@@ -74,7 +74,7 @@ type WordPrimitive struct {
 	Entry *DictionaryEntry // The associated dictionary entry.
 }
 
-func (w WordPrimitive) Execute(vm *VirtualMachine) error {
+func (w *WordPrimitive) Execute(vm *VirtualMachine) error {
 	return w.Go(vm, w.Entry)
 }
 
@@ -83,7 +83,7 @@ type WordMemory struct {
 	Entry  *DictionaryEntry // The associated dictionary entry.
 }
 
-func (w WordMemory) Execute(vm *VirtualMachine) error {
+func (w *WordMemory) Execute(vm *VirtualMachine) error {
 	cell := CellAddress{Entry: w.Entry, Offset: 0} // create an address cell referencing the start position
 	return vm.Stack.Push(cell)                     // and push it onto the stack
 }

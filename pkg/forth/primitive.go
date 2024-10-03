@@ -16,7 +16,7 @@ func primitiveAdd(vm *VirtualMachine, name string, goFunc PrimitiveGo, ulpAsm Pr
 	var entry DictionaryEntry
 	entry = DictionaryEntry{
 		Name: name,
-		Word: WordPrimitive{
+		Word: &WordPrimitive{
 			Go:    goFunc,
 			Ulp:   ulpAsm,
 			Entry: &entry,
@@ -67,10 +67,6 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r2, __rsp", // store the updated return stack pointer
 				"jump next",
 			},
-		},
-		{
-			name:   "\\",
-			goFunc: primitiveFuncBackslash,
 		},
 		{
 			name:   "+",
@@ -171,7 +167,7 @@ func primitiveFuncCreateForth(vm *VirtualMachine, entry *DictionaryEntry) error 
 	var newEntry DictionaryEntry
 	newEntry = DictionaryEntry{
 		Name: string(name),
-		Word: WordForth{
+		Word: &WordForth{
 			Cells: make([]Cell, 0),
 			Entry: &newEntry,
 		},
@@ -198,19 +194,15 @@ func primitiveFuncExit(vm *VirtualMachine, entry *DictionaryEntry) error {
 	if err != nil {
 		return errors.Join(fmt.Errorf("%s could not pop return address.", entry), err)
 	}
-	addr, ok := ret.(CellAddress)
+	tmp := CellAddress{}
+	if ret == tmp {
+		fmt.Printf("woooah")
+	}
+	addr, ok := ret.(*CellAddress)
 	if !ok {
-		return fmt.Errorf("%s expected a return address on the return stack.", entry)
+		return fmt.Errorf("%s expected a return address on the return stack.: %v", entry, ret)
 	}
-	vm.IP = &CellAddress{addr.Entry, addr.Offset}
-	return nil
-}
-
-func primitiveFuncBackslash(vm *VirtualMachine, entry *DictionaryEntry) error {
-	_, err := vm.ParseArea.Word('\n')
-	if err != nil {
-		return errors.Join(fmt.Errorf("%s error while skipping through newline.", entry), err)
-	}
+	vm.IP = addr
 	return nil
 }
 
