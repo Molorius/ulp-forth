@@ -145,7 +145,21 @@ func (vm *VirtualMachine) execute(bytes []byte) error {
 				}
 			}
 		case StateCompile:
-			return fmt.Errorf("compile not implemented yet")
+			for _, cell := range cells {
+				cellEntry, ok := cell.(CellEntry)
+				if ok && cellEntry.Entry.Flag.Immediate {
+					err = cellEntry.Execute(vm)
+					if err != nil {
+						return err
+					}
+				} else {
+					last, err := vm.Dictionary.LastForthWord()
+					if err != nil {
+						return err
+					}
+					last.Cells = append(last.Cells, cell)
+				}
+			}
 		case StateExit:
 			return nil // the repl will exit after reading the state
 		default:

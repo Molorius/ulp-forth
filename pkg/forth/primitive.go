@@ -9,9 +9,10 @@ type primitive struct {
 	name   string
 	goFunc PrimitiveGo
 	ulpAsm PrimitiveUlp
+	flag   Flag
 }
 
-func primitiveAdd(vm *VirtualMachine, name string, goFunc PrimitiveGo, ulpAsm PrimitiveUlp) error {
+func primitiveAdd(vm *VirtualMachine, name string, goFunc PrimitiveGo, ulpAsm PrimitiveUlp, flag Flag) error {
 	var entry DictionaryEntry
 	entry = DictionaryEntry{
 		Name: name,
@@ -20,6 +21,7 @@ func primitiveAdd(vm *VirtualMachine, name string, goFunc PrimitiveGo, ulpAsm Pr
 			Ulp:   ulpAsm,
 			Entry: &entry,
 		},
+		Flag: flag,
 	}
 	return vm.Dictionary.AddEntry(&entry)
 }
@@ -35,8 +37,36 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: primitiveFuncWords,
 		},
 		{
+			name:   "--SEE",
+			goFunc: primitiveFuncSee,
+		},
+		{
 			name:   "WORD",
 			goFunc: primitiveFuncWord,
+		},
+		{
+			name:   "--CREATE-FORTH",
+			goFunc: primitiveFuncCreateForth,
+		},
+		{
+			name:   "[",
+			goFunc: primitiveFuncLeftBracket,
+			flag:   Flag{Immediate: true},
+		},
+		{
+			name:   "]",
+			goFunc: primitiveFuncRightBracket,
+		},
+		{
+			name:   "EXIT",
+			goFunc: primitiveFuncExit,
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r2, __rsp", // load the return stack pointer
+				"ld r1, r0, 0",     // load the return address into r0
+				"sub r0, r0, 1",    // decrement pointer
+				"st r0, r2, __rsp", // store the updated return stack pointer
+				"jump next",
+			},
 		},
 		{
 			name:   "\\",
@@ -68,7 +98,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 	}
 	for _, p := range prims {
-		err := primitiveAdd(vm, p.name, p.goFunc, p.ulpAsm)
+		err := primitiveAdd(vm, p.name, p.goFunc, p.ulpAsm, p.flag)
 		if err != nil {
 			return err
 		}
@@ -82,6 +112,7 @@ func primitiveFuncDotS(vm *VirtualMachine, entry *DictionaryEntry) error {
 }
 
 func primitiveFuncWords(vm *VirtualMachine, entry *DictionaryEntry) error {
+	fmt.Println("")
 	for i := len(vm.Dictionary.Entries) - 1; i >= 0; i-- {
 		name := vm.Dictionary.Entries[i].Name
 		if len(name) > 0 {
@@ -89,6 +120,25 @@ func primitiveFuncWords(vm *VirtualMachine, entry *DictionaryEntry) error {
 			fmt.Print(" ")
 		}
 	}
+	return nil
+}
+
+func primitiveFuncSee(vm *VirtualMachine, entry *DictionaryEntry) error {
+	cell, err := vm.Stack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not pop name.", entry), err)
+	}
+	cellString, ok := cell.(CellString)
+	if !ok {
+		return fmt.Errorf("%s requires a counted string.", entry)
+	}
+	name := cellString.Memory[cellString.Offset:]
+	wordEntry, err := vm.Dictionary.FindName(string(name))
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not find word.", entry), err)
+	}
+	fmt.Printf("\r\n%s", wordEntry)
+	fmt.Printf("%s", wordEntry.Word)
 	return nil
 }
 
@@ -106,6 +156,54 @@ func primitiveFuncWord(vm *VirtualMachine, entry *DictionaryEntry) error {
 		Offset: 0,
 	}
 	return vm.Stack.Push(c)
+}
+
+func primitiveFuncCreateForth(vm *VirtualMachine, entry *DictionaryEntry) error {
+	cell, err := vm.Stack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not pop name.", entry), err)
+	}
+	cellString, ok := cell.(CellString)
+	if !ok {
+		return fmt.Errorf("%s requires a counted string.", entry)
+	}
+	name := cellString.Memory[cellString.Offset:]
+	var newEntry DictionaryEntry
+	newEntry = DictionaryEntry{
+		Name: string(name),
+		Word: WordForth{
+			Cells: make([]Cell, 0),
+			Entry: &newEntry,
+		},
+	}
+	err = vm.Dictionary.AddEntry(&newEntry)
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not add new dictionary entry.", entry), err)
+	}
+	return nil
+}
+
+func primitiveFuncLeftBracket(vm *VirtualMachine, entry *DictionaryEntry) error {
+	vm.State.Set(StateInterpret)
+	return nil
+}
+
+func primitiveFuncRightBracket(vm *VirtualMachine, entry *DictionaryEntry) error {
+	vm.State.Set(StateCompile)
+	return nil
+}
+
+func primitiveFuncExit(vm *VirtualMachine, entry *DictionaryEntry) error {
+	ret, err := vm.ReturnStack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not pop return address.", entry), err)
+	}
+	addr, ok := ret.(CellAddress)
+	if !ok {
+		return fmt.Errorf("%s expected a return address on the return stack.", entry)
+	}
+	vm.IP = &CellAddress{addr.Entry, addr.Offset}
+	return nil
 }
 
 func primitiveFuncBackslash(vm *VirtualMachine, entry *DictionaryEntry) error {

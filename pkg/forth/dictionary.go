@@ -49,3 +49,12 @@ func (d *Dictionary) FindName(name string) (*DictionaryEntry, error) {
 	}
 	return nil, fmt.Errorf("%s not found in dictionary.", name)
 }
+
+func (d *Dictionary) LastForthWord() (*WordForth, error) {
+	lastEntry := d.Entries[len(d.Entries)-1]
+	last, ok := lastEntry.Word.(WordForth)
+	if !ok {
+		return nil, fmt.Errorf("The last word in dictionary is not a Forth word.")
+	}
+	return &last, nil
+}
