@@ -93,6 +93,13 @@ func (vm *VirtualMachine) Repl() error {
 
 	fmt.Println("ulp-forth")
 	for {
+		state, err := vm.State.Get()
+		if err != nil {
+			return err
+		}
+		if state == StateExit {
+			return nil
+		}
 		line, err := rl.ReadLineWithConfig(&cfg)
 		if err != nil {
 			return err
@@ -121,26 +128,44 @@ func (vm *VirtualMachine) execute(bytes []byte) error {
 		if len(word) == 0 {
 			return nil
 		}
-		name := string(word)
-		err = vm.executeName(name)
+		cells, err := vm.getCells(string(word))
 		if err != nil {
 			return err
+		}
+		state, err := vm.State.Get()
+		if err != nil {
+			return err
+		}
+		switch state {
+		case StateInterpret:
+			for _, c := range cells {
+				err := c.Execute(vm)
+				if err != nil {
+					return err
+				}
+			}
+		case StateCompile:
+			return fmt.Errorf("compile not implemented yet")
+		case StateExit:
+			return nil // the repl will exit after reading the state
+		default:
+			return fmt.Errorf("Unknown state %d", state)
 		}
 	}
 }
 
-func (vm *VirtualMachine) executeName(name string) error {
+func (vm *VirtualMachine) getCells(name string) ([]Cell, error) {
+	// check in dictionary for the name
 	entry, dictErr := vm.Dictionary.FindName(name)
 	if dictErr == nil {
-		return entry.Word.Execute(vm)
+		return []Cell{CellEntry{entry}}, nil
 	}
 	// dictionary lookup failed, check if this is a character
 	nameSlice := []byte(name)
 	if len(nameSlice) == 3 && nameSlice[0] == '\'' && nameSlice[2] == '\'' {
-		cell := CellNumber{uint16(nameSlice[1])}
-		return vm.Stack.Push(cell)
+		return []Cell{CellNumber{uint16(nameSlice[1])}}, nil
 	}
-	// try to parse as a number
+	// not a character, try to parse as a number
 	name = strings.ToLower(name)
 	double := false
 	if strings.HasSuffix(name, ".") {
@@ -151,13 +176,13 @@ func (vm *VirtualMachine) executeName(name string) error {
 	n, err := strconv.ParseInt(name, base, 64)
 	if err == nil {
 		cell := CellNumber{Number: uint16(n)}
-		vm.Stack.Push(cell)
 		if double {
-			cell = CellNumber{Number: uint16(n >> 16)}
-			vm.Stack.Push(cell)
+			cellHigh := CellNumber{Number: uint16(n >> 16)}
+			return []Cell{cell, cellHigh}, nil
+		} else {
+			return []Cell{cell}, nil
 		}
-		return nil
 	}
 	// could not parse as a number, return lookup failure
-	return dictErr
+	return nil, dictErr
 }
