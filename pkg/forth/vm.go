@@ -134,7 +134,13 @@ func (vm *VirtualMachine) executeName(name string) error {
 	if dictErr == nil {
 		return entry.Word.Execute(vm)
 	}
-	// dictionary lookup failed, try to parse as a number
+	// dictionary lookup failed, check if this is a character
+	nameSlice := []byte(name)
+	if len(nameSlice) == 3 && nameSlice[0] == '\'' && nameSlice[2] == '\'' {
+		cell := CellNumber{uint16(nameSlice[1])}
+		return vm.Stack.Push(cell)
+	}
+	// try to parse as a number
 	name = strings.ToLower(name)
 	double := false
 	if strings.HasSuffix(name, ".") {

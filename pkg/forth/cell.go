@@ -30,8 +30,8 @@ func (c CellEntry) Execute(vm *VirtualMachine) error {
 	return c.Entry.Word.Execute(vm) // Execute the underlying dictionary entry.
 }
 
-// A Cell representing an address. Used for pointers such
-// as return addresses and accessing memory.
+// A Cell representing an address in the dictionary. Used for pointers such
+// as return addresses.
 type CellAddress struct {
 	Entry  *DictionaryEntry // The dictionary entry with the address.
 	Offset int              // The offset within that entry.
@@ -43,4 +43,18 @@ func (c CellAddress) Execute(vm *VirtualMachine) error {
 
 func (c CellAddress) String() string {
 	return fmt.Sprintf("{%s %d}", c.Entry, c.Offset)
+}
+
+// A Cell representing a string.
+type CellString struct {
+	Memory []byte
+	Offset int
+}
+
+func (c CellString) Execute(vm *VirtualMachine) error {
+	return fmt.Errorf("Cannot execute a string cell.")
+}
+
+func (c CellString) String() string {
+	return fmt.Sprintf("\"%s\"", c.Memory[c.Offset:])
 }

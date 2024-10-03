@@ -35,6 +35,10 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: primitiveFuncWords,
 		},
 		{
+			name:   "WORD",
+			goFunc: primitiveFuncWord,
+		},
+		{
 			name:   "\\",
 			goFunc: primitiveFuncBackslash,
 		},
@@ -86,6 +90,22 @@ func primitiveFuncWords(vm *VirtualMachine, entry *DictionaryEntry) error {
 		}
 	}
 	return nil
+}
+
+func primitiveFuncWord(vm *VirtualMachine, entry *DictionaryEntry) error {
+	n, err := vm.Stack.PopNumber()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not pop delimiter.", entry), err)
+	}
+	word, err := vm.ParseArea.Word(byte(n))
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not parse.", entry), err)
+	}
+	c := CellString{
+		Memory: word,
+		Offset: 0,
+	}
+	return vm.Stack.Push(c)
 }
 
 func primitiveFuncBackslash(vm *VirtualMachine, entry *DictionaryEntry) error {
