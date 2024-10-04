@@ -87,6 +87,17 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: primitiveSetImmediate,
 		},
 		{
+			name:   "U.",
+			goFunc: primitiveUDot,
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 0",                   // load the value we want to print
+				"mv r1, 2",                       // indicate that the host should do the printu16 method
+				"st r0, r2, __boot_data_start+4", // set the value
+				"st r1, r2, __boot_data_start+3", // set the method indicator
+				"jump next",
+			},
+		},
+		{
 			name:   "EXIT",
 			goFunc: primitiveFuncExit,
 			ulpAsm: PrimitiveUlp{
@@ -327,6 +338,15 @@ func primitiveFuncCompile(vm *VirtualMachine, entry *DictionaryEntry) error {
 		return errors.Join(fmt.Errorf("%s could not get last forth word.", entry), err)
 	}
 	last.Cells = append(last.Cells, c)
+	return nil
+}
+
+func primitiveUDot(vm *VirtualMachine, entry *DictionaryEntry) error {
+	cell, err := vm.Stack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
+	}
+	fmt.Printf("%s ", cell)
 	return nil
 }
 
