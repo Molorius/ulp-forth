@@ -37,7 +37,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: primitiveFuncWords,
 		},
 		{
-			name:   "--SEE",
+			name:   "--SEE", // ( )
 			goFunc: primitiveFuncSee,
 		},
 		{
@@ -56,6 +56,35 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		{
 			name:   "]",
 			goFunc: primitiveFuncRightBracket,
+		},
+		{
+			name:   "LAST",
+			goFunc: primitiveFuncLast,
+		},
+		{
+			name:   "LITERAL",
+			goFunc: primitiveFuncLiteral,
+			flag:   Flag{Immediate: true},
+		},
+		{
+			name:   "--'",
+			goFunc: primitiveFuncTick,
+		},
+		{
+			name:   "COMPILE,",
+			goFunc: primitiveFuncCompile,
+		},
+		{
+			name:   "--POSTPONE",
+			goFunc: primitiveFuncPostpone,
+		},
+		{
+			name:   "SET-HIDDEN",
+			goFunc: primitiveSetHidden,
+		},
+		{
+			name:   "SET-IMMEDIATE",
+			goFunc: primitiveSetImmediate,
 		},
 		{
 			name:   "EXIT",
@@ -133,8 +162,8 @@ func primitiveFuncSee(vm *VirtualMachine, entry *DictionaryEntry) error {
 	if err != nil {
 		return errors.Join(fmt.Errorf("%s could not find word.", entry), err)
 	}
-	fmt.Printf("\r\n%s", wordEntry)
-	fmt.Printf("%s", wordEntry.Word)
+	fmt.Println()
+	fmt.Print(wordEntry.Details())
 	return nil
 }
 
@@ -180,12 +209,124 @@ func primitiveFuncCreateForth(vm *VirtualMachine, entry *DictionaryEntry) error 
 }
 
 func primitiveFuncLeftBracket(vm *VirtualMachine, entry *DictionaryEntry) error {
-	vm.State.Set(StateInterpret)
-	return nil
+	return vm.State.Set(StateInterpret)
 }
 
 func primitiveFuncRightBracket(vm *VirtualMachine, entry *DictionaryEntry) error {
-	vm.State.Set(StateCompile)
+	return vm.State.Set(StateCompile)
+}
+
+func primitiveFuncLast(vm *VirtualMachine, entry *DictionaryEntry) error {
+	last := vm.Dictionary.Entries[len(vm.Dictionary.Entries)-1]
+	c := CellEntry{last}
+	return vm.Stack.Push(c)
+}
+
+func primitiveFuncLiteral(vm *VirtualMachine, entry *DictionaryEntry) error {
+	c, err := vm.Stack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
+	}
+	newCell := CellLiteral{c}
+	last, err := vm.Dictionary.LastForthWord()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get last forth word.", entry), err)
+	}
+	last.Cells = append(last.Cells, newCell)
+	return nil
+}
+
+func primitiveFuncTick(vm *VirtualMachine, entry *DictionaryEntry) error {
+	cell, err := vm.Stack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
+	}
+	cellString, ok := cell.(CellString)
+	if !ok {
+		return fmt.Errorf("%s requires a counted string.", entry)
+	}
+	name := cellString.Memory[cellString.Offset:]
+	found, err := vm.Dictionary.FindName(string(name))
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not find name: %s", entry, name), err)
+	}
+	newCell := CellEntry{found}
+	return vm.Stack.Push(newCell)
+}
+
+func primitiveFuncPostpone(vm *VirtualMachine, entry *DictionaryEntry) error {
+	cell, err := vm.Stack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
+	}
+	cellEntry, ok := cell.(CellEntry)
+	if !ok {
+		return fmt.Errorf("%s requires an entry cell: %s", entry, cell)
+	}
+	last, err := vm.Dictionary.LastForthWord()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get last forth word.", entry), err)
+	}
+	if cellEntry.Entry.Flag.Immediate {
+		last.Cells = append(last.Cells, cellEntry)
+		return nil
+	} else {
+		compile, err := vm.Dictionary.FindName("COMPILE,")
+		if !ok {
+			return errors.Join(fmt.Errorf("%s requires the COMPILE, word.", entry), err)
+		}
+		newCells := []Cell{CellLiteral{cellEntry}, CellEntry{compile}}
+		last.Cells = append(last.Cells, newCells...)
+	}
+	return nil
+}
+
+func primitiveSetImmediate(vm *VirtualMachine, entry *DictionaryEntry) error {
+	cell0, err := vm.Stack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get entry cell.", entry), err)
+	}
+	cellEntry, ok := cell0.(CellEntry)
+	if !ok {
+		return fmt.Errorf("%s expected an entry cell: %s", entry, cellEntry)
+	}
+	cellNum, err := vm.Stack.PopNumber()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get bool cell.", entry), err)
+	}
+	flag := cellNum > 0
+	cellEntry.Entry.Flag.Immediate = flag
+	return nil
+}
+
+func primitiveSetHidden(vm *VirtualMachine, entry *DictionaryEntry) error {
+	cell0, err := vm.Stack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get entry cell.", entry), err)
+	}
+	cellEntry, ok := cell0.(CellEntry)
+	if !ok {
+		return fmt.Errorf("%s expected an entry cell: %s", entry, cellEntry)
+	}
+	cellNum, err := vm.Stack.PopNumber()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get bool cell.", entry), err)
+	}
+	flag := cellNum > 0
+	cellEntry.Entry.Flag.Hidden = flag
+	return nil
+}
+
+func primitiveFuncCompile(vm *VirtualMachine, entry *DictionaryEntry) error {
+	c, err := vm.Stack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
+	}
+	last, err := vm.Dictionary.LastForthWord()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get last forth word.", entry), err)
+	}
+	last.Cells = append(last.Cells, c)
 	return nil
 }
 
@@ -193,10 +334,6 @@ func primitiveFuncExit(vm *VirtualMachine, entry *DictionaryEntry) error {
 	ret, err := vm.ReturnStack.Pop()
 	if err != nil {
 		return errors.Join(fmt.Errorf("%s could not pop return address.", entry), err)
-	}
-	tmp := CellAddress{}
-	if ret == tmp {
-		fmt.Printf("woooah")
 	}
 	addr, ok := ret.(*CellAddress)
 	if !ok {

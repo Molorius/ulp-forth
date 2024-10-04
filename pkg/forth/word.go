@@ -38,13 +38,14 @@ func (w *WordForth) Execute(vm *VirtualMachine) error {
 			vm.ReturnStack.SetDepth(startDepth) // attempt to reset the stack depth to "fix" part of the problem
 			return fmt.Errorf("%s instruction pointer went outside of definition.", w.Entry)
 		}
-		nxt := w.Cells[vm.IP.Offset]
+		currentOffset := vm.IP.Offset
+		nxt := w.Cells[currentOffset]
 		vm.IP.Offset += 1
 		err := nxt.Execute(vm)
 		if err != nil { // error when executing lower word
 			vm.IP = previous                    // reset the instruction pointer
 			vm.ReturnStack.SetDepth(startDepth) // attempt to reset the stack depth to "fix" part of the problem
-			return errors.Join(fmt.Errorf("%s error while executing word.", w.Entry), err)
+			return errors.Join(fmt.Errorf("%s error while executing %s in position %d", w.Entry, nxt, currentOffset), err)
 		}
 	}
 

@@ -16,6 +16,10 @@ func (d DictionaryEntry) String() string {
 	return d.Name
 }
 
+func (d DictionaryEntry) Details() string {
+	return fmt.Sprintf("%s", d.Word)
+}
+
 // The Forth Dictionary. This architecture uses individual entries
 // representing words rather than a flat cell structure.
 type Dictionary struct {

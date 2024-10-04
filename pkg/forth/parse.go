@@ -30,7 +30,7 @@ func (p *ParseArea) Word(delimiter byte) ([]byte, error) {
 	}
 
 	// find the end
-	endIndex := startIndex + 1
+	endIndex := startIndex
 	if endIndex > len(p.area) {
 		p.index = endIndex
 		return nil, nil

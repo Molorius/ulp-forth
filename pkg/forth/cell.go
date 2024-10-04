@@ -30,6 +30,10 @@ func (c CellEntry) Execute(vm *VirtualMachine) error {
 	return c.Entry.Word.Execute(vm) // Execute the underlying dictionary entry.
 }
 
+func (c CellEntry) String() string {
+	return c.Entry.String()
+}
+
 // A Cell representing an address in the dictionary. Used for pointers such
 // as return addresses.
 type CellAddress struct {
@@ -57,4 +61,18 @@ func (c CellString) Execute(vm *VirtualMachine) error {
 
 func (c CellString) String() string {
 	return fmt.Sprintf("\"%s\"", c.Memory[c.Offset:])
+}
+
+// A Cell that places the underlying cell on the stack.
+// Used for execution tokens.
+type CellLiteral struct {
+	cell Cell
+}
+
+func (c CellLiteral) Execute(vm *VirtualMachine) error {
+	return vm.Stack.Push(c.cell)
+}
+
+func (c CellLiteral) String() string {
+	return fmt.Sprintf("Literal(%s)", c.cell)
 }
