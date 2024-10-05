@@ -19,7 +19,3 @@
 : ESP.PRINTCHAR ( char -- ) ESP.FUNC.TYPE.PRINTCHAR ESP.FUNC ;
 : ESP.DONE ( -- ) 0 ESP.FUNC.TYPE.DONE ESP.FUNC ;
 : U. ( n -- ) ESP.PRINTU16 ;
-
-\ used for testing, will remove later
-: main 123 u. ;
-bye
