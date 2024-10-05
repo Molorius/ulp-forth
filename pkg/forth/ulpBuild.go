@@ -209,11 +209,13 @@ func (u *Ulp) buildInterpreter() string {
 		"next:",
 
 		// load the instruction
-		"move r2, 0",      // r2 is 0 at the start of every loop as a global pointer
-		"ld r1, r2, __ip", // load the instruction pointer
-		"add r1, r1, 1",   // increment the pointer to the next instruction
-		"st r1, r2, __ip", // store the pointer
-		"ld r0, r1, -1",   // load the current instruction
+		"move r2, 0",        // r2 is 0 at the start of every loop as a global pointer
+		"__next_skip_r2:",   // address to skip loading r2
+		"ld r1, r2, __ip",   // load the instruction pointer
+		"__next_skip_load:", // address to skip loading IP
+		"add r1, r1, 1",     // increment the pointer to the next instruction
+		"st r1, r2, __ip",   // store the pointer
+		"ld r0, r1, -1",     // load the current instruction
 
 		// determine instruction type
 		"__ins_asm:",

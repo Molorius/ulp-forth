@@ -90,12 +90,11 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			name:   "EXIT",
 			goFunc: primitiveFuncExit,
 			ulpAsm: PrimitiveUlp{
-				"ld r0, r2, __rsp", // load the return stack pointer
-				"ld r1, r0, 0",     // load the return address into r1
-				"sub r0, r0, 1",    // decrement pointer
-				"st r0, r2, __rsp", // store the updated return stack pointer
-				"st r1, r2, __ip",  // store the returned address
-				"jump next",
+				"ld r0, r2, __rsp",      // load the return stack pointer
+				"ld r1, r0, 0",          // load the return address into r1
+				"sub r0, r0, 1",         // decrement pointer
+				"st r0, r2, __rsp",      // store the updated return stack pointer
+				"jump __next_skip_load", // skip loading, r1 and r2 are already fine
 			},
 		},
 		{
@@ -107,7 +106,19 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"add r0, r0, r1",
 				"add r3, r3, 1",
 				"st r0, r3, 0",
-				"jump next",
+				"jump __next_skip_r2",
+			},
+		},
+		{
+			name:   "-",
+			goFunc: primitiveFuncMinus,
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 1",
+				"ld r1, r3, 0",
+				"sub r0, r0, r1",
+				"add r3, r3, 1",
+				"st r0, r3, 0",
+				"jump __next_skip_r2",
 			},
 		},
 		{
@@ -115,7 +126,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: primitiveFuncDrop,
 			ulpAsm: PrimitiveUlp{
 				"add r3, r3, 1",
-				"jump next",
+				"jump __next_skip_r2",
 			},
 		},
 		{
@@ -127,7 +138,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: notImplemented,
 			ulpAsm: PrimitiveUlp{
 				"move r3, __stack_end", // set the stack pointer to the end of the stack
-				"jump next",
+				"jump __next_skip_r2",
 			},
 		},
 		{
@@ -146,7 +157,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r2, __boot_data_start+4", // set the value
 				"st r1, r2, __boot_data_start+3", // set the method indicator
 				"add r3, r3, 2",                  // decrease the stack by 2
-				"jump next",
+				"jump __next_skip_r2",
 			},
 		},
 		{
@@ -156,7 +167,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"ld r0, r2, __boot_data_start+3",
 				"sub r3, r3, 1",
 				"st r0, r2, 0",
-				"jump next",
+				"jump __next_skip_r2",
 			},
 		},
 		{
@@ -172,7 +183,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"ld r0, r2, __boot_data_start+2", // read turn
 				"jumpr mutex.take.0, 0, gt",      // loop if turn>0
 				"mutex.take.1:",
-				"jump next",
+				"jump __next_skip_r2",
 			},
 		},
 		{
@@ -180,7 +191,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: nop,
 			ulpAsm: PrimitiveUlp{
 				"st r2, r2, __boot_data_start", // flag0 = 0
-				"jump next",
+				"jump __next_skip_r2",
 			},
 		},
 		{
@@ -188,7 +199,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: nop,
 			ulpAsm: PrimitiveUlp{
 				"wait 0xFFFF",
-				"jump next",
+				"jump __next_skip_r2",
 			},
 		},
 	}
@@ -444,6 +455,18 @@ func primitiveFuncPlus(vm *VirtualMachine, entry *DictionaryEntry) error {
 		return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
 	}
 	return vm.Stack.Push(CellNumber{left + right})
+}
+
+func primitiveFuncMinus(vm *VirtualMachine, entry *DictionaryEntry) error {
+	right, err := vm.Stack.PopNumber()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+	}
+	left, err := vm.Stack.PopNumber()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+	}
+	return vm.Stack.Push(CellNumber{left - right})
 }
 
 func primitiveFuncDrop(vm *VirtualMachine, entry *DictionaryEntry) error {

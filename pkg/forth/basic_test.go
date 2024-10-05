@@ -36,6 +36,11 @@ func TestPrimitives(t *testing.T) {
 			expect: "3 ",
 		},
 		{
+			name:   "-",
+			asm:    "3 1 - u.",
+			expect: "2 ",
+		},
+		{
 			name:   "DROP",
 			asm:    "1 2 3 DROP u. u.",
 			expect: "2 1 ",
