@@ -7,9 +7,10 @@ import (
 
 // A Dictionary entry. Contains the name, the word itself, and the flags.
 type DictionaryEntry struct {
-	Name string
-	Word Word
-	Flag Flag
+	Name    string
+	ulpName string // the name we're going to compile this to
+	Word    Word
+	Flag    Flag
 }
 
 func (d DictionaryEntry) String() string {

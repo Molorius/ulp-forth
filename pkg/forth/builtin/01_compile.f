@@ -1,6 +1,8 @@
 
 32 WORD IMMEDIATE --CREATE-FORTH ] -1 LAST SET-IMMEDIATE EXIT [
-32 WORD \ --CREATE-FORTH ] 10 WORD DROP EXIT [ IMMEDIATE \ end of line comments work now
+32 WORD \ --CREATE-FORTH ] 10 WORD DROP EXIT [ IMMEDIATE \ End of line comments work now.
+\ The word IMMEDIATE sets the previously defined word to immediate mode,
+\ which means it will run as soon as it's parsed when compiling.
 32 WORD ( --CREATE-FORTH ] ')' WORD DROP EXIT [ IMMEDIATE ( inline comments work now )
 
 \ This file contains words related to compilation. More specifically, all of the 
@@ -26,7 +28,7 @@ CREATE FALSE ( -- false ) ] 0 EXIT [
 
 \ ' (tick) parses the next name and places the execution token of that name
 \ onto the stack.
-CREATE ' ] BL WORD --' EXIT [
+CREATE ' ] BL WORD FIND-WORD EXIT [
 
 \ POSTPONE parses the next name and compiles the compilation semantics of that word
 \ onto the latest word. Immediate.

@@ -67,8 +67,8 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			flag:   Flag{Immediate: true},
 		},
 		{
-			name:   "--'",
-			goFunc: primitiveFuncTick,
+			name:   "FIND-WORD",
+			goFunc: primitiveFindWord,
 		},
 		{
 			name:   "COMPILE,",
@@ -87,24 +87,14 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: primitiveSetImmediate,
 		},
 		{
-			name:   "U.",
-			goFunc: primitiveUDot,
-			ulpAsm: PrimitiveUlp{
-				"ld r0, r3, 0",                   // load the value we want to print
-				"mv r1, 2",                       // indicate that the host should do the printu16 method
-				"st r0, r2, __boot_data_start+4", // set the value
-				"st r1, r2, __boot_data_start+3", // set the method indicator
-				"jump next",
-			},
-		},
-		{
 			name:   "EXIT",
 			goFunc: primitiveFuncExit,
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r2, __rsp", // load the return stack pointer
-				"ld r1, r0, 0",     // load the return address into r0
+				"ld r1, r0, 0",     // load the return address into r1
 				"sub r0, r0, 1",    // decrement pointer
 				"st r0, r2, __rsp", // store the updated return stack pointer
+				"st r1, r2, __ip",  // store the returned address
 				"jump next",
 			},
 		},
@@ -131,6 +121,75 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		{
 			name:   "BYE",
 			goFunc: primitiveFuncBye,
+		},
+		{
+			name:   "VM.STACK.INIT", // initialize the ulp stack
+			goFunc: notImplemented,
+			ulpAsm: PrimitiveUlp{
+				"move r3, __stack_end", // set the stack pointer to the end of the stack
+				"jump next",
+			},
+		},
+		{
+			name:   "VM.STOP", // stop executing
+			goFunc: notImplemented,
+			ulpAsm: PrimitiveUlp{
+				"jump .", // loop indefinitely
+			},
+		},
+		{
+			name:   "ESP.FUNC.UNSAFE", // use one of the custom esp32/host functions
+			goFunc: primitiveEspFunc,
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 1",                   // load the value we want to print
+				"ld r1, r3, 0",                   // load the method number
+				"st r0, r2, __boot_data_start+4", // set the value
+				"st r1, r2, __boot_data_start+3", // set the method indicator
+				"add r3, r3, 2",                  // decrease the stack by 2
+				"jump next",
+			},
+		},
+		{
+			name:   "ESP.FUNC.READ.UNSAFE",
+			goFunc: primitiveFuncEspRead,
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r2, __boot_data_start+3",
+				"sub r3, r3, 1",
+				"st r0, r2, 0",
+				"jump next",
+			},
+		},
+		{
+			name:   "MUTEX.TAKE",
+			goFunc: nop,
+			ulpAsm: PrimitiveUlp{
+				"move r1, 1",
+				"st r1, r2, __boot_data_start",   // flag0 = 1
+				"st r1, r2, __boot_data_start+2", // turn = 1
+				"mutex.take.0:",                  // //while flag1>0 && turn>0
+				"ld r0, r2, __boot_data_start+1", // read flag1
+				"jumpr mutex.take.1, 1, lt",      // exit if flag1<1
+				"ld r0, r2, __boot_data_start+2", // read turn
+				"jumpr mutex.take.0, 0, gt",      // loop if turn>0
+				"mutex.take.1:",
+				"jump next",
+			},
+		},
+		{
+			name:   "MUTEX.GIVE",
+			goFunc: nop,
+			ulpAsm: PrimitiveUlp{
+				"st r2, r2, __boot_data_start", // flag0 = 0
+				"jump next",
+			},
+		},
+		{
+			name:   "DEBUG.PAUSE", // temporarily used while we don't have jumps
+			goFunc: nop,
+			ulpAsm: PrimitiveUlp{
+				"wait 0xFFFF",
+				"jump next",
+			},
 		},
 	}
 	for _, p := range prims {
@@ -247,7 +306,7 @@ func primitiveFuncLiteral(vm *VirtualMachine, entry *DictionaryEntry) error {
 	return nil
 }
 
-func primitiveFuncTick(vm *VirtualMachine, entry *DictionaryEntry) error {
+func primitiveFindWord(vm *VirtualMachine, entry *DictionaryEntry) error {
 	cell, err := vm.Stack.Pop()
 	if err != nil {
 		return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
@@ -341,12 +400,24 @@ func primitiveFuncCompile(vm *VirtualMachine, entry *DictionaryEntry) error {
 	return nil
 }
 
-func primitiveUDot(vm *VirtualMachine, entry *DictionaryEntry) error {
+func primitiveEspFunc(vm *VirtualMachine, entry *DictionaryEntry) error {
+	funcType, err := vm.Stack.PopNumber()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get function type from stack.", entry), err)
+	}
 	cell, err := vm.Stack.Pop()
 	if err != nil {
 		return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
 	}
-	fmt.Printf("%s ", cell)
+	switch funcType {
+	case 0: // nothing
+	case 1: // done
+	case 2:
+		fmt.Printf("%s ", cell)
+	default:
+		return fmt.Errorf("%s unknown function type %d", entry, funcType)
+	}
+
 	return nil
 }
 
@@ -385,4 +456,16 @@ func primitiveFuncDrop(vm *VirtualMachine, entry *DictionaryEntry) error {
 
 func primitiveFuncBye(vm *VirtualMachine, entry *DictionaryEntry) error {
 	return vm.State.Set(StateExit)
+}
+
+func primitiveFuncEspRead(vm *VirtualMachine, entry *DictionaryEntry) error {
+	return vm.Stack.Push(CellNumber{0})
+}
+
+func notImplemented(vm *VirtualMachine, entry *DictionaryEntry) error {
+	return fmt.Errorf("%s cannot be executed on the host.", entry)
+}
+
+func nop(vm *VirtualMachine, entry *DictionaryEntry) error {
+	return nil
 }

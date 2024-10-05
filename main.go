@@ -16,5 +16,13 @@ func main() {
 	err = vm.Repl()
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
+	ulp := forth.Ulp{}
+	asm, err := ulp.BuildAssembly(&vm, "main")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(asm)
 }
