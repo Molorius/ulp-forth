@@ -106,7 +106,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"ld r1, r3, 1",
 				"add r0, r0, r1",
 				"add r3, r3, 1",
-				"st r0, r0, 0",
+				"st r0, r3, 0",
 				"jump next",
 			},
 		},

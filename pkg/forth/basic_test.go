@@ -21,6 +21,39 @@ func TestPrintChar(t *testing.T) {
 	runOutputTest(forth, "ABC", t)
 }
 
+// TestPrimitives has very basic tests for primitive words.
+// This is just to rule out initial problems, more thorough tests
+// will be done through the standard test suite.
+func TestPrimitives(t *testing.T) {
+	tests := []struct {
+		name   string
+		asm    string
+		expect string
+	}{
+		{
+			name:   "+",
+			asm:    "1 2 + u.",
+			expect: "3 ",
+		},
+		{
+			name:   "DROP",
+			asm:    "1 2 3 DROP u. u.",
+			expect: "2 1 ",
+		},
+		{ // not really needed but being thorough
+			name:   "EXIT",
+			asm:    "1 U. EXIT 2 U.",
+			expect: "1 ",
+		},
+	}
+	for _, tt := range tests {
+		f := " : MAIN " + tt.asm + " ; " // put the code inside of a word
+		t.Run(tt.name, func(t *testing.T) {
+			runOutputTest(f, tt.expect, t)
+		})
+	}
+}
+
 func runOutputTest(code string, expected string, t *testing.T) {
 	reduce := true // reduce code: we always want to for size!
 	vm := VirtualMachine{}
