@@ -33,6 +33,11 @@ func TestPrimitives(t *testing.T) {
 		expect string
 	}{
 		{
+			name:   "double",
+			asm:    "0xFFFFFF. u. u.",
+			expect: "255 65535 ",
+		},
+		{
 			name:   "+",
 			asm:    "1 2 + u.",
 			expect: "3 ",
@@ -41,6 +46,16 @@ func TestPrimitives(t *testing.T) {
 			name:   "-",
 			asm:    "3 1 - u.",
 			expect: "2 ",
+		},
+		{
+			name:   "SWAP",
+			asm:    "1 2 SWAP u. u.",
+			expect: "1 2 ",
+		},
+		{
+			name:   "ROT",
+			asm:    "1 2 3 ROT u. u. u.",
+			expect: "1 3 2 ",
 		},
 		{
 			name:   "DROP",

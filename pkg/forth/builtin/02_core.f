@@ -19,3 +19,11 @@
 : ESP.PRINTCHAR ( char -- ) ESP.FUNC.TYPE.PRINTCHAR ESP.FUNC ;
 : ESP.DONE ( -- ) 0 ESP.FUNC.TYPE.DONE ESP.FUNC ;
 : U. ( n -- ) ESP.PRINTU16 ;
+
+: NIP ( a b -- b ) SWAP DROP ;
+: 1+ ( x -- x+1 ) 1 + ;
+: 1- ( x -- x-1 ) 1 - ;
+\ Negate x. -2 becomes 2, 3 becomes -3, etc.
+: NEGATE ( x -- -x ) 0 SWAP - ;
+\ Invert all bits. 0xFFFF becomes 0, 0xFFF0 becomes 0x000F, etc.
+: INVERT ( x -- x^0xFFFF ) NEGATE 1- ;

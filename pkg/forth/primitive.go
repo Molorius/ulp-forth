@@ -122,6 +122,30 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name:   "SWAP",
+			goFunc: primitiveFuncSwap,
+			ulpAsm: PrimitiveUlp{
+				"ld r1, r3, 0",
+				"ld r0, r3, 1",
+				"st r1, r3, 1",
+				"st r0, r3, 0",
+				"jump __next_skip_r2",
+			},
+		},
+		{
+			name:   "ROT",
+			goFunc: primitiveFuncRot,
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 0",
+				"ld r1, r3, 1",
+				"st r0, r3, 1",
+				"ld r0, r3, 2",
+				"st r1, r3, 2",
+				"st r0, r3, 0",
+				"jump __next_skip_r2",
+			},
+		},
+		{
 			name:   "DROP",
 			goFunc: primitiveFuncDrop,
 			ulpAsm: PrimitiveUlp{
@@ -472,6 +496,43 @@ func primitiveFuncMinus(vm *VirtualMachine, entry *DictionaryEntry) error {
 		return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
 	}
 	return vm.Stack.Push(CellNumber{left - right})
+}
+
+func primitiveFuncSwap(vm *VirtualMachine, entry *DictionaryEntry) error {
+	right, err := vm.Stack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+	}
+	left, err := vm.Stack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+	}
+	err = vm.Stack.Push(right)
+	if err != nil {
+		return err
+	}
+	return vm.Stack.Push(left)
+}
+
+func primitiveFuncRot(vm *VirtualMachine, entry *DictionaryEntry) error {
+	c, err := vm.Stack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get c value.", entry), err)
+	}
+	b, err := vm.Stack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get b value.", entry), err)
+	}
+	a, err := vm.Stack.Pop()
+	if err != nil {
+		return errors.Join(fmt.Errorf("%s could not get a value.", entry), err)
+	}
+	err = vm.Stack.Push(b)
+	if err != nil {
+		return err
+	}
+	err = vm.Stack.Push(c)
+	return vm.Stack.Push(a)
 }
 
 func primitiveFuncDrop(vm *VirtualMachine, entry *DictionaryEntry) error {
