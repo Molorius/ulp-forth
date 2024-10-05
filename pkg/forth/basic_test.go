@@ -1,6 +1,8 @@
 package forth
 
 import (
+	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/Molorius/ulp-c/pkg/asm"
@@ -52,29 +54,45 @@ func TestPrimitives(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		f := " : MAIN " + tt.asm + " ; " // put the code inside of a word
 		t.Run(tt.name, func(t *testing.T) {
-			runOutputTest(f, tt.expect, t)
+			runOutputTest(wrapMain(tt.asm), tt.expect, t)
 		})
 	}
 }
 
 func runOutputTest(code string, expected string, t *testing.T) {
 	reduce := true // reduce code: we always want to for size!
-	vm := VirtualMachine{}
+	var buff bytes.Buffer
+	// set up the virtual machine
+	vm := VirtualMachine{Out: &buff}
 	err := vm.Setup()
 	if err != nil {
 		t.Fatalf("failed to set up vm: %s", err)
 	}
+	// run the code through the interpreter
 	err = vm.execute([]byte(code))
 	if err != nil {
 		t.Fatalf("failed to execute test code: %s", err)
 	}
 	ulp := Ulp{}
+	// cross compile "main"
 	assembly, err := ulp.BuildAssembly(&vm, "main")
 	if err != nil {
 		t.Fatalf("failed to generate assembly: %s", err)
 	}
-	// run the test!
+
+	// run the test directly on host
+	t.Run("host", func(t *testing.T) {
+		err = vm.execute([]byte(" MAIN "))
+		got := buff.String()
+		if got != expected {
+			t.Errorf("expected \"%s\" got \"%s\"", expected, got)
+		}
+	})
+	// run the cross compiled test on emulator and hardware
 	asm.RunTest(t, assembly, expected, reduce)
+}
+
+func wrapMain(code string) string {
+	return fmt.Sprintf(" : MAIN %s ; ", code)
 }

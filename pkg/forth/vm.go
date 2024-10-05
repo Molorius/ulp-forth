@@ -20,10 +20,15 @@ type VirtualMachine struct {
 	ParseArea   ParseArea    // The input parse area.
 	State       State        // The execution state for the virtual machine.
 	IP          *CellAddress // The interpreter pointer.
+	Out         io.Writer
 }
 
 // Set up the virtual machine.
 func (vm *VirtualMachine) Setup() error {
+	if vm.Out == nil {
+		vm.Out = os.Stdout
+	}
+
 	err := vm.Dictionary.Setup()
 	if err != nil {
 		return err
@@ -129,7 +134,7 @@ func (vm *VirtualMachine) Repl() error {
 	}
 	defer rl.Close()
 
-	fmt.Println("ulp-forth")
+	fmt.Fprintln(vm.Out, "ulp-forth")
 	for {
 		state, err := vm.State.Get()
 		if err != nil {
@@ -142,13 +147,13 @@ func (vm *VirtualMachine) Repl() error {
 		if err != nil {
 			return err
 		}
-		fmt.Print(" ")
+		fmt.Fprint(vm.Out, " ")
 		err = vm.execute([]byte(line))
 		if err != nil {
-			fmt.Println("")
+			fmt.Fprintln(vm.Out)
 			return err
 		}
-		fmt.Println(" ok")
+		fmt.Fprintln(vm.Out, " ok")
 	}
 }
 

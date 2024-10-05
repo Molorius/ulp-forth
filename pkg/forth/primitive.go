@@ -213,17 +213,16 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 }
 
 func primitiveFuncDotS(vm *VirtualMachine, entry *DictionaryEntry) error {
-	fmt.Printf("%s", vm.Stack)
+	fmt.Fprintf(vm.Out, "%s", vm.Stack)
 	return nil
 }
 
 func primitiveFuncWords(vm *VirtualMachine, entry *DictionaryEntry) error {
-	fmt.Println("")
+	fmt.Fprintln(vm.Out)
 	for i := len(vm.Dictionary.Entries) - 1; i >= 0; i-- {
 		name := vm.Dictionary.Entries[i].Name
 		if len(name) > 0 {
-			fmt.Print(name)
-			fmt.Print(" ")
+			fmt.Fprint(vm.Out, name, " ")
 		}
 	}
 	return nil
@@ -243,8 +242,7 @@ func primitiveFuncSee(vm *VirtualMachine, entry *DictionaryEntry) error {
 	if err != nil {
 		return errors.Join(fmt.Errorf("%s could not find word.", entry), err)
 	}
-	fmt.Println()
-	fmt.Print(wordEntry.Details())
+	fmt.Fprint(vm.Out, "\r\n", wordEntry.Details())
 	return nil
 }
 
@@ -423,8 +421,15 @@ func primitiveEspFunc(vm *VirtualMachine, entry *DictionaryEntry) error {
 	switch funcType {
 	case 0: // nothing
 	case 1: // done
-	case 2:
-		fmt.Printf("%s ", cell)
+	case 2: // print unsigned number (we're not quite accurate here for convenience)
+		fmt.Fprint(vm.Out, cell, " ")
+	case 3: // print char
+		num, ok := cell.(CellNumber)
+		if !ok {
+			return fmt.Errorf("%s expected a number: %s", entry, num)
+		}
+		c := byte(num.Number)
+		fmt.Fprintf(vm.Out, "%c", c)
 	default:
 		return fmt.Errorf("%s unknown function type %d", entry, funcType)
 	}
