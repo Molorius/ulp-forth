@@ -6,6 +6,7 @@ import "fmt"
 // Cells are what constitute words, stack entries, etc.
 type Cell interface {
 	Execute(*VirtualMachine) error
+	// Compile(*Ulp) (string, error) // The compiled string for the output assembly.
 }
 
 // A Cell representing a number.
@@ -14,7 +15,7 @@ type CellNumber struct {
 }
 
 func (c CellNumber) Execute(vm *VirtualMachine) error {
-	return vm.Stack.Push(c) // Push copy of this cell onto stack.
+	return fmt.Errorf("Cannot directly execute a number")
 }
 
 func (c CellNumber) String() string {
@@ -98,7 +99,7 @@ func (c *CellDestination) name(u *Ulp) string {
 	if c.ulpName != "" {
 		return c.ulpName
 	}
-	c.ulpName = u.name("dest", "")
+	c.ulpName = u.name("dest", "", true)
 	return c.ulpName
 }
 

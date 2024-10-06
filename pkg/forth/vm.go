@@ -226,7 +226,7 @@ func (vm *VirtualMachine) getCells(name string) ([]Cell, error) {
 	// dictionary lookup failed, check if this is a character
 	nameSlice := []byte(name)
 	if len(nameSlice) == 3 && nameSlice[0] == '\'' && nameSlice[2] == '\'' {
-		return []Cell{CellNumber{uint16(nameSlice[1])}}, nil
+		return []Cell{CellLiteral{CellNumber{uint16(nameSlice[1])}}}, nil
 	}
 	// not a character, try to parse as a number
 	name = strings.ToLower(name)
@@ -238,9 +238,9 @@ func (vm *VirtualMachine) getCells(name string) ([]Cell, error) {
 	base := 0
 	n, err := strconv.ParseInt(name, base, 64)
 	if err == nil {
-		cell := CellNumber{Number: uint16(n)}
+		cell := CellLiteral{CellNumber{Number: uint16(n)}}
 		if double {
-			cellHigh := CellNumber{Number: uint16(n >> 16)}
+			cellHigh := CellLiteral{CellNumber{Number: uint16(n >> 16)}}
 			return []Cell{cell, cellHigh}, nil
 		} else {
 			return []Cell{cell}, nil

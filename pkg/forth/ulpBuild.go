@@ -53,7 +53,7 @@ func (uForth ulpForth) build() string {
 type Ulp struct {
 	assembly []ulpAsm
 	forth    []ulpForth
-	numbers  map[uint16]string
+	data     map[string]string
 	outCount int
 }
 
@@ -75,15 +75,13 @@ func (u *Ulp) build() string {
 		sb.WriteString(forth.build())
 	}
 	sb.WriteString("__forthwords_end:\r\n\r\n")
-	// numbers
-	sb.WriteString("__numbers_start:\r\n")
-	for n, str := range u.numbers {
-		sb.WriteString(str)
-		sb.WriteString(":\r\n    .int ")
-		sb.WriteString(strconv.Itoa(int(n)))
+	// data
+	sb.WriteString("__forthdata_start:\r\n")
+	for _, d := range u.data {
+		sb.WriteString(d)
 		sb.WriteString("\r\n")
 	}
-	sb.WriteString("__numbers_end:\r\n")
+	sb.WriteString("__forthdata_end:\r\n")
 	return sb.String()
 }
 
@@ -94,7 +92,7 @@ func (u *Ulp) BuildAssembly(vm *VirtualMachine, word string) (string, error) {
 	// u.Entries = make([]*DictionaryEntry, 0)
 	u.assembly = make([]ulpAsm, 0)
 	u.forth = make([]ulpForth, 0)
-	u.numbers = make(map[uint16]string)
+	u.data = make(map[string]string)
 
 	vm.State.Set(StateInterpret)
 	// err := vm.execute([]byte(" : VM.INIT VM.STACK.INIT 0 2 MUTEX.TAKE --ESP.FUNC MUTEX.GIVE DEBUG.PAUSE 0 1 MUTEX.TAKE --ESP.FUNC MUTEX.GIVE VM.STOP ; "))
@@ -115,7 +113,7 @@ func (u *Ulp) findUsedEntry(entry *DictionaryEntry) (string, error) {
 	}
 	switch w := entry.Word.(type) {
 	case *WordForth:
-		name := u.name("forth", entry.Name)
+		name := u.name("forth", entry.Name, true)
 		entry.ulpName = name
 		forth := ulpForth{
 			name:  name,
@@ -135,7 +133,7 @@ func (u *Ulp) findUsedEntry(entry *DictionaryEntry) (string, error) {
 		u.forth = append(u.forth, forth)
 		return name, nil
 	case *WordPrimitive:
-		name := u.name("asm", entry.Name)
+		name := u.name("asm", entry.Name, true)
 		entry.ulpName = name
 		asm := ulpAsm{
 			name: name,
@@ -153,10 +151,22 @@ func (u *Ulp) findUsedCell(cell Cell) (string, error) {
 	case CellEntry:
 		return u.findUsedEntry(c.Entry)
 	case CellNumber:
-		name, ok := u.numbers[c.Number]
+		return strconv.Itoa(int(c.Number)), nil
+	case CellLiteral:
+		pointedName, err := u.findUsedCell(c.cell)
+		if err != nil {
+			return "", err
+		}
+		var name string
+		_, isNum := c.cell.(CellNumber)
+		if isNum {
+			name = u.name("number", pointedName, false)
+		} else {
+			name = u.name("literal", pointedName, false)
+		}
+		_, ok := u.data[name]
 		if !ok {
-			name = u.name("num", strconv.Itoa(int(c.Number)))
-			u.numbers[c.Number] = name
+			u.data[name] = fmt.Sprintf("%s: .int %s", name, pointedName)
 		}
 		return name, nil
 	case *CellBranch0:
@@ -170,15 +180,19 @@ func (u *Ulp) findUsedCell(cell Cell) (string, error) {
 	}
 }
 
-func (u *Ulp) name(middle string, word string) string {
+func (u *Ulp) name(middle string, word string, addSuffix bool) string {
 	// Forth words can have any character, replace them all
 	fixed := u.replaceOtherChars(word)
 	if word == "VM.INIT" { // keep this static so we can keep the vm code static
 		return "__forth_VM.INIT"
 	}
-	n := fmt.Sprintf("__%s_%s_%d", middle, fixed, u.outCount)
-	u.outCount++
-	return n
+	if addSuffix {
+		n := fmt.Sprintf("__%s_%s_%d", middle, fixed, u.outCount)
+		u.outCount++
+		return n
+	} else {
+		return fmt.Sprintf("__%s_%s", middle, fixed)
+	}
 }
 
 // replace all non-alphanumeric chars.
@@ -232,7 +246,7 @@ func (u *Ulp) buildInterpreter() string {
 		"jump r0",
 
 		"__ins_forth:",
-		"jumpr __ins_num, __numbers_start, ge",
+		"jumpr __ins_num, __forthdata_start, ge",
 		// it's forth
 		"st r0, r2, __ip",  // put the address into the instruction pointer
 		"ld r0, r2, __rsp", // load the return stack pointer
@@ -242,7 +256,7 @@ func (u *Ulp) buildInterpreter() string {
 		"jump next",        // then start the vm again at the defined instruction
 
 		"__ins_num:",
-		"jumpr __ins_branch0, __numbers_end, gt",
+		"jumpr __ins_branch0, __forthdata_end, gt",
 		// it's a number or variable
 		"ld r0, r0, 0",  // load the number
 		"sub r3, r3, 1", // increase the stack by 1
