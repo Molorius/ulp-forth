@@ -78,13 +78,3 @@ type WordPrimitive struct {
 func (w *WordPrimitive) Execute(vm *VirtualMachine) error {
 	return w.Go(vm, w.Entry)
 }
-
-type WordMemory struct {
-	Memory []Cell
-	Entry  *DictionaryEntry // The associated dictionary entry.
-}
-
-func (w *WordMemory) Execute(vm *VirtualMachine) error {
-	cell := CellAddress{Entry: w.Entry, Offset: 0} // create an address cell referencing the start position
-	return vm.Stack.Push(cell)                     // and push it onto the stack
-}
