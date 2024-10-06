@@ -62,6 +62,36 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: primitiveFuncLast,
 		},
 		{
+			name:   ">C",
+			goFunc: primitiveToC,
+		},
+		{
+			name:   "C>",
+			goFunc: primitiveFromC,
+		},
+		{
+			name: "BRANCH",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				return vm.Stack.Push(&CellBranch{})
+			},
+		},
+		{
+			name: "BRANCH0",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				return vm.Stack.Push(&CellBranch0{})
+			},
+		},
+		{
+			name: "DEST",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				return vm.Stack.Push(&CellDestination{})
+			},
+		},
+		{
+			name:   "RESOLVE-BRANCH",
+			goFunc: primitiveResolveBranch,
+		},
+		{
 			name:   "LITERAL",
 			goFunc: primitiveFuncLiteral,
 			flag:   Flag{Immediate: true},
@@ -128,6 +158,16 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"ld r1, r3, 0",
 				"ld r0, r3, 1",
 				"st r1, r3, 1",
+				"st r0, r3, 0",
+				"jump __next_skip_r2",
+			},
+		},
+		{
+			name:   "DUP",
+			goFunc: primitiveFuncDup,
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 0",
+				"sub r3, r3, 1",
 				"st r0, r3, 0",
 				"jump __next_skip_r2",
 			},
@@ -325,6 +365,46 @@ func primitiveFuncLast(vm *VirtualMachine, entry *DictionaryEntry) error {
 	return vm.Stack.Push(c)
 }
 
+func primitiveToC(vm *VirtualMachine, entry *DictionaryEntry) error {
+	c, err := vm.Stack.Pop()
+	if err != nil {
+		return err
+	}
+	return vm.ControlFlowStack.Push(c)
+}
+
+func primitiveFromC(vm *VirtualMachine, entry *DictionaryEntry) error {
+	c, err := vm.ControlFlowStack.Pop()
+	if err != nil {
+		return err
+	}
+	return vm.Stack.Push(c)
+}
+
+func primitiveResolveBranch(vm *VirtualMachine, entry *DictionaryEntry) error {
+	destCell, err := vm.Stack.Pop()
+	if err != nil {
+		return err
+	}
+	branchCell, err := vm.Stack.Pop()
+	if err != nil {
+		return err
+	}
+	dest, ok := destCell.(*CellDestination)
+	if !ok {
+		return fmt.Errorf("%s expected a destination: %s", entry, dest)
+	}
+	switch b := branchCell.(type) {
+	case *CellBranch:
+		b.dest = dest
+	case *CellBranch0:
+		b.dest = dest
+	default:
+		return fmt.Errorf("%s expected a branch: %s", entry, branchCell)
+	}
+	return nil
+}
+
 func primitiveFuncLiteral(vm *VirtualMachine, entry *DictionaryEntry) error {
 	c, err := vm.Stack.Pop()
 	if err != nil {
@@ -430,6 +510,13 @@ func primitiveFuncCompile(vm *VirtualMachine, entry *DictionaryEntry) error {
 		return errors.Join(fmt.Errorf("%s could not get last forth word.", entry), err)
 	}
 	last.Cells = append(last.Cells, c)
+	dest, ok := c.(*CellDestination)
+	if ok {
+		dest.Addr = CellAddress{
+			Entry:  last.Entry,
+			Offset: len(last.Cells) - 1,
+		}
+	}
 	return nil
 }
 
@@ -512,6 +599,18 @@ func primitiveFuncSwap(vm *VirtualMachine, entry *DictionaryEntry) error {
 		return err
 	}
 	return vm.Stack.Push(left)
+}
+
+func primitiveFuncDup(vm *VirtualMachine, entry *DictionaryEntry) error {
+	c, err := vm.Stack.Pop()
+	if err != nil {
+		return err
+	}
+	err = vm.Stack.Push(c)
+	if err != nil {
+		return err
+	}
+	return vm.Stack.Push(c)
 }
 
 func primitiveFuncRot(vm *VirtualMachine, entry *DictionaryEntry) error {

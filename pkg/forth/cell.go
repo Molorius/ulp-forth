@@ -76,3 +76,60 @@ func (c CellLiteral) Execute(vm *VirtualMachine) error {
 func (c CellLiteral) String() string {
 	return fmt.Sprintf("Literal(%s)", c.cell)
 }
+
+// A destination to branch to. Only used during compilation.
+type CellDestination struct {
+	ulpName string      // the name we're going to compile this into
+	Addr    CellAddress // the address of this destination
+}
+
+func (c *CellDestination) Execute(vm *VirtualMachine) error {
+	return nil
+}
+
+func (c *CellDestination) copyAddress() CellAddress {
+	return CellAddress{
+		Entry:  c.Addr.Entry,
+		Offset: c.Addr.Offset,
+	}
+}
+
+func (c *CellDestination) name(u *Ulp) string {
+	if c.ulpName != "" {
+		return c.ulpName
+	}
+	c.ulpName = u.name("dest", "")
+	return c.ulpName
+}
+
+func (c *CellDestination) String() string {
+	return fmt.Sprintf("Dest(%p)", c)
+}
+
+// A definite branch.
+type CellBranch struct {
+	dest *CellDestination
+}
+
+func (c *CellBranch) Execute(vm *VirtualMachine) error {
+	addr := c.dest.copyAddress() // probably unsafe, yay for gc!
+	vm.IP = &addr
+	return nil
+}
+
+// A conditional branch.
+type CellBranch0 struct {
+	dest *CellDestination
+}
+
+func (c *CellBranch0) Execute(vm *VirtualMachine) error {
+	n, err := vm.Stack.PopNumber()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		addr := c.dest.copyAddress() // probably unsafe, yay for gc!
+		vm.IP = &addr
+	}
+	return nil
+}

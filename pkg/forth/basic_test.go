@@ -53,6 +53,11 @@ func TestPrimitives(t *testing.T) {
 			expect: "1 2 ",
 		},
 		{
+			name:   "DUP",
+			asm:    "456 789 DUP u. u. u.",
+			expect: "789 789 456 ",
+		},
+		{
 			name:   "ROT",
 			asm:    "1 2 3 ROT u. u. u.",
 			expect: "1 3 2 ",
@@ -66,6 +71,26 @@ func TestPrimitives(t *testing.T) {
 			name:   "EXIT",
 			asm:    "1 U. EXIT 2 U.",
 			expect: "1 ",
+		},
+		{
+			name:   "IF true",
+			asm:    "TRUE IF 123 THEN U.",
+			expect: "123 ",
+		},
+		{
+			name:   "IF false",
+			asm:    "456 FALSE IF 123 THEN U.",
+			expect: "456 ",
+		},
+		{
+			name:   "IF ELSE true",
+			asm:    "TRUE IF 123 ELSE 456 THEN U.",
+			expect: "123 ",
+		},
+		{
+			name:   "IF ELSE false",
+			asm:    "FALSE IF 123 ELSE 456 THEN U.",
+			expect: "456 ",
 		},
 	}
 	for _, tt := range tests {

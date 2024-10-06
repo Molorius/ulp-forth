@@ -14,13 +14,14 @@ import (
 
 // The Forth virtual machine.
 type VirtualMachine struct {
-	Dictionary  Dictionary   // The Forth dictionary.
-	Stack       Stack        // The data stack.
-	ReturnStack Stack        // The return stack.
-	ParseArea   ParseArea    // The input parse area.
-	State       State        // The execution state for the virtual machine.
-	IP          *CellAddress // The interpreter pointer.
-	Out         io.Writer
+	Dictionary       Dictionary   // The Forth dictionary.
+	Stack            Stack        // The data stack.
+	ReturnStack      Stack        // The return stack.
+	ControlFlowStack Stack        // The control flow stack.
+	ParseArea        ParseArea    // The input parse area.
+	State            State        // The execution state for the virtual machine.
+	IP               *CellAddress // The interpreter pointer.
+	Out              io.Writer
 }
 
 // Set up the virtual machine.
@@ -40,6 +41,11 @@ func (vm *VirtualMachine) Setup() error {
 	}
 
 	err = vm.ReturnStack.Setup()
+	if err != nil {
+		return err
+	}
+
+	err = vm.ControlFlowStack.Setup()
 	if err != nil {
 		return err
 	}

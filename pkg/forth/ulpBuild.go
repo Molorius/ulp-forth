@@ -41,7 +41,9 @@ func (uForth ulpForth) build() string {
 	sb.WriteString(uForth.name)
 	sb.WriteString(":\r\n")
 	for _, cell := range uForth.cells {
-		sb.WriteString("    .int ")
+		if !strings.Contains(cell.name, ":") {
+			sb.WriteString("    .int ")
+		}
 		sb.WriteString(cell.name)
 		sb.WriteString("\r\n")
 	}
@@ -157,6 +159,12 @@ func (u *Ulp) findUsedCell(cell Cell) (string, error) {
 			u.numbers[c.Number] = name
 		}
 		return name, nil
+	case *CellBranch0:
+		return fmt.Sprintf("%s + 0x4000", c.dest.name(u)), nil
+	case *CellBranch:
+		return fmt.Sprintf("%s + 0x8000", c.dest.name(u)), nil
+	case *CellDestination:
+		return fmt.Sprintf("%s:", c.name(u)), nil
 	default:
 		return "", fmt.Errorf("Type %T not supported for cross compile, cell: %s", c, c)
 	}
@@ -233,13 +241,27 @@ func (u *Ulp) buildInterpreter() string {
 		"st r0, r2, __rsp", // store the rsp
 		"jump next",        // then start the vm again at the defined instruction
 
-		// it's a number or variable
 		"__ins_num:",
+		"jumpr __ins_branch0, __numbers_end, gt",
+		// it's a number or variable
 		"ld r0, r0, 0",  // load the number
 		"sub r3, r3, 1", // increase the stack by 1
 		"st r0, r3, 0",  // store the number
 		"jump next",     // next!
-		"",              // newline at end
+
+		"__ins_branch0:",
+		"jumpr __ins_branch, 0x8000, ge",
+		// it's a conditional branch, check stack
+		"ld r1, r3, 0",            // get value from stack
+		"add r3, r3, 1",           // decrement stack
+		"add r1, r1, 0xFFFF",      // add number with all bits set
+		"jump __next_skip_r2, ov", // if overflow then number wasn't 0, continue vm. Otherwise jump.
+
+		"__ins_branch:",
+		// it's a definite branch
+		"and r1, r0, 0x3FFF",    // get the lowest 14 bits
+		"jump __next_skip_load", // then continue vm at this newer address
+		"",                      // newline at end
 	}
 	return strings.Join(i, "\r\n")
 }
