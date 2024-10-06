@@ -92,6 +92,11 @@ func TestPrimitives(t *testing.T) {
 			asm:    "FALSE IF 123 ELSE 456 THEN U.",
 			expect: "456 ",
 		},
+		{
+			name:   ">R R>",
+			asm:    "123 234 >R U. R> U.",
+			expect: "123 234 ",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

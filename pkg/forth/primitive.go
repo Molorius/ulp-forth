@@ -155,6 +155,44 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name: ">R",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				c, err := vm.Stack.Pop()
+				if err != nil {
+					return err
+				}
+				return vm.ReturnStack.Push(c)
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 0",     // get value from stack
+				"ld r1, r2, __rsp", // load rsp
+				"add r1, r1, 1",    // increment rsp
+				"st r0, r1, 0",     // store value on rsp
+				"st r1, r2, __rsp", // save rsp
+				"add r3, r3, 1",    // decrement stack
+				"jump __next_skip_r2",
+			},
+		},
+		{
+			name: "R>",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				c, err := vm.ReturnStack.Pop()
+				if err != nil {
+					return err
+				}
+				return vm.Stack.Push(c)
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r1, r2, __rsp", // load rsp
+				"ld r0, r1, 0",     // get value from rsp
+				"sub r1, r1, 1",    // decrement rsp
+				"st r1, r2, __rsp", // store rsp
+				"sub r3, r3, 1",    // increment stack
+				"st r0, r3, 0",     // store value on stack
+				"jump __next_skip_r2",
+			},
+		},
+		{
 			name: "BRANCH",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				return vm.Stack.Push(&CellBranch{})
