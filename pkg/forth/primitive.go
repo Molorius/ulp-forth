@@ -230,7 +230,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r2, __boot_data_start+3",
 				"sub r3, r3, 1",
-				"st r0, r2, 0",
+				"st r0, r3, 0",
 				"jump __next_skip_r2",
 			},
 		},

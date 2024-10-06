@@ -6,20 +6,6 @@
 \ Immediate.
 : RECURSE ( -- ) LAST COMPILE, ; IMMEDIATE
 
-: ESP.FUNC.TYPE.ACK 0 ;
-: ESP.FUNC.TYPE.DONE 1 ;
-: ESP.FUNC.TYPE.PRINTU16 2 ;
-: ESP.FUNC.TYPE.PRINTCHAR 3 ;
-: ESP.FUNC ( value function_number -- )
-    MUTEX.TAKE ESP.FUNC.UNSAFE MUTEX.GIVE
-    \ we don't have branches yet, pause instead of checking for ack
-    DEBUG.PAUSE DEBUG.PAUSE
-;
-: ESP.PRINTU16 ( n -- ) ESP.FUNC.TYPE.PRINTU16 ESP.FUNC ;
-: ESP.PRINTCHAR ( char -- ) ESP.FUNC.TYPE.PRINTCHAR ESP.FUNC ;
-: ESP.DONE ( -- ) 0 ESP.FUNC.TYPE.DONE ESP.FUNC ;
-: U. ( n -- ) ESP.PRINTU16 ;
-
 : NIP ( a b -- b ) SWAP DROP ;
 : 1+ ( x -- x+1 ) 1 + ;
 : 1- ( x -- x-1 ) 1 - ;
@@ -48,3 +34,23 @@
     DEST DUP COMPILE, \ create a destination, compile it
     RESOLVE-BRANCH \ then resolve the branch
 ; IMMEDIATE
+
+: BEGIN
+    DEST DUP COMPILE, \ create a destination, compile it
+    >C \ put it on the control flow stack
+; IMMEDIATE
+
+: UNTIL
+    BRANCH0 DUP COMPILE, \ create a condition branch, compile it
+    C> RESOLVE-BRANCH \ and resolve it
+; IMMEDIATE
+
+: AGAIN \ same logic as UNTIL but with a definite branch
+    BRANCH DUP COMPILE,
+    C> RESOLVE-BRANCH
+; IMMEDIATE
+
+: 0= IF FALSE ELSE TRUE THEN ;
+: = - 0= ;
+: 0<> 0= 0= ;
+: <> = 0= ;
