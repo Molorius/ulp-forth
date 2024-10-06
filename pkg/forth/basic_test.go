@@ -97,6 +97,11 @@ func TestPrimitives(t *testing.T) {
 			asm:    "123 234 >R U. R> U.",
 			expect: "123 234 ",
 		},
+		{
+			name:   "EXECUTE",
+			asm:    "['] U. 123 SWAP EXECUTE",
+			expect: "123 ",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

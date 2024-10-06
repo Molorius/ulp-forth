@@ -296,6 +296,25 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name: "EXECUTE",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				c, err := vm.Stack.Pop()
+				if err != nil {
+					return err
+				}
+				cellEntry, ok := c.(CellEntry)
+				if !ok {
+					return fmt.Errorf("unable to execute cell %s", c)
+				}
+				return cellEntry.Execute(vm)
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 0",   // load the token into r0
+				"add r3, r3, 1",  // decrement stack pointer
+				"jump __ins_asm", // start execution of the token
+			},
+		},
+		{
 			name: "--POSTPONE",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()
