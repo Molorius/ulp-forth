@@ -315,6 +315,83 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name: "ALLOCATE",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				n, err := vm.Stack.PopNumber()
+				if err != nil {
+					return err
+				}
+				cell := CellData{
+					Data: &Data{
+						Cells: make([]Cell, n),
+					},
+					Offset: 0,
+				}
+				// set all values to 0 at start
+				for i := range cell.Data.Cells {
+					cell.Data.Cells[i] = CellNumber{0}
+				}
+				err = vm.Stack.Push(cell)
+				if err != nil {
+					return err
+				}
+				// also push 0 because allocation worked
+				return vm.Stack.Push(CellNumber{0})
+			},
+		},
+		{
+			name: "@",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				cell, err := vm.Stack.Pop()
+				if err != nil {
+					return err
+				}
+				data, ok := cell.(CellData)
+				if !ok {
+					return fmt.Errorf("%s can only read data cells: %T", entry, data)
+				}
+				if data.Offset >= len(data.Data.Cells) {
+					return fmt.Errorf("%s reading outside of data range, offset %d", entry, data.Offset)
+				}
+				return vm.Stack.Push(data.Data.Cells[data.Offset])
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 0", // get the address from stack
+				"ld r0, r0, 0", // load the value
+				"st r0, r3, 0", // store the address on stack
+				"jump __next_skip_r2",
+			},
+		},
+		{
+			name: "!",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				cell, err := vm.Stack.Pop()
+				if err != nil {
+					return err
+				}
+				data, ok := cell.(CellData)
+				if !ok {
+					return fmt.Errorf("%s can only write data cells: %T", entry, data)
+				}
+				if data.Offset >= len(data.Data.Cells) {
+					return fmt.Errorf("%s writing outside of data range, offset %d", entry, data.Offset)
+				}
+				n, err := vm.Stack.Pop()
+				if err != nil {
+					return err
+				}
+				data.Data.Cells[data.Offset] = n
+				return nil
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 0",  // load the address
+				"ld r1, r3, 1",  // load the value
+				"st r1, r0, 0",  // store the value in address
+				"add r3, r3, 2", // decrement the stack
+				"jump __next_skip_r2",
+			},
+		},
+		{
 			name: "--POSTPONE",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()

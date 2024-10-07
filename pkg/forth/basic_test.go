@@ -34,78 +34,83 @@ func TestPrimitives(t *testing.T) {
 	}{
 		{
 			name:   "double",
-			asm:    "0xFFFFFF. u. u.",
+			asm:    wrapMain("0xFFFFFF. u. u."),
 			expect: "255 65535 ",
 		},
 		{
 			name:   "+",
-			asm:    "1 2 + u.",
+			asm:    wrapMain("1 2 + u."),
 			expect: "3 ",
 		},
 		{
 			name:   "-",
-			asm:    "3 1 - u.",
+			asm:    wrapMain("3 1 - u."),
 			expect: "2 ",
 		},
 		{
 			name:   "SWAP",
-			asm:    "1 2 SWAP u. u.",
+			asm:    wrapMain("1 2 SWAP u. u."),
 			expect: "1 2 ",
 		},
 		{
 			name:   "DUP",
-			asm:    "456 789 DUP u. u. u.",
+			asm:    wrapMain("456 789 DUP u. u. u."),
 			expect: "789 789 456 ",
 		},
 		{
 			name:   "ROT",
-			asm:    "1 2 3 ROT u. u. u.",
+			asm:    wrapMain("1 2 3 ROT u. u. u."),
 			expect: "1 3 2 ",
 		},
 		{
 			name:   "DROP",
-			asm:    "1 2 3 DROP u. u.",
+			asm:    wrapMain("1 2 3 DROP u. u."),
 			expect: "2 1 ",
 		},
 		{ // not really needed but being thorough
 			name:   "EXIT",
-			asm:    "1 U. EXIT 2 U.",
+			asm:    wrapMain("1 U. EXIT 2 U."),
 			expect: "1 ",
 		},
 		{
 			name:   "IF true",
-			asm:    "TRUE IF 123 THEN U.",
+			asm:    wrapMain("TRUE IF 123 THEN U."),
 			expect: "123 ",
 		},
 		{
 			name:   "IF false",
-			asm:    "456 FALSE IF 123 THEN U.",
+			asm:    wrapMain("456 FALSE IF 123 THEN U."),
 			expect: "456 ",
 		},
 		{
 			name:   "IF ELSE true",
-			asm:    "TRUE IF 123 ELSE 456 THEN U.",
+			asm:    wrapMain("TRUE IF 123 ELSE 456 THEN U."),
 			expect: "123 ",
 		},
 		{
 			name:   "IF ELSE false",
-			asm:    "FALSE IF 123 ELSE 456 THEN U.",
+			asm:    wrapMain("FALSE IF 123 ELSE 456 THEN U."),
 			expect: "456 ",
 		},
 		{
 			name:   ">R R>",
-			asm:    "123 234 >R U. R> U.",
+			asm:    wrapMain("123 234 >R U. R> U."),
 			expect: "123 234 ",
 		},
 		{
 			name:   "EXECUTE",
-			asm:    "['] U. 123 SWAP EXECUTE",
+			asm:    wrapMain("['] U. 123 SWAP EXECUTE"),
 			expect: "123 ",
+		},
+		{
+			name:   "@ !",
+			asm:    "VARIABLE V 789 V ! : MAIN V @ U. 123 456 V ! U. V @ U. ;",
+			expect: "789 123 456 ",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			runOutputTest(wrapMain(tt.asm), tt.expect, t)
+			runOutputTest(tt.asm, tt.expect, t)
 		})
 	}
 }

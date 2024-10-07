@@ -169,6 +169,37 @@ func (u *Ulp) findUsedCell(cell Cell) (string, error) {
 			u.data[name] = fmt.Sprintf("%s: .int %s", name, pointedName)
 		}
 		return name, nil
+	case CellData:
+		name := c.Data.ulpName
+		if name == "" {
+			name = u.name("data", "unnamed", true)
+			c.Data.ulpName = name
+		}
+		_, ok := u.data[name]
+		if !ok {
+			// build the definition
+			var sb strings.Builder
+			sb.WriteString(name)
+			sb.WriteString(":")
+			if len(c.Data.Cells) > 0 {
+				sb.WriteString(" .int ")
+				val0, err := u.findUsedCell(c.Data.Cells[0])
+				if err != nil {
+					return "", err
+				}
+				sb.WriteString(val0)
+				for i := 1; i < len(c.Data.Cells); i++ {
+					val, err := u.findUsedCell(c.Data.Cells[i])
+					if err != nil {
+						return "", err
+					}
+					sb.WriteString(", ")
+					sb.WriteString(val)
+				}
+			}
+			u.data[name] = sb.String()
+		}
+		return fmt.Sprintf("%s+%d", name, c.Offset), nil
 	case *CellBranch0:
 		return fmt.Sprintf("%s + 0x4000", c.dest.name(u)), nil
 	case *CellBranch:

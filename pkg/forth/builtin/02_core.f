@@ -54,3 +54,16 @@
 : = - 0= ;
 : 0<> 0= 0= ;
 : <> = 0= ;
+
+\ Parse the next word delimited by a space. Allocate n cells. Create
+\ a definition for the word that places the address of the allocated
+\ memory onto the stack.
+: N-VARIABLE ( n -- )
+    ALLOCATE DROP \ allocate n words, drop the superfluous "ok" indicator but keep address
+    : \ parse the next input, create a word with that name
+    POSTPONE LITERAL \ compile the allocated address literal
+    POSTPONE ; \ end the definition
+;
+
+: VARIABLE 1 N-VARIABLE ;
+: 2VARIABLE 2 N-VARIABLE ;
