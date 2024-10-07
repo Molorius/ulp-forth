@@ -95,8 +95,7 @@ func (u *Ulp) BuildAssembly(vm *VirtualMachine, word string) (string, error) {
 	u.data = make(map[string]string)
 
 	vm.State.Set(StateInterpret)
-	// err := vm.execute([]byte(" : VM.INIT VM.STACK.INIT 0 2 MUTEX.TAKE --ESP.FUNC MUTEX.GIVE DEBUG.PAUSE 0 1 MUTEX.TAKE --ESP.FUNC MUTEX.GIVE VM.STOP ; "))
-	err := vm.execute([]byte(" : VM.INIT VM.STACK.INIT " + word + " ESP.DONE VM.STOP ; "))
+	err := vm.execute([]byte(" : VM.INIT VM.STACK.INIT " + word + " BEGIN AGAIN ; "))
 	if err != nil {
 		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)
 	}
@@ -123,7 +122,7 @@ func (u *Ulp) findUsedEntry(entry *DictionaryEntry) (string, error) {
 		for i, c := range w.Cells {
 			str, err := u.findUsedCell(c)
 			if err != nil {
-				return "", err
+				return "", errors.Join(fmt.Errorf("%s error while compiling", entry.Name), err)
 			}
 			forth.cells[i] = ulpForthCell{
 				cell: c,
@@ -135,6 +134,9 @@ func (u *Ulp) findUsedEntry(entry *DictionaryEntry) (string, error) {
 	case *WordPrimitive:
 		name := u.name("asm", entry.Name, true)
 		entry.ulpName = name
+		if w.Ulp == nil {
+			return "", fmt.Errorf("Cannot compile primitive without ulp assembly: %v", w)
+		}
 		asm := ulpAsm{
 			name: name,
 			asm:  w.Ulp,

@@ -9,17 +9,17 @@ import (
 )
 
 func TestBlank(t *testing.T) {
-	forth := ": MAIN ;"
+	forth := ": MAIN ESP.DONE ;"
 	runOutputTest(forth, "", t)
 }
 
 func TestPrintU16(t *testing.T) {
-	forth := ": MAIN 123 U. 456 U. ;"
+	forth := ": MAIN 123 U. 456 U. ESP.DONE ;"
 	runOutputTest(forth, "123 456 ", t)
 }
 
 func TestPrintChar(t *testing.T) {
-	forth := ": MAIN 'A' ESP.PRINTCHAR 'B' ESP.PRINTCHAR 'C' ESP.PRINTCHAR ;"
+	forth := ": MAIN 'A' ESP.PRINTCHAR 'B' ESP.PRINTCHAR 'C' ESP.PRINTCHAR ESP.DONE ;"
 	runOutputTest(forth, "ABC", t)
 }
 
@@ -69,7 +69,7 @@ func TestPrimitives(t *testing.T) {
 		},
 		{ // not really needed but being thorough
 			name:   "EXIT",
-			asm:    wrapMain("1 U. EXIT 2 U."),
+			asm:    wrapMain("1 U. ESP.DONE EXIT 2 U."),
 			expect: "1 ",
 		},
 		{
@@ -104,8 +104,13 @@ func TestPrimitives(t *testing.T) {
 		},
 		{
 			name:   "@ !",
-			asm:    "VARIABLE V 789 V ! : MAIN V @ U. 123 456 V ! U. V @ U. ;",
+			asm:    "VARIABLE V 789 V ! : MAIN V @ U. 123 456 V ! U. V @ U. ESP.DONE ;",
 			expect: "789 123 456 ",
+		},
+		{
+			name:   "PICK",
+			asm:    wrapMain("123 456 789 2 PICK u. u. u. u."),
+			expect: "123 789 456 123 ",
 		},
 	}
 	for _, tt := range tests {
@@ -149,5 +154,5 @@ func runOutputTest(code string, expected string, t *testing.T) {
 }
 
 func wrapMain(code string) string {
-	return fmt.Sprintf(" : MAIN %s ; ", code)
+	return fmt.Sprintf(" : MAIN %s ESP.DONE ; ", code)
 }

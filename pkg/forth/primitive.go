@@ -572,6 +572,28 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name: "PICK",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				n, err := vm.Stack.PopNumber()
+				if err != nil {
+					return err
+				}
+				if int(n) >= len(vm.Stack.stack) {
+					return fmt.Errorf("%s number out of range: %d", entry, n)
+				}
+				index := len(vm.Stack.stack) - int(n) - 1
+				cell := vm.Stack.stack[index]
+				return vm.Stack.Push(cell)
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 0",
+				"add r0, r0, r3",
+				"ld r0, r0, 1",
+				"st r0, r3, 0",
+				"jump __next_skip_r2",
+			},
+		},
+		{
 			name: "ROT",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.Stack.Pop()
