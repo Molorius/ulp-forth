@@ -112,6 +112,11 @@ func TestPrimitives(t *testing.T) {
 			asm:    wrapMain("123 456 789 2 PICK u. u. u. u."),
 			expect: "123 789 456 123 ",
 		},
+		{
+			name:   "DEPTH",
+			asm:    wrapMain("123 DEPTH DEPTH u. u. u."),
+			expect: "2 1 123 ",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

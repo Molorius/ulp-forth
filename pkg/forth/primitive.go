@@ -646,6 +646,21 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name: "DEPTH",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				depth := len(vm.Stack.stack)
+				cell := CellNumber{uint16(depth)}
+				return vm.Stack.Push(cell)
+			},
+			ulpAsm: PrimitiveUlp{
+				"move r0, __stack_end",
+				"sub r0, r0, r3",
+				"sub r3, r3, 1",
+				"st r0, r3, 0",
+				"jump __next_skip_r2",
+			},
+		},
+		{
 			name:   "VM.STACK.INIT", // initialize the ulp stack
 			goFunc: notImplemented,
 			ulpAsm: PrimitiveUlp{
