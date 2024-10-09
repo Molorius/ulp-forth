@@ -485,15 +485,34 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		{
 			name: "+",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
-				right, err := vm.Stack.PopNumber()
+				right, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+					return err
 				}
-				left, err := vm.Stack.PopNumber()
+				left, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+					return err
 				}
-				return vm.Stack.Push(CellNumber{left + right})
+				switch r := right.(type) {
+				case CellNumber:
+					switch l := left.(type) {
+					case CellNumber:
+						return vm.Stack.Push(CellNumber{l.Number + r.Number})
+					case CellData:
+						return vm.Stack.Push(CellData{l.Data, l.Offset + int(r.Number)})
+					default:
+						return fmt.Errorf("Cannot add these types")
+					}
+				case CellData:
+					switch l := left.(type) {
+					case CellNumber:
+						return vm.Stack.Push(CellData{r.Data, int(l.Number) + r.Offset})
+					default:
+						return fmt.Errorf("Cannot add these types")
+					}
+				default:
+					return fmt.Errorf("Cannot add these types")
+				}
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 0",
@@ -521,6 +540,28 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"ld r0, r3, 1",
 				"ld r1, r3, 0",
 				"sub r0, r0, r1",
+				"add r3, r3, 1",
+				"st r0, r3, 0",
+				"jump __next_skip_r2",
+			},
+		},
+		{
+			name: "LSHIFT",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				amount, err := vm.Stack.PopNumber()
+				if err != nil {
+					return err
+				}
+				num, err := vm.Stack.PopNumber()
+				if err != nil {
+					return err
+				}
+				return vm.Stack.Push(CellNumber{num << amount})
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 1",
+				"ld r1, r3, 0",
+				"lsh r0, r0, r1",
 				"add r3, r3, 1",
 				"st r0, r3, 0",
 				"jump __next_skip_r2",
@@ -661,8 +702,11 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
-			name:   "VM.STACK.INIT", // initialize the ulp stack
-			goFunc: notImplemented,
+			name: "VM.STACK.INIT", // initialize the ulp stack
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				vm.Stack.stack = make([]Cell, 0)
+				return nil
+			},
 			ulpAsm: PrimitiveUlp{
 				"move r3, __stack_end", // set the stack pointer to the end of the stack
 				"jump __next_skip_r2",

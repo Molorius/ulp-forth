@@ -13,6 +13,8 @@
 : NEGATE ( x -- -x ) 0 SWAP - ;
 \ Invert all bits. 0xFFFF becomes 0, 0xFFF0 becomes 0x000F, etc.
 : INVERT ( x -- x^0xFFFF ) NEGATE 1- ;
+: 2* 1 LSHIFT ;
+: 2DROP DROP DROP ;
 
 : IF
     BRANCH0 \ create a conditional branch
@@ -58,18 +60,30 @@
 \ Parse the next word delimited by a space. Allocate n cells. Create
 \ a definition for the word that places the address of the allocated
 \ memory onto the stack.
-: N-VARIABLE ( n -- )
+: BUFFER: ( n -- )
     ALLOCATE DROP \ allocate n words, drop the superfluous "ok" indicator but keep address
     : \ parse the next input, create a word with that name
     POSTPONE LITERAL \ compile the allocated address literal
     POSTPONE ; \ end the definition
 ;
 
-: VARIABLE 1 N-VARIABLE ;
-: 2VARIABLE 2 N-VARIABLE ;
+: VARIABLE 1 BUFFER: ;
+: 2VARIABLE 2 BUFFER: ;
+: +! DUP @ ROT + SWAP ! ;
 
 : OVER 1 PICK ;
 : 2OVER 3 PICK 3 PICK ;
+: 2DUP OVER OVER ;
 : 2>R POSTPONE SWAP POSTPONE >R POSTPONE >R ; IMMEDIATE
 : 2R> POSTPONE R> POSTPONE R> POSTPONE SWAP ; IMMEDIATE
-: UNLOOP POSTPONE >R POSTPONE >R ; IMMEDIATE
+: UNLOOP POSTPONE >R POSTPONE >R POSTPONE 2DROP ; IMMEDIATE
+: I POSTPONE R> POSTPONE DUP POSTPONE >R ; IMMEDIATE
+
+\ : ?DO
+\     POSTPONE 2DUP \ compile 2dup
+\     POSTPONE 2>R \ compile 2>r
+\     POSTPONE <> \ compile <>
+\     BRANCH0 DUP COMPILE, \ compile a conditional branch
+\     DEST DUP COMPILE, \ compile a destination
+\     >C >C \ push destination then branch on control stack
+\ ; IMMEDIATE

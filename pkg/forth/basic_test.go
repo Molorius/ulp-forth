@@ -48,6 +48,11 @@ func TestPrimitives(t *testing.T) {
 			expect: "2 ",
 		},
 		{
+			name:   "LSHIFT",
+			asm:    wrapMain("1 0 LSHIFT u. 1 1 LSHIFT u. 1 2 LSHIFT u."),
+			expect: "1 2 4 ",
+		},
+		{
 			name:   "SWAP",
 			asm:    wrapMain("1 2 SWAP u. u."),
 			expect: "1 2 ",
