@@ -43,7 +43,17 @@ type CellAddress struct {
 }
 
 func (c CellAddress) Execute(vm *VirtualMachine) error {
-	return fmt.Errorf("Cannot execute an address cell.")
+	if !c.Entry.Flag.Data {
+		return fmt.Errorf("Cannot execute a forth address cell.")
+	}
+	w, ok := c.Entry.Word.(*WordForth)
+	if !ok {
+		return fmt.Errorf("Cannot execute an address cell that doesn't point to data.")
+	}
+	if c.Offset >= len(w.Cells) {
+		return fmt.Errorf("Trying to get data from outside of allocated data.")
+	}
+	return vm.Stack.Push(w.Cells[c.Offset])
 }
 
 func (c CellAddress) String() string {

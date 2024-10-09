@@ -21,6 +21,7 @@ type VirtualMachine struct {
 	ParseArea        ParseArea    // The input parse area.
 	State            State        // The execution state for the virtual machine.
 	IP               *CellAddress // The interpreter pointer.
+	Base             VMNumber     // The number base.
 	Out              io.Writer
 }
 
@@ -66,6 +67,12 @@ func (vm *VirtualMachine) Setup() error {
 	if err != nil {
 		return err
 	}
+
+	err = vm.Base.Setup(vm, "BASE", true)
+	if err != nil {
+		return err
+	}
+	vm.Base.Set(10)
 
 	err = vm.Builtin()
 	if err != nil {
@@ -235,9 +242,26 @@ func (vm *VirtualMachine) getCells(name string) ([]Cell, error) {
 		double = true
 		name = name[:len(name)-1]
 	}
-	base := 0
+	isNegative := strings.HasPrefix(name, "-")
+	if isNegative {
+		name = name[1:]
+	}
+	base := int(vm.Base.Get())
+	if strings.HasPrefix(name, "0x") {
+		base = 16
+		name = name[2:]
+	} else if strings.HasPrefix(name, "0b") {
+		base = 2
+		name = name[2:]
+	} else if strings.HasPrefix(name, "#") {
+		base = 10
+		name = name[1:]
+	}
 	n, err := strconv.ParseInt(name, base, 64)
 	if err == nil {
+		if isNegative {
+			n = n * -1
+		}
 		cell := CellLiteral{CellNumber{Number: uint16(n)}}
 		if double {
 			cellHigh := CellLiteral{CellNumber{Number: uint16(n >> 16)}}
@@ -248,4 +272,52 @@ func (vm *VirtualMachine) getCells(name string) ([]Cell, error) {
 	}
 	// could not parse as a number, return lookup failure
 	return nil, dictErr
+}
+
+type VMNumber struct {
+	Word WordForth
+}
+
+func (n *VMNumber) Setup(vm *VirtualMachine, name string, shared bool) error {
+	// first create the allocated memory
+	var allocEntry DictionaryEntry
+	n.Word = WordForth{
+		Cells: make([]Cell, 1),
+		Entry: &allocEntry,
+	}
+	n.Word.Cells[0] = CellNumber{0} // initialize to 0
+	allocEntry = DictionaryEntry{
+		Name: name,
+		Word: &n.Word,
+		Flag: Flag{Data: true},
+	}
+	// then create the actual dictionary entry
+	exit, err := vm.Dictionary.FindName("EXIT")
+	if err != nil {
+		return err
+	}
+	var dEntry DictionaryEntry
+	dWord := WordForth{
+		Cells: make([]Cell, 2),
+		Entry: &dEntry,
+	}
+	dWord.Cells[0] = CellLiteral{CellAddress{&allocEntry, 0}} // put address on stack
+	dWord.Cells[1] = CellEntry{exit}                          // then exit
+	dEntry = DictionaryEntry{
+		Name: name,
+		Word: &dWord,
+	}
+	// add the actual entry to the dictionary
+	vm.Dictionary.Entries = append(vm.Dictionary.Entries, &dEntry)
+	return nil
+}
+
+func (n *VMNumber) Get() uint16 {
+	c := n.Word.Cells[0]
+	num := c.(CellNumber) // instant fail if this isn't a number
+	return num.Number
+}
+
+func (n *VMNumber) Set(num uint16) {
+	n.Word.Cells[0] = CellNumber{num}
 }

@@ -25,15 +25,53 @@ func TestSuite(t *testing.T) {
 		// ALIGNED
 		// ALLOT
 		// AND
-		// BASE
+		{
+			name: "BASE",
+			code: "T{ GN2 -> 10 A }T",
+		},
 		// BEGIN doesn't have tests
 		{
 			name: "BL",
-			code: "T{ BL -> 32 }T", // TODO fix after hex printing is enabled
+			code: "T{ BL -> 20 }T",
 		},
+		// BUFFER
 		{
 			name: "[",
-			code: "T{ GC3 -> 88 }T", // TODO fix after hex printing is enabled
+			code: "T{ GC3 -> 58 }T",
+		},
+		// [CHAR]
+		// [COMPILE]
+		{
+			name: "[']",
+			code: "T{ POSTPONE GT2 EXECUTE -> 123 }T", // postpone because it's inside "main"
+		},
+		// CASE
+		// C,
+		// CELL+ doesn't have regular tests
+		// CELLS
+		// C@
+		// CHAR
+		// CHAR+
+		// CHARS
+		// COMPILE,
+		{
+			name: "CONSTANT",
+			code: `
+				T{ X123 -> 123 }T
+				T{ Y123 -> 123 }T
+			`,
+		},
+		// COUNT
+		// CR does not have any tests
+		// CREATE does not have any tests
+		// C! does not have any tests
+		{
+			name: ":",
+			code: `
+				T{ NOP1 -> }T
+				T{ NOP2 -> }T
+				T{ GDX -> 123 234 }T
+			`,
 		},
 	}
 

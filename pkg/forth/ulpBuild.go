@@ -125,6 +125,7 @@ func (u *Ulp) findUsedEntry(entry *DictionaryEntry) (string, error) {
 			if !ok {
 				return "", fmt.Errorf("%s cannot build a data entry that doesn't use a forth word", entry.Name)
 			}
+			vals := make([]string, 0)
 			for _, c := range w.Cells {
 				str, err := u.findUsedCell(c)
 				if err != nil {
@@ -133,9 +134,10 @@ func (u *Ulp) findUsedEntry(entry *DictionaryEntry) (string, error) {
 				if strings.Contains(str, ":") {
 					return "", fmt.Errorf("%s cannot compile an address inside data", entry.Name)
 				}
-				sb.WriteString("\r\n    .int ")
-				sb.WriteString(str)
+				vals = append(vals, str)
 			}
+			sb.WriteString("  .int ")
+			sb.WriteString(strings.Join(vals, ", "))
 			u.data[entry.Name] = sb.String()
 		}
 	}

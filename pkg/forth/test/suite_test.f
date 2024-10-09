@@ -60,8 +60,23 @@ VARIABLE TEST-DEPTH
     0 TEST-COUNT !
 ;
 
+HEX \ the test suite runs in hex mode
+
 T{ : GC1 'X' ; -> }T \ should be : GC1 [CHAR] X ;
 T{ : GC2 'H' ; -> }T \ should be : GC2 [CHAR] HELLO ;
 T{ : GC3 [ GC1 ] LITERAL ; }T
+: GN2 ( -- 16 10 )
+    BASE @ >R HEX BASE @ DECIMAL BASE @ R> BASE ! ;
+
+T{ : GT1 123 ; -> }T
+T{ : GT2 ['] GT1 ; IMMEDIATE -> }T
+
+T{ 123 CONSTANT X123 -> }T
+T{ : EQU CONSTANT ; -> }T
+T{ X123 EQU Y123 -> }T
+
+T{ : NOP : POSTPONE ; ; -> }T
+T{ NOP NOP1 NOP NOP2 -> }T
+T{ : GDX 123 ; : GDX GDX 234 ; -> }T
 
 RESET-TEST

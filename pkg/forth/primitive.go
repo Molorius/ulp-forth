@@ -331,6 +331,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				}
 				de = DictionaryEntry{
 					Word: &w,
+					Flag: Flag{Data: true},
 				}
 				cell := CellAddress{
 					Offset: 0,
