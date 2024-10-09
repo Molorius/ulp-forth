@@ -36,8 +36,7 @@ func (c CellEntry) String() string {
 }
 
 // A Cell representing an address in the dictionary. Used for pointers such
-// as return addresses. Data is not placed on the dictionary so we can more easily
-// optimize dictionary entries without affecting data.
+// as return addresses.
 type CellAddress struct {
 	Entry  *DictionaryEntry // The dictionary entry with the address.
 	Offset int              // The offset within that entry.
@@ -49,25 +48,6 @@ func (c CellAddress) Execute(vm *VirtualMachine) error {
 
 func (c CellAddress) String() string {
 	return fmt.Sprintf("{%s %d}", c.Entry, c.Offset)
-}
-
-// Allocated data.
-type Data struct {
-	Cells   []Cell
-	ulpName string // the compiled name of this section of data
-}
-
-// A Cell pointing to a section of allocated data.
-type CellData struct {
-	Data   *Data // The allocated data.
-	Offset int   // The current offset inside of the data.
-}
-
-func (c CellData) Execute(vm *VirtualMachine) error {
-	if c.Offset >= len(c.Data.Cells) {
-		return fmt.Errorf("Trying to access out of range data, offset %d.", c.Offset)
-	}
-	return vm.Stack.Push(c.Data.Cells[c.Offset])
 }
 
 // A Cell representing a string.
