@@ -559,6 +559,71 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name: "/MOD",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				right, err := vm.Stack.PopNumber()
+				if err != nil {
+					return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+				}
+				left, err := vm.Stack.PopNumber()
+				if err != nil {
+					return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+				}
+				quotient := left / right
+				remainder := left % right
+				err = vm.Stack.Push(CellNumber{remainder})
+				if err != nil {
+					return err
+				}
+				return vm.Stack.Push(CellNumber{quotient})
+			},
+			ulpAsm: PrimitiveUlp{
+				// 'd' on 0
+				// 'n' on 1
+				// 'r' on -1
+				// 'q' on -2
+				// loop on stage_cnt
+
+				"st r2, r3, -1", // r = 0
+				"st r2, r3, -2", // q = 0
+				"stage_rst",     // stage_cnt = 0
+				"__divmod.0:",
+				// shift n into r, shift r, shift q
+				"ld r0, r3, 1",   // load n
+				"rsh r1, r0, 15", // get the highest bit from n
+				"lsh r0, r0, 1",  // n = n<<1
+				"st r0, r3, 1",   // store n
+				"ld r0, r3, -1",  // load r
+				"lsh r0, r0, 1",  // r = r<<1
+				"or r0, r0, r1",  // put in highest bit from n
+				"st r0, r3, -1",  // store r
+				"ld r0, r3, -2",  // load q
+				"lsh r0, r0, 1",  // q = q<<1
+				"st r0, r3, -2",  // store q
+				// attempt subtracting
+				"ld r1, r3, 0",        // load d
+				"ld r0, r3, -1",       // load r
+				"sub r0, r0, r1",      // r0 = r - d
+				"jump __divmod.1, ov", // exit if that overflowed
+				// no overflow, store result into r
+				"st r0, r3, -1",
+				// set the lowest bit of q
+				"ld r0, r3, -2",
+				"add r0, r0, 1",
+				"st r0, r3, -2",
+				"__divmod.1:",
+				"stage_inc 1",              // increase the stage counter
+				"jumps __divmod.0, 16, lt", // loop over each bit
+
+				// done! store r and q
+				"ld r0, r3, -1", // r
+				"ld r1, r3, -2", // q
+				"st r1, r3, 0",  // q
+				"st r0, r3, 1",  // r
+				"jump next",
+			},
+		},
+		{
 			name: "LSHIFT",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				amount, err := vm.Stack.PopNumber()
