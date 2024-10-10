@@ -602,8 +602,8 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"sub r1, r0, r1",      // r1 = r - d
 				"jump __divmod.1, ov", // jump ahead if that overflowed
 				// no overflow
-				"move r0, r1",   // store result into r
-				"add r2, r2, 1", // set the lowest bit of q
+				"move r0, r1",  // store result into r
+				"or r2, r2, 1", // set the lowest bit of q
 				"__divmod.1:",
 				"stage_inc 1",              // increase the stage counter
 				"jumps __divmod.0, 16, lt", // loop over each bit

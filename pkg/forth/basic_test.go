@@ -8,21 +8,6 @@ import (
 	"github.com/Molorius/ulp-c/pkg/asm"
 )
 
-func TestBlank(t *testing.T) {
-	forth := ": MAIN ESP.DONE ;"
-	runOutputTest(forth, "", t)
-}
-
-func TestPrintU16(t *testing.T) {
-	forth := ": MAIN 123 U. 456 U. ESP.DONE ;"
-	runOutputTest(forth, "123 456 ", t)
-}
-
-func TestPrintChar(t *testing.T) {
-	forth := ": MAIN 'A' ESP.PRINTCHAR 'B' ESP.PRINTCHAR 'C' ESP.PRINTCHAR ESP.DONE ;"
-	runOutputTest(forth, "ABC", t)
-}
-
 // TestPrimitives has very basic tests for primitive words.
 // This is just to rule out initial problems, more thorough tests
 // will be done through the standard test suite.
@@ -32,6 +17,21 @@ func TestPrimitives(t *testing.T) {
 		asm    string
 		expect string
 	}{
+		{
+			name:   "blank",
+			asm:    ": MAIN ESP.DONE ;",
+			expect: "",
+		},
+		{
+			name:   "print u16",
+			asm:    ": MAIN 123 U. 456 U. ESP.DONE ;",
+			expect: "123 456 ",
+		},
+		{
+			name:   "print char",
+			asm:    ": MAIN 'A' ESP.PRINTCHAR 'B' ESP.PRINTCHAR 'C' ESP.PRINTCHAR ESP.DONE ;",
+			expect: "ABC",
+		},
 		{
 			name:   "double",
 			asm:    wrapMain("0xFFFFFF. u. u."),
@@ -128,15 +128,21 @@ func TestPrimitives(t *testing.T) {
 			expect: "5 0 61 1 ",
 		},
 	}
+	r := asm.Runner{}
+	r.SetDefaults()
+	err := r.SetupPort()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			runOutputTest(tt.asm, tt.expect, t)
+			runOutputTest(tt.asm, tt.expect, t, &r)
 		})
 	}
 }
 
-func runOutputTest(code string, expected string, t *testing.T) {
-	reduce := true // reduce code: we always want to for size!
+func runOutputTest(code string, expected string, t *testing.T, r *asm.Runner) {
 	var buff bytes.Buffer
 	// set up the virtual machine
 	vm := VirtualMachine{Out: &buff}
@@ -165,7 +171,7 @@ func runOutputTest(code string, expected string, t *testing.T) {
 		}
 	})
 	// run the cross compiled test on emulator and hardware
-	asm.RunTest(t, assembly, expected, reduce)
+	r.RunTest(t, assembly, expected)
 }
 
 func wrapMain(code string) string {

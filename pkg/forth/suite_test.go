@@ -4,6 +4,8 @@ import (
 	_ "embed"
 	"fmt"
 	"testing"
+
+	"github.com/Molorius/ulp-c/pkg/asm"
 )
 
 //go:embed test/suite_test.f
@@ -111,10 +113,17 @@ func TestSuite(t *testing.T) {
 		},
 	}
 
+	r := asm.Runner{}
+	r.SetDefaults()
+	err := r.SetupPort()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			code := createTest(tt.code)
-			runOutputTest(code, "", t)
+			runOutputTest(code, "", t, &r)
 		})
 	}
 }
