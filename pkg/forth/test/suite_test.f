@@ -60,6 +60,15 @@ VARIABLE TEST-DEPTH
     0 TEST-COUNT !
 ;
 
+: <TRUE> TRUE ;
+: <FALSE> FALSE ;
+: MAX-UINT 0xFFFF ;
+: MAX-INT 0x7FFF ;
+: MIN-UINT 0 ;
+: MIN-INT 0x8000 ;
+: MID-UINT 0x7FFF ;
+: MID-UINT+1 0x8000 ;
+
 HEX \ the test suite runs in hex mode
 
 T{ : GC1 'X' ; -> }T \ should be : GC1 [CHAR] X ;

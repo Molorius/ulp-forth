@@ -245,7 +245,7 @@ func (u *Ulp) replaceOtherChars(str string) string {
 			b == '_':
 			sb.WriteByte(b)
 		default:
-			sb.WriteString(fmt.Sprintf("_special%d_", int(b)))
+			sb.WriteString(fmt.Sprintf("_ascii%d_", int(b)))
 		}
 	}
 	return sb.String()

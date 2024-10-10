@@ -16,6 +16,14 @@
 : 2* 1 LSHIFT ;
 : 2DROP DROP DROP ;
 
+: U> SWAP U< ; \ greaterthan is just lessthan with operands swapped
+: > 
+    0x8000 - \ shift top of stack into unsigned space
+    SWAP 0x8000 - \ shift next into unsigned space
+    U< \ compare!
+;
+: < SWAP > ;
+
 : IF
     BRANCH0 \ create a conditional branch
     DUP COMPILE, \ compile it

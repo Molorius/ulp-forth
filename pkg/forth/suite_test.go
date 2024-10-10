@@ -111,6 +111,82 @@ func TestSuite(t *testing.T) {
 				T{ 1 DUP -> 1 1 }T
 			`,
 		},
+		{
+			name: "U<",
+			code: `
+				T{        0        1 U< -> <TRUE>  }T
+				T{        1        2 U< -> <TRUE>  }T
+				T{        0 MID-UINT U< -> <TRUE>  }T
+				T{        0 MAX-UINT U< -> <TRUE>  }T
+				T{ MID-UINT MAX-UINT U< -> <TRUE>  }T
+				T{        0        0 U< -> <FALSE> }T
+				T{        1        1 U< -> <FALSE> }T
+				T{        1        0 U< -> <FALSE> }T
+				T{        2        1 U< -> <FALSE> }T
+				T{ MID-UINT        0 U< -> <FALSE> }T
+				T{ MAX-UINT        0 U< -> <FALSE> }T
+				T{ MAX-UINT MID-UINT U< -> <FALSE> }T
+			`,
+		},
+		{
+			name: "U>",
+			code: `
+				T{        0        1 U> -> <FALSE> }T
+				T{        1        2 U> -> <FALSE> }T
+				T{        0 MID-UINT U> -> <FALSE> }T
+				T{        0 MAX-UINT U> -> <FALSE> }T
+				T{ MID-UINT MAX-UINT U> -> <FALSE> }T
+				T{        0        0 U> -> <FALSE> }T
+				T{        1        1 U> -> <FALSE> }T
+				T{        1        0 U> -> <TRUE>  }T
+				T{        2        1 U> -> <TRUE>  }T
+				T{ MID-UINT        0 U> -> <TRUE>  }T
+				T{ MAX-UINT        0 U> -> <TRUE>  }T
+				T{ MAX-UINT MID-UINT U> -> <TRUE>  }T
+			`,
+		},
+		{
+			name: "<",
+			code: `
+				T{       0       1 < -> <TRUE>  }T
+				T{       1       2 < -> <TRUE>  }T
+				T{      -1       0 < -> <TRUE>  }T
+				T{      -1       1 < -> <TRUE>  }T
+				T{ MIN-INT       0 < -> <TRUE>  }T
+				T{ MIN-INT MAX-INT < -> <TRUE>  }T
+				T{       0 MAX-INT < -> <TRUE>  }T
+				T{       0       0 < -> <FALSE> }T
+				T{       1       1 < -> <FALSE> }T
+				T{       1       0 < -> <FALSE> }T
+				T{       2       1 < -> <FALSE> }T
+				T{       0      -1 < -> <FALSE> }T
+				T{       1      -1 < -> <FALSE> }T
+				T{       0 MIN-INT < -> <FALSE> }T
+				T{ MAX-INT MIN-INT < -> <FALSE> }T
+				T{ MAX-INT       0 < -> <FALSE> }T
+			`,
+		},
+		{
+			name: ">",
+			code: `
+				T{       0       1 > -> <FALSE> }T
+				T{       1       2 > -> <FALSE> }T
+				T{      -1       0 > -> <FALSE> }T
+				T{      -1       1 > -> <FALSE> }T
+				T{ MIN-INT       0 > -> <FALSE> }T
+				T{ MIN-INT MAX-INT > -> <FALSE> }T
+				T{       0 MAX-INT > -> <FALSE> }T
+				T{       0       0 > -> <FALSE> }T
+				T{       1       1 > -> <FALSE> }T
+				T{       1       0 > -> <TRUE>  }T
+				T{       2       1 > -> <TRUE>  }T
+				T{       0      -1 > -> <TRUE>  }T
+				T{       1      -1 > -> <TRUE>  }T
+				T{       0 MIN-INT > -> <TRUE>  }T
+				T{ MAX-INT MIN-INT > -> <TRUE>  }T
+				T{ MAX-INT       0 > -> <TRUE>  }T
+			`,
+		},
 	}
 
 	r := asm.Runner{}

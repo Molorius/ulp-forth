@@ -750,6 +750,36 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name: "U<",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				right, err := vm.Stack.PopNumber()
+				if err != nil {
+					return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+				}
+				left, err := vm.Stack.PopNumber()
+				if err != nil {
+					return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+				}
+				val := 0
+				if left < right {
+					val = 0xFFFF
+				}
+				return vm.Stack.Push(CellNumber{uint16(val)})
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r2, r3, 1",            // left
+				"ld r1, r3, 0",            // right
+				"move r0, 0xFFFF",         // default to true
+				"sub r2, r2, r1",          // subtract
+				"jump __u_lessthan.0, ov", // jump if overflow
+				"move r0, 0",              // no overflow: false
+				"__u_lessthan.0:",         // then
+				"add r3, r3, 1",           // decrement stack
+				"st r0, r3, 0",            // store the result
+				"jump next",
+			},
+		},
+		{
 			name: "BYE",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				return vm.State.Set(StateExit)
