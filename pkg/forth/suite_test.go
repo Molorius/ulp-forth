@@ -73,6 +73,42 @@ func TestSuite(t *testing.T) {
 				T{ GDX -> 123 234 }T
 			`,
 		},
+		{
+			name: ":NONAME",
+			code: `
+				T{ nn1 @ EXECUTE -> 1234 }T
+				T{ nn2 @ EXECUTE -> 9876 }T
+			`,
+		},
+		// ,
+		// C"
+		// DECIMAL does not have any tests
+		// DEFER
+		// DEFER@
+		// DEFER!
+		{
+			name: "DEPTH",
+			code: `
+				T{ 0 1 DEPTH -> 0 1 2 }T
+				T{   0 DEPTH -> 0 1   }T
+				T{     DEPTH -> 0     }T
+			`,
+		},
+		// DO does not have any tests
+		// DOES>
+		{
+			name: "DROP",
+			code: `
+				T{ 1 2 DROP -> 1 }T
+				T{ 0   DROP ->   }T
+			`,
+		},
+		{
+			name: "DUP",
+			code: `
+				T{ 1 DUP -> 1 1 }T
+			`,
+		},
 	}
 
 	for _, tt := range tests {

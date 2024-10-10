@@ -79,4 +79,10 @@ T{ : NOP : POSTPONE ; ; -> }T
 T{ NOP NOP1 NOP NOP2 -> }T
 T{ : GDX 123 ; : GDX GDX 234 ; -> }T
 
+\ from the :NONAME test
+VARIABLE nn1
+VARIABLE nn2
+T{ :NONAME 1234 ; nn1 ! -> }T
+T{ :NONAME 9876 ; nn2 ! -> }T
+
 RESET-TEST

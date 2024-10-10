@@ -50,3 +50,13 @@ CREATE ; ( -- ) ]
     FALSE LAST SET-HIDDEN \ unhide the new word
     POSTPONE [ \ put back in interpret mode
 EXIT [ IMMEDIATE
+
+
+: :NONAME \ start creating the noname definition
+    [ 'A' WORD A ] \ put an empty string on the stack
+    LITERAL \ compile it into :noname
+    --CREATE-FORTH \ later create a definition with the empty name
+    TRUE LAST SET-HIDDEN \ hide it
+    LAST \ put the execution token on the stack
+    ] \ and put in compile mode
+;
