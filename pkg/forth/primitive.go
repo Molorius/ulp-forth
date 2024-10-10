@@ -580,46 +580,37 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			ulpAsm: PrimitiveUlp{
 				// 'd' on 0
 				// 'n' on 1
-				// 'r' on -1
-				// 'q' on -2
+				// 'r' on r0
+				// 'q' on r2
 				// loop on stage_cnt
 
-				"st r2, r3, -1", // r = 0
-				"st r2, r3, -2", // q = 0
-				"stage_rst",     // stage_cnt = 0
+				"move r0, 0", // r = 0, r2 already set to 0
+				"stage_rst",  // stage_cnt = 0
+
 				"__divmod.0:",
 				// shift n into r, shift r, shift q
-				"ld r0, r3, 1",   // load n
-				"rsh r1, r0, 15", // get the highest bit from n
-				"lsh r0, r0, 1",  // n = n<<1
-				"st r0, r3, 1",   // store n
-				"ld r0, r3, -1",  // load r
 				"lsh r0, r0, 1",  // r = r<<1
-				"or r0, r0, r1",  // put in highest bit from n
-				"st r0, r3, -1",  // store r
-				"ld r0, r3, -2",  // load q
-				"lsh r0, r0, 1",  // q = q<<1
-				"st r0, r3, -2",  // store q
+				"lsh r2, r2, 1",  // q = q<<1
+				"ld r1, r3, 1",   // load n
+				"rsh r1, r1, 15", // get the highest bit from n
+				"or r0, r0, r1",  // "shift" the bit into r
+				"ld r1, r3, 1",   // reload n
+				"lsh r1, r1, 1",  // n = n<<1
+				"st r1, r3, 1",   // store n
 				// attempt subtracting
 				"ld r1, r3, 0",        // load d
-				"ld r0, r3, -1",       // load r
-				"sub r0, r0, r1",      // r0 = r - d
-				"jump __divmod.1, ov", // exit if that overflowed
-				// no overflow, store result into r
-				"st r0, r3, -1",
-				// set the lowest bit of q
-				"ld r0, r3, -2",
-				"add r0, r0, 1",
-				"st r0, r3, -2",
+				"sub r1, r0, r1",      // r1 = r - d
+				"jump __divmod.1, ov", // jump ahead if that overflowed
+				// no overflow
+				"move r0, r1",   // store result into r
+				"add r2, r2, 1", // set the lowest bit of q
 				"__divmod.1:",
 				"stage_inc 1",              // increase the stage counter
 				"jumps __divmod.0, 16, lt", // loop over each bit
 
 				// done! store r and q
-				"ld r0, r3, -1", // r
-				"ld r1, r3, -2", // q
-				"st r1, r3, 0",  // q
-				"st r0, r3, 1",  // r
+				"st r2, r3, 0", // q
+				"st r0, r3, 1", // r
 				"jump next",
 			},
 		},
