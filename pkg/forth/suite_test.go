@@ -79,7 +79,15 @@ func TestSuite(t *testing.T) {
 			code: "T{ GC3 -> 58 }T",
 		},
 		// [CHAR]
-		// [COMPILE]
+		{
+			name: "[COMPILE]",
+			code: `
+				T{ 123 [COMPILE] [c1] -> 123 123 }T
+				T{ 234 [c2] -> 234 234 }T
+				T{ -1 [c3] -> 111 }T
+				T{  0 [c3] -> 222 }T
+			`,
+		},
 		{
 			name: "[']",
 			code: "T{ POSTPONE GT2 EXECUTE -> 123 }T", // postpone because it's inside "main"

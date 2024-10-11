@@ -143,6 +143,10 @@
 : DECIMAL 10 BASE ! ;
 : CELL+ 1+ ;
 : CELLS ;
+: [COMPILE]
+    ' \ get the execution token of the next input
+    COMPILE, \ and compile it!
+; IMMEDIATE
 
 \ : ?DO
 \     POSTPONE 2DUP \ compile 2dup
