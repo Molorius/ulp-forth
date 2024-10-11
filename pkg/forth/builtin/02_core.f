@@ -74,6 +74,8 @@
 : = - 0= ;
 : 0<> 0= 0= ;
 : <> = 0= ;
+: 0< 0x7FFF U> ;
+: 0> 1- 0x7FFF U< ;
 
 \ Parse the next word delimited by a space. Allocate n cells. Create
 \ a definition for the word that places the address of the allocated
@@ -96,6 +98,7 @@
 : 2R> POSTPONE R> POSTPONE R> POSTPONE SWAP ; IMMEDIATE
 : UNLOOP POSTPONE >R POSTPONE >R POSTPONE 2DROP ; IMMEDIATE
 : I POSTPONE R> POSTPONE DUP POSTPONE >R ; IMMEDIATE
+: ?DUP DUP IF DUP THEN ;
 
 : CONSTANT
     :

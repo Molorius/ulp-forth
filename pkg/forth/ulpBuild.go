@@ -41,7 +41,9 @@ func (uForth ulpForth) build() string {
 	sb.WriteString(uForth.name)
 	sb.WriteString(":\r\n")
 	for _, cell := range uForth.cells {
-		if !strings.Contains(cell.name, ":") {
+		if strings.Contains(cell.name, ":") {
+			sb.WriteString("  ")
+		} else {
 			sb.WriteString("    .int ")
 		}
 		sb.WriteString(cell.name)

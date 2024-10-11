@@ -127,6 +127,11 @@ func TestPrimitives(t *testing.T) {
 			asm:    wrapMain("10 2 /MOD U. U. 123 2 /MOD U. U."),
 			expect: "5 0 61 1 ",
 		},
+		{
+			name:   ".",
+			asm:    wrapMain("0 . 1 . 2 . 3 . -1 . -2 . -3 ."),
+			expect: "0 1 2 3 -1 -2 -3 ",
+		},
 	}
 	r := asm.Runner{}
 	r.SetDefaults()

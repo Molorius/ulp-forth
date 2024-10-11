@@ -18,5 +18,29 @@
 : ESP.PRINTU16 ( n -- ) ESP.FUNC.TYPE.PRINTU16 ESP.FUNC ;
 : ESP.PRINTCHAR ( char -- ) ESP.FUNC.TYPE.PRINTCHAR ESP.FUNC ;
 : ESP.DONE ( -- ) 0 ESP.FUNC.TYPE.DONE ESP.FUNC ;
-: U. ( n -- ) ESP.PRINTU16 ;
-: EMIT ( char -- ) ESP.PRINTCHAR ;
+
+DEFER EMIT \ let us change EMIT
+: SPACE BL EMIT ;
+
+: U.NOSPACE ( u -- )
+    BASE @ /MOD \ divide with remainder
+    ?DUP IF RECURSE THEN \ if the quotient is nonzero, print that first
+    DUP #10 U< IF \ if it's 0-9 then we want those characters
+        '0'
+    ELSE
+        [ 'A' 10 - ] LITERAL \ otherwise start printing at 'A' character
+    THEN
+    + EMIT \ add on the character offset and print it!
+;
+
+: U. ( u -- ) U.NOSPACE SPACE ;
+: .  ( n -- )
+    DUP 0< IF \ if the value is less than 0
+        '-' EMIT \ print a minus sign
+        NEGATE \ and negate the value
+    THEN
+    U. \ print the value
+;
+
+\ set EMIT to the system printchar by default
+' ESP.PRINTCHAR ' EMIT DEFER!
