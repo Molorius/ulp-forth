@@ -29,7 +29,21 @@ func TestSuite(t *testing.T) {
 			`,
 		},
 		// ACCEPT
-		// ACTION-OF
+		{
+			name: "ACTION-OF",
+			code: `
+				\ uses ['] rather than ' so we can run on ulp
+				T{ ['] * ['] defer1 DEFER! ->   }T
+				T{          2 3 defer1 -> 6 }T
+				T{ ACTION-OF defer1 -> ['] * }T
+				T{    action-defer1 -> ['] * }T
+
+				T{ ['] + IS defer1 ->   }T
+				T{    1 2 defer1 -> 3 }T
+				T{ ACTION-OF defer1 -> ['] + }T
+				T{    action-defer1 -> ['] + }T
+			`,
+		},
 		// AGAIN
 		// ALIGN
 		// ALIGNED

@@ -357,7 +357,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					if !ok {
 						return fmt.Errorf("%s can only read forth data words: %T", entry, w)
 					}
-					if c.Offset >= len(w.Cells) {
+					if c.Offset < 0 || c.Offset >= len(w.Cells) {
 						return fmt.Errorf("%s reading outside of data range, offset %d", entry, c.Offset)
 					}
 					return vm.Stack.Push(w.Cells[c.Offset])
@@ -389,7 +389,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					if !ok {
 						return fmt.Errorf("%s can only write forth data words: %T", entry, w)
 					}
-					if c.Offset >= len(w.Cells) {
+					if c.Offset < 0 || c.Offset >= len(w.Cells) {
 						return fmt.Errorf("%s writing outside of data range, offset %d", entry, c.Offset)
 					}
 					w.Cells[c.Offset] = n
@@ -541,15 +541,37 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		{
 			name: "-",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
-				right, err := vm.Stack.PopNumber()
+				right, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+					return err
 				}
-				left, err := vm.Stack.PopNumber()
+				left, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+					return err
 				}
-				return vm.Stack.Push(CellNumber{left - right})
+				switch r := right.(type) {
+				case CellNumber:
+					switch l := left.(type) {
+					case CellNumber:
+						return vm.Stack.Push(CellNumber{l.Number - r.Number})
+					case CellAddress:
+						return vm.Stack.Push(CellAddress{l.Entry, l.Offset - int(r.Number)})
+					default:
+						return fmt.Errorf("%s cannot add these types", entry)
+					}
+				case CellAddress:
+					switch l := left.(type) {
+					case CellAddress:
+						if l.Entry == r.Entry {
+							return vm.Stack.Push(CellNumber{uint16(l.Offset) - uint16(r.Offset)})
+						}
+						return fmt.Errorf("%s cannot subtract addresses from different words.", entry)
+					default:
+						return fmt.Errorf("%s cannot subtract these types", entry)
+					}
+				default:
+					return fmt.Errorf("%s cannot subtract these types", entry)
+				}
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 1",

@@ -131,6 +131,14 @@
     IMMEDIATE
 ;
 
+: ACTION-OF
+    STATE @ IF
+        POSTPONE ['] POSTPONE DEFER@
+    ELSE
+        ' DEFER@
+    THEN
+; IMMEDIATE
+
 : HEX 16 BASE ! ;
 : DECIMAL 10 BASE ! ;
 : CELL+ 1+ ;

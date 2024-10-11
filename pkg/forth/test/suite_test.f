@@ -4,7 +4,7 @@ VARIABLE TEST-DEPTH
 16 BUFFER: TEST-STACK \ might need to increase if tests need more space
 
 \ run this to indicate that a test passes
-: TEST-PASS ( -- ) ;
+: TEST-PASS ( -- ) ; IMMEDIATE
 \ TODO print better fail messages
 : TEST-FAIL ( -- )
     BL EMIT \ print a space
@@ -13,7 +13,7 @@ VARIABLE TEST-DEPTH
 ;
 
 \ begin a test
-: T{ ( -- ) ;
+: T{ ( -- ) ; IMMEDIATE
 
 \ save desired values to compare test result against
 : -> ( -- )
@@ -60,16 +60,16 @@ VARIABLE TEST-DEPTH
     0 TEST-COUNT !
 ;
 
-: <TRUE> TRUE ;
-: <FALSE> FALSE ;
-: MAX-UINT 0xFFFF ;
-: MAX-INT 0x7FFF ;
-: MIN-UINT 0 ;
-: MIN-INT 0x8000 ;
-: MID-UINT 0x7FFF ;
-: MID-UINT+1 0x8000 ;
-: 0S 0 ;
-: 1S 0xFFFF ;
+TRUE   CONSTANT <TRUE>
+FALSE  CONSTANT <FALSE>
+0xFFFF CONSTANT MAX-UINT
+0x7FFF CONSTANT MAX-INT
+0      CONSTANT MIN-UINT
+0x8000 CONSTANT MIN-INT
+0x7FFF CONSTANT MID-UINT
+0x8000 CONSTANT MID-UINT+1
+0      CONSTANT 0S
+0xFFFF CONSTANT 1S
 
 HEX \ the test suite runs in hex mode
 
@@ -98,17 +98,47 @@ VARIABLE nn2
 T{ :NONAME 1234 ; nn1 ! -> }T
 T{ :NONAME 9876 ; nn2 ! -> }T
 
+\ from the ACTION-OF test
+T{ DEFER defer1 -> }T
+T{ : action-defer1 ACTION-OF defer1 ; -> }T
+T{ ' * ' defer1 DEFER! ->   }T
+T{          2 3 defer1 -> 6 }T
+T{ ACTION-OF defer1 -> ' * }T
+T{    action-defer1 -> ' * }T
+T{ ' + IS defer1 ->   }T
+T{    1 2 defer1 -> 3 }T
+T{ ACTION-OF defer1 -> ' + }T
+T{    action-defer1 -> ' + }T
+
 \ from the DEFER test
 T{ DEFER defer2 -> }T
+T{ ' * ' defer2 DEFER! -> }T
+T{   2 3 defer2 -> 6 }T
+T{ ' + IS defer2 ->   }T
+T{    1 2 defer2 -> 3 }T
 
 \ from the DEFER@ test
 T{ DEFER defer4 -> }T
+T{ ' * ' defer4 DEFER! -> }T
+T{ 2 3 defer4 -> 6 }T
+T{ ' defer4 DEFER@ -> ' * }T
+T{ ' + IS defer4 -> }T
+T{ 1 2 defer4 -> 3 }T
+T{ ' defer4 DEFER@ -> ' + }T
 
 \ from the DEFER! test
 T{ DEFER defer3 -> }T
+T{ ' * ' defer3 DEFER! -> }T
+T{ 2 3 defer3 -> 6 }T
+T{ ' + ' defer3 DEFER! -> }T
+T{ 1 2 defer3 -> 3 }T
 
 \ from the IS test
 T{ DEFER defer5 -> }T
 T{ : is-defer5 IS defer5 ; -> }T
+T{ ' * IS defer5 -> }T
+T{ 2 3 defer5 -> 6 }T
+T{ ' + is-defer5 -> }T
+T{ 1 2 defer5 -> 3 }T
 
 RESET-TEST
