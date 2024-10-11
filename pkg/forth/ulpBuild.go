@@ -96,7 +96,7 @@ func (u *Ulp) BuildAssembly(vm *VirtualMachine, word string) (string, error) {
 	u.forth = make([]ulpForth, 0)
 	u.data = make(map[string]string)
 
-	vm.State.Set(StateInterpret)
+	vm.State.Set(uint16(StateInterpret))
 	err := vm.execute([]byte(" : VM.INIT VM.STACK.INIT " + word + " BEGIN AGAIN ; "))
 	if err != nil {
 		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)

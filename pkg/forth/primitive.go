@@ -117,13 +117,13 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			name: "[",
 			flag: Flag{Immediate: true},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
-				return vm.State.Set(StateInterpret)
+				return vm.State.Set(uint16(StateInterpret))
 			},
 		},
 		{
 			name: "]",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
-				return vm.State.Set(StateCompile)
+				return vm.State.Set(uint16(StateCompile))
 			},
 		},
 		{
@@ -806,7 +806,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		{
 			name: "BYE",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
-				return vm.State.Set(StateExit)
+				return vm.State.Set(uint16(StateExit))
 			},
 		},
 		{

@@ -77,6 +77,14 @@
 : 0< 0x7FFF U> ;
 : 0> 1- 0x7FFF U< ;
 
+: IS
+    STATE @ IF
+        POSTPONE ['] POSTPONE DEFER!
+    ELSE
+        ' DEFER!
+    THEN
+; IMMEDIATE
+
 \ Parse the next word delimited by a space. Allocate n cells. Create
 \ a definition for the word that places the address of the allocated
 \ memory onto the stack.

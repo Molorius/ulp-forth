@@ -19,7 +19,7 @@ type VirtualMachine struct {
 	ReturnStack      Stack        // The return stack.
 	ControlFlowStack Stack        // The control flow stack.
 	ParseArea        ParseArea    // The input parse area.
-	State            State        // The execution state for the virtual machine.
+	State            VMNumber     // The execution state for the virtual machine. Convert to type State when using.
 	IP               *CellAddress // The interpreter pointer.
 	Base             VMNumber     // The number base.
 	Out              io.Writer
@@ -56,11 +56,6 @@ func (vm *VirtualMachine) Setup() error {
 		return err
 	}
 
-	err = vm.State.Setup(vm)
-	if err != nil {
-		return err
-	}
-
 	vm.IP = nil
 
 	err = PrimitiveSetup(vm)
@@ -73,6 +68,11 @@ func (vm *VirtualMachine) Setup() error {
 		return err
 	}
 	vm.Base.Set(10)
+
+	err = vm.State.Setup(vm, "STATE", false) // no need to share state as it shouldn't change
+	if err != nil {
+		return err
+	}
 
 	err = vm.Builtin()
 	if err != nil {
@@ -149,10 +149,11 @@ func (vm *VirtualMachine) Repl() error {
 
 	fmt.Fprintln(vm.Out, "ulp-forth")
 	for {
-		state, err := vm.State.Get()
+		stateUint, err := vm.State.Get()
 		if err != nil {
 			return err
 		}
+		state := StateType(stateUint)
 		if state == StateExit {
 			return nil
 		}
@@ -188,10 +189,11 @@ func (vm *VirtualMachine) execute(bytes []byte) error {
 		if err != nil {
 			return err
 		}
-		state, err := vm.State.Get()
+		stateUint, err := vm.State.Get()
 		if err != nil {
 			return err
 		}
+		state := StateType(stateUint)
 		switch state {
 		case StateInterpret:
 			for _, c := range cells {
@@ -246,7 +248,11 @@ func (vm *VirtualMachine) getCells(name string) ([]Cell, error) {
 	if isNegative {
 		name = name[1:]
 	}
-	base := int(vm.Base.Get())
+	baseuint, err := vm.Base.Get()
+	if err != nil {
+		return nil, err
+	}
+	base := int(baseuint)
 	if strings.HasPrefix(name, "0x") {
 		base = 16
 		name = name[2:]
@@ -312,12 +318,13 @@ func (n *VMNumber) Setup(vm *VirtualMachine, name string, shared bool) error {
 	return nil
 }
 
-func (n *VMNumber) Get() uint16 {
+func (n *VMNumber) Get() (uint16, error) {
 	c := n.Word.Cells[0]
 	num := c.(CellNumber) // instant fail if this isn't a number
-	return num.Number
+	return num.Number, nil
 }
 
-func (n *VMNumber) Set(num uint16) {
+func (n *VMNumber) Set(num uint16) error {
 	n.Word.Cells[0] = CellNumber{num}
+	return nil
 }
