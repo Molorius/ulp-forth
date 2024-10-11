@@ -351,18 +351,25 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return err
 				}
-				addr, ok := cell.(CellAddress)
-				if !ok {
-					return fmt.Errorf("%s can only read address cells: %T", entry, addr)
+				switch c := cell.(type) {
+				case CellAddress:
+					w, ok := c.Entry.Word.(*WordForth)
+					if !ok {
+						return fmt.Errorf("%s can only read forth data words: %T", entry, w)
+					}
+					if c.Offset >= len(w.Cells) {
+						return fmt.Errorf("%s reading outside of data range, offset %d", entry, c.Offset)
+					}
+					return vm.Stack.Push(w.Cells[c.Offset])
+				case CellEntry:
+					w, ok := c.Entry.Word.(*WordForth)
+					if !ok {
+						return fmt.Errorf("%s can only write forth words: %T", entry, w)
+					}
+					return vm.Stack.Push(w.Cells[0])
+				default:
+					return fmt.Errorf("%s can only write address or entry cells: %T", entry, cell)
 				}
-				w, ok := addr.Entry.Word.(*WordForth)
-				if !ok {
-					return fmt.Errorf("%s can only read forth words: %T", entry, w)
-				}
-				if addr.Offset >= len(w.Cells) {
-					return fmt.Errorf("%s reading outside of data range, offset %d", entry, addr.Offset)
-				}
-				return vm.Stack.Push(w.Cells[addr.Offset])
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 0", // get the address from stack
@@ -378,23 +385,31 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return err
 				}
-				addr, ok := cell.(CellAddress)
-				if !ok {
-					return fmt.Errorf("%s can only write address cells: %T", entry, addr)
-				}
-				w, ok := addr.Entry.Word.(*WordForth)
-				if !ok {
-					return fmt.Errorf("%s can only read forth words: %T", entry, w)
-				}
-				if addr.Offset >= len(w.Cells) {
-					return fmt.Errorf("%s writing outside of data range, offset %d", entry, addr.Offset)
-				}
 				n, err := vm.Stack.Pop()
 				if err != nil {
 					return err
 				}
-				w.Cells[addr.Offset] = n
-				return nil
+				switch c := cell.(type) {
+				case CellAddress:
+					w, ok := c.Entry.Word.(*WordForth)
+					if !ok {
+						return fmt.Errorf("%s can only write forth data words: %T", entry, w)
+					}
+					if c.Offset >= len(w.Cells) {
+						return fmt.Errorf("%s writing outside of data range, offset %d", entry, c.Offset)
+					}
+					w.Cells[c.Offset] = n
+					return nil
+				case CellEntry:
+					w, ok := c.Entry.Word.(*WordForth)
+					if !ok {
+						return fmt.Errorf("%s can only write forth words: %T", entry, w)
+					}
+					w.Cells[0] = n
+					return nil
+				default:
+					return fmt.Errorf("%s can only write address or entry cells: %T", entry, cell)
+				}
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 0",  // load the address
@@ -631,6 +646,28 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"ld r0, r3, 1",
 				"ld r1, r3, 0",
 				"lsh r0, r0, r1",
+				"add r3, r3, 1",
+				"st r0, r3, 0",
+				"jump __next_skip_r2",
+			},
+		},
+		{
+			name: "RSHIFT",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				amount, err := vm.Stack.PopNumber()
+				if err != nil {
+					return err
+				}
+				num, err := vm.Stack.PopNumber()
+				if err != nil {
+					return err
+				}
+				return vm.Stack.Push(CellNumber{num >> amount})
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 1",
+				"ld r1, r3, 0",
+				"rsh r0, r0, r1",
 				"add r3, r3, 1",
 				"st r0, r3, 0",
 				"jump __next_skip_r2",

@@ -94,4 +94,13 @@ VARIABLE nn2
 T{ :NONAME 1234 ; nn1 ! -> }T
 T{ :NONAME 9876 ; nn2 ! -> }T
 
+\ from the DEFER test
+T{ DEFER defer2 -> }T
+
+\ from the DEFER@ test
+T{ DEFER defer4 -> }T
+
+\ from the DEFER! test
+T{ DEFER defer3 -> }T
+
 RESET-TEST

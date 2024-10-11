@@ -85,9 +85,33 @@ func TestSuite(t *testing.T) {
 		// ,
 		// C"
 		// DECIMAL does not have any tests
-		// DEFER
-		// DEFER@
-		// DEFER!
+		{
+			name: "DEFER",
+			code: `
+				\ TODO change this to the standard
+				T{ ['] + ['] defer2 DEFER! -> }T
+				T{   2 3 defer2 -> 5 }T
+			`,
+		},
+		{
+			name: "DEFER@",
+			code: ` \ TODO change this to the standard
+				T{ ['] - ['] defer4 DEFER! -> }T
+				T{ 2 3 defer4 -> -1 }T
+				T{ ['] defer4 DEFER@ -> ['] - }T
+			`,
+		},
+		{
+			name: "DEFER!",
+			code: `
+				\ TODO change this to the standard
+				T{ ['] - ['] defer3 DEFER! -> }T
+				T{ 2 3 defer3 -> -1 }T
+
+				T{ ['] + ['] defer3 DEFER! -> }T
+				T{ 1 2 defer3 -> 3 }T
+			`,
+		},
 		{
 			name: "DEPTH",
 			code: `

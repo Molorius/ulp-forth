@@ -1,10 +1,20 @@
 
 \ ['] parses the next name and compiles the execution token of that name. Immediate.
-: ['] ( -- ) ' POSTPONE LITERAL ; IMMEDIATE
+: ['] ( "<spaces>name" -- ) ' POSTPONE LITERAL ; IMMEDIATE
 
 \ RECURSE compiles the most recently defined name, which usually means the current definition. 
 \ Immediate.
 : RECURSE ( -- ) LAST COMPILE, ; IMMEDIATE
+
+: >BODY ( xt -- a-addr ) ; \ the address is the same as the xt in this kernel
+
+: DEFER ( "<spaces>name" -- )
+    CREATE \ create a new dictionary entry
+    POSTPONE EXIT \ compile an EXIT here for now. can be changed by DEFER!.
+    POSTPONE EXIT \ compile the actual EXIT.
+;
+: DEFER@ ( xt1 -- xt2 ) >BODY @ ;
+: DEFER! ( xt2 xt1 -- ) >BODY ! ;
 
 : NIP ( a b -- b ) SWAP DROP ;
 : 1+ ( x -- x+1 ) 1 + ;
