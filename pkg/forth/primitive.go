@@ -561,6 +561,87 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name: "AND",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				right, err := vm.Stack.PopNumber()
+				if err != nil {
+					return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+				}
+				left, err := vm.Stack.PopNumber()
+				if err != nil {
+					return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+				}
+				return vm.Stack.Push(CellNumber{left & right})
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 1",
+				"ld r1, r3, 0",
+				"and r0, r0, r1",
+				"add r3, r3, 1",
+				"st r0, r3, 0",
+				"jump __next_skip_r2",
+			},
+		},
+		{
+			name: "OR",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				right, err := vm.Stack.PopNumber()
+				if err != nil {
+					return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+				}
+				left, err := vm.Stack.PopNumber()
+				if err != nil {
+					return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+				}
+				return vm.Stack.Push(CellNumber{left | right})
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 1",
+				"ld r1, r3, 0",
+				"or r0, r0, r1",
+				"add r3, r3, 1",
+				"st r0, r3, 0",
+				"jump __next_skip_r2",
+			},
+		},
+		{
+			name: "*",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				right, err := vm.Stack.PopNumber()
+				if err != nil {
+					return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+				}
+				left, err := vm.Stack.PopNumber()
+				if err != nil {
+					return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+				}
+				return vm.Stack.Push(CellNumber{left * right})
+			},
+			ulpAsm: PrimitiveUlp{
+				// x * y = z
+				// x on r1
+				// y on r0
+				// z on 1, 0 after stack decrement
+				"ld r1, r3, 1", // load x
+				"ld r0, r3, 0", // load y
+				"st r2, r3, 1", // initialize z to 0
+				"__mult.0:",
+				"and r2, r0, 1",     // get the lowest bit of y
+				"jump __mult.1, eq", // check if the bit is set
+				// bit is set! z = z + x
+				"ld r2, r3, 1",          // load z
+				"add r2, r2, r1",        // z = z+x
+				"st r2, r3, 1",          // store z
+				"__mult.1:",             // then
+				"lsh r1, r1, 1",         // x = x<<1
+				"rsh r0, r0, 1",         // y = y>>1
+				"jumpr __mult.0, 0, gt", // loop if y > 0
+				// finalize
+				"add r3, r3, 1", // decrement stack, z already in place
+				"jump next",
+			},
+		},
+		{
 			name: "/MOD",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.PopNumber()

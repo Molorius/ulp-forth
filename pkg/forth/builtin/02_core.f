@@ -107,11 +107,28 @@
 : UNLOOP POSTPONE >R POSTPONE >R POSTPONE 2DROP ; IMMEDIATE
 : I POSTPONE R> POSTPONE DUP POSTPONE >R ; IMMEDIATE
 : ?DUP DUP IF DUP THEN ;
+: XOR ( a b -- c )
+    \ [a ^ b] = [a|b] - [a&b]
+    2DUP ( A B A B )
+    OR ( A B [A|B] )
+    SWAP ROT ( [A|B] B A )
+    AND ( [A|B] [A&B] )
+    - ( [A^B] )
+;
+: ABS DUP 0< IF NEGATE THEN ;
+
+: --CONSTANT
+    STATE @ IF \ if we're compiling
+        POSTPONE LITERAL \ then compile the value on the stack
+    THEN \ otherwise leave on the stack
+;
 
 : CONSTANT
     :
     POSTPONE LITERAL
+    POSTPONE --CONSTANT
     POSTPONE ;
+    IMMEDIATE
 ;
 
 : HEX 16 BASE ! ;

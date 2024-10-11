@@ -19,14 +19,37 @@ func TestSuite(t *testing.T) {
 	}{
 		// ABORT
 		// ABORT"
-		// ABS
+		{
+			name: "ABS",
+			code: `
+				T{       0 ABS ->          0 }T
+				T{       1 ABS ->          1 }T
+				T{      -1 ABS ->          1 }T
+				T{ MIN-INT ABS -> MID-UINT+1 }T
+			`,
+		},
 		// ACCEPT
 		// ACTION-OF
 		// AGAIN
 		// ALIGN
 		// ALIGNED
 		// ALLOT
-		// AND
+		{
+			name: "AND",
+			code: `
+				T{ 0 0 AND -> 0 }T
+				T{ 0 1 AND -> 0 }T
+				T{ 1 0 AND -> 0 }T
+				T{ 1 1 AND -> 1 }T
+				T{ 0 INVERT 1 AND -> 1 }T
+				T{ 1 INVERT 1 AND -> 0 }T
+
+				T{ 0S 0S AND -> 0S }T
+				T{ 0S 1S AND -> 0S }T
+				T{ 1S 0S AND -> 0S }T
+				T{ 1S 1S AND -> 1S }T
+			`,
+		},
 		{
 			name: "BASE",
 			code: "T{ GN2 -> 10 A }T",
@@ -88,25 +111,32 @@ func TestSuite(t *testing.T) {
 		{
 			name: "DEFER",
 			code: `
-				\ TODO change this to the standard
-				T{ ['] + ['] defer2 DEFER! -> }T
-				T{   2 3 defer2 -> 5 }T
+				\ uses ['] rather than ' so we can run on ulp
+				T{ ['] * ['] defer2 DEFER! -> }T
+				T{   2 3 defer2 -> 6    }T
+				T{ ['] + IS defer2 ->   }T
+				T{    1 2 defer2 -> 3   }T
 			`,
 		},
 		{
 			name: "DEFER@",
-			code: ` \ TODO change this to the standard
-				T{ ['] - ['] defer4 DEFER! -> }T
-				T{ 2 3 defer4 -> -1 }T
-				T{ ['] defer4 DEFER@ -> ['] - }T
+			code: `
+				\ uses ['] rather than ' so we can run on ulp
+				T{ ['] * ['] defer4 DEFER! -> }T
+				T{ 2 3 defer4 -> 6 }T
+				T{ ['] defer4 DEFER@ -> ['] * }T
+
+				T{ ['] + IS defer4 -> }T
+				T{ 1 2 defer4 -> 3 }T
+				T{ ['] defer4 DEFER@ -> ['] + }T
 			`,
 		},
 		{
 			name: "DEFER!",
 			code: `
-				\ TODO change this to the standard
-				T{ ['] - ['] defer3 DEFER! -> }T
-				T{ 2 3 defer3 -> -1 }T
+				\ uses ['] rather than ' so we can run on ulp
+				T{ ['] * ['] defer3 DEFER! -> }T
+				T{ 2 3 defer3 -> 6 }T
 
 				T{ ['] + ['] defer3 DEFER! -> }T
 				T{ 1 2 defer3 -> 3 }T
@@ -133,6 +163,43 @@ func TestSuite(t *testing.T) {
 			name: "DUP",
 			code: `
 				T{ 1 DUP -> 1 1 }T
+			`,
+		},
+		{
+			name: "OR",
+			code: `
+				T{ 0S 0S OR -> 0S }T
+				T{ 0S 1S OR -> 1S }T
+				T{ 1S 0S OR -> 1S }T
+				T{ 1S 1S OR -> 1S }T
+			`,
+		},
+		{
+			name: "*",
+			code: `
+				T{  0  0 * ->  0 }T \ TEST IDENTITIES
+				T{  0  1 * ->  0 }T
+				T{  1  0 * ->  0 }T
+				T{  1  2 * ->  2 }T
+				T{  2  1 * ->  2 }T
+				T{  3  3 * ->  9 }T
+				T{ -3  3 * -> -9 }T
+				T{  3 -3 * -> -9 }T
+				T{ -3 -3 * ->  9 }T
+				T{ MID-UINT+1 1 RSHIFT 2 *               -> MID-UINT+1 }T
+				T{ MID-UINT+1 2 RSHIFT 4 *               -> MID-UINT+1 }T
+				T{ MID-UINT+1 1 RSHIFT MID-UINT+1 OR 2 * -> MID-UINT+1 }T
+			`,
+		},
+		{
+			name: "IS",
+			code: `
+				\ uses ['] rather than ' so we can run on ulp
+				T{ ['] * IS defer5 -> }T
+				T{ 2 3 defer5 -> 6    }T
+
+				T{ ['] + is-defer5 -> }T
+				T{ 1 2 defer5 -> 3    }T
 			`,
 		},
 		{
@@ -167,6 +234,15 @@ func TestSuite(t *testing.T) {
 				T{ MID-UINT        0 U> -> <TRUE>  }T
 				T{ MAX-UINT        0 U> -> <TRUE>  }T
 				T{ MAX-UINT MID-UINT U> -> <TRUE>  }T
+			`,
+		},
+		{
+			name: "XOR",
+			code: `
+				T{ 0S 0S XOR -> 0S }T
+				T{ 0S 1S XOR -> 1S }T
+				T{ 1S 0S XOR -> 1S }T
+				T{ 1S 1S XOR -> 0S }T
 			`,
 		},
 		{

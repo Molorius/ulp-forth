@@ -68,6 +68,8 @@ VARIABLE TEST-DEPTH
 : MIN-INT 0x8000 ;
 : MID-UINT 0x7FFF ;
 : MID-UINT+1 0x8000 ;
+: 0S 0 ;
+: 1S 0xFFFF ;
 
 HEX \ the test suite runs in hex mode
 
@@ -80,10 +82,12 @@ T{ : GC3 [ GC1 ] LITERAL ; }T
 T{ : GT1 123 ; -> }T
 T{ : GT2 ['] GT1 ; IMMEDIATE -> }T
 
+\ part of the CONSTANT test
 T{ 123 CONSTANT X123 -> }T
 T{ : EQU CONSTANT ; -> }T
 T{ X123 EQU Y123 -> }T
 
+\ part of the : test
 T{ : NOP : POSTPONE ; ; -> }T
 T{ NOP NOP1 NOP NOP2 -> }T
 T{ : GDX 123 ; : GDX GDX 234 ; -> }T
@@ -102,5 +106,9 @@ T{ DEFER defer4 -> }T
 
 \ from the DEFER! test
 T{ DEFER defer3 -> }T
+
+\ from the IS test
+T{ DEFER defer5 -> }T
+T{ : is-defer5 IS defer5 ; -> }T
 
 RESET-TEST
