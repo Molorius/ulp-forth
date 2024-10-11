@@ -121,6 +121,9 @@ func (u *Ulp) findUsedEntry(entry *DictionaryEntry) (string, error) {
 		if !ok {
 			// build the definition
 			var sb strings.Builder
+			sb.WriteString(".global ")
+			sb.WriteString(entry.Name)
+			sb.WriteString("\r\n")
 			sb.WriteString(entry.Name)
 			sb.WriteString(":")
 			w, ok := entry.Word.(*WordForth)
@@ -142,6 +145,7 @@ func (u *Ulp) findUsedEntry(entry *DictionaryEntry) (string, error) {
 			sb.WriteString(strings.Join(vals, ", "))
 			u.data[entry.Name] = sb.String()
 		}
+		return entry.ulpName, nil
 	}
 	switch w := entry.Word.(type) {
 	case *WordForth:
