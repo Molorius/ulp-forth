@@ -181,8 +181,6 @@ func (u *Ulp) findUsedEntry(entry *DictionaryEntry) (string, error) {
 
 func (u *Ulp) findUsedCell(cell Cell) (string, error) {
 	switch c := cell.(type) {
-	case CellEntry:
-		return u.findUsedEntry(c.Entry)
 	case CellNumber:
 		return strconv.Itoa(int(c.Number)), nil
 	case CellLiteral:
@@ -204,6 +202,9 @@ func (u *Ulp) findUsedCell(cell Cell) (string, error) {
 		return name, nil
 	case CellAddress:
 		name, err := u.findUsedEntry(c.Entry)
+		if c.Offset == 0 {
+			return fmt.Sprintf("%s", name), err
+		}
 		return fmt.Sprintf("%s+%d", name, c.Offset), err
 	case *CellBranch0:
 		return fmt.Sprintf("%s + 0x4000", c.dest.name(u)), nil

@@ -16,7 +16,7 @@ type WordForth struct {
 	Entry *DictionaryEntry // The associated dictionary entry.
 }
 
-func (w *WordForth) Execute(vm *VirtualMachine) error {
+func (w *WordForth) ExecuteOffset(vm *VirtualMachine, offset int) error {
 	// push the instruction pointer onto the return stack
 	startDepth := vm.ReturnStack.Depth()
 	previous := vm.IP // keep the previous address for error popping
@@ -24,7 +24,7 @@ func (w *WordForth) Execute(vm *VirtualMachine) error {
 	if err != nil {
 		return errors.Join(fmt.Errorf("%s could not push instruction pointer to return stack.", w.Entry), err)
 	}
-	vm.IP = &CellAddress{Entry: w.Entry, Offset: 0} // create a new instruction pointer
+	vm.IP = &CellAddress{Entry: w.Entry, Offset: offset} // create a new instruction pointer
 
 	// execute each lower word
 	for vm.ReturnStack.Depth() > startDepth { // while the original instruction pointer hasn't been popped
@@ -60,6 +60,10 @@ func (w *WordForth) Execute(vm *VirtualMachine) error {
 		return fmt.Errorf("%s return stack wrong size on exit", w.Entry)
 	}
 	return nil
+}
+
+func (w *WordForth) Execute(vm *VirtualMachine) error {
+	return w.ExecuteOffset(vm, 0)
 }
 
 // The Go code for a primitive Word.

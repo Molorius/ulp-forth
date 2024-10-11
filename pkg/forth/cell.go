@@ -22,19 +22,6 @@ func (c CellNumber) String() string {
 	return fmt.Sprintf("%d", c.Number)
 }
 
-// A Cell representing an entry in the Dictionary such as an execution token.
-type CellEntry struct {
-	Entry *DictionaryEntry // The dictionary entry this represents.
-}
-
-func (c CellEntry) Execute(vm *VirtualMachine) error {
-	return c.Entry.Word.Execute(vm) // Execute the underlying dictionary entry.
-}
-
-func (c CellEntry) String() string {
-	return c.Entry.String()
-}
-
 // A Cell representing an address in the dictionary. Used for pointers such
 // as return addresses.
 type CellAddress struct {
@@ -43,17 +30,23 @@ type CellAddress struct {
 }
 
 func (c CellAddress) Execute(vm *VirtualMachine) error {
-	if !c.Entry.Flag.Data {
-		return fmt.Errorf("Cannot execute a forth address cell.")
+	switch w := c.Entry.Word.(type) {
+	case *WordForth:
+		if c.Offset >= len(w.Cells) {
+			return fmt.Errorf("Trying to get data from outside of allocated data.")
+		}
+		if c.Entry.Flag.Data {
+			return vm.Stack.Push(w.Cells[c.Offset])
+		}
+		return w.ExecuteOffset(vm, c.Offset)
+	case *WordPrimitive:
+		if c.Offset != 0 {
+			return fmt.Errorf("Cannot execute a primitive word at an offset.")
+		}
+		return w.Execute(vm)
+	default:
+		return fmt.Errorf("Cannot execute word type %t", c.Entry.Word)
 	}
-	w, ok := c.Entry.Word.(*WordForth)
-	if !ok {
-		return fmt.Errorf("Cannot execute an address cell that doesn't point to data.")
-	}
-	if c.Offset >= len(w.Cells) {
-		return fmt.Errorf("Trying to get data from outside of allocated data.")
-	}
-	return vm.Stack.Push(w.Cells[c.Offset])
 }
 
 func (c CellAddress) String() string {

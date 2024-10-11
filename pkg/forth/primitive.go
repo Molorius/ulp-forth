@@ -130,7 +130,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			name: "LAST",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				last := vm.Dictionary.Entries[len(vm.Dictionary.Entries)-1]
-				c := CellEntry{last}
+				c := CellAddress{last, 0}
 				return vm.Stack.Push(c)
 			},
 		},
@@ -269,7 +269,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return errors.Join(fmt.Errorf("%s could not find name: %s", entry, name), err)
 				}
-				newCell := CellEntry{found}
+				newCell := CellAddress{found, 0}
 				return vm.Stack.Push(newCell)
 			},
 		},
@@ -302,11 +302,11 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return err
 				}
-				cellEntry, ok := c.(CellEntry)
+				cellAddr, ok := c.(CellAddress)
 				if !ok {
 					return fmt.Errorf("unable to execute cell %s", c)
 				}
-				return cellEntry.Execute(vm)
+				return cellAddr.Execute(vm)
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 0",   // load the token into r0
@@ -361,12 +361,6 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 						return fmt.Errorf("%s reading outside of data range, offset %d", entry, c.Offset)
 					}
 					return vm.Stack.Push(w.Cells[c.Offset])
-				case CellEntry:
-					w, ok := c.Entry.Word.(*WordForth)
-					if !ok {
-						return fmt.Errorf("%s can only write forth words: %T", entry, w)
-					}
-					return vm.Stack.Push(w.Cells[0])
 				default:
 					return fmt.Errorf("%s can only write address or entry cells: %T", entry, cell)
 				}
@@ -400,13 +394,6 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					}
 					w.Cells[c.Offset] = n
 					return nil
-				case CellEntry:
-					w, ok := c.Entry.Word.(*WordForth)
-					if !ok {
-						return fmt.Errorf("%s can only write forth words: %T", entry, w)
-					}
-					w.Cells[0] = n
-					return nil
 				default:
 					return fmt.Errorf("%s can only write address or entry cells: %T", entry, cell)
 				}
@@ -426,7 +413,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
 				}
-				cellEntry, ok := cell.(CellEntry)
+				cellAddr, ok := cell.(CellAddress)
 				if !ok {
 					return fmt.Errorf("%s requires an entry cell: %s", entry, cell)
 				}
@@ -434,15 +421,15 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return errors.Join(fmt.Errorf("%s could not get last forth word.", entry), err)
 				}
-				if cellEntry.Entry.Flag.Immediate {
-					last.Cells = append(last.Cells, cellEntry)
+				if cellAddr.Entry.Flag.Immediate {
+					last.Cells = append(last.Cells, cellAddr)
 					return nil
 				} else {
 					compile, err := vm.Dictionary.FindName("COMPILE,")
 					if !ok {
 						return errors.Join(fmt.Errorf("%s requires the COMPILE, word.", entry), err)
 					}
-					newCells := []Cell{CellLiteral{cellEntry}, CellEntry{compile}}
+					newCells := []Cell{CellLiteral{cellAddr}, CellAddress{compile, 0}}
 					last.Cells = append(last.Cells, newCells...)
 				}
 				return nil
@@ -453,18 +440,18 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell0, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get entry cell.", entry), err)
+					return errors.Join(fmt.Errorf("%s could not get address cell.", entry), err)
 				}
-				cellEntry, ok := cell0.(CellEntry)
+				cellAddr, ok := cell0.(CellAddress)
 				if !ok {
-					return fmt.Errorf("%s expected an entry cell: %s", entry, cellEntry)
+					return fmt.Errorf("%s expected an address cell: %s", entry, cellAddr)
 				}
 				cellNum, err := vm.Stack.PopNumber()
 				if err != nil {
 					return errors.Join(fmt.Errorf("%s could not get bool cell.", entry), err)
 				}
 				flag := cellNum > 0
-				cellEntry.Entry.Flag.Hidden = flag
+				cellAddr.Entry.Flag.Hidden = flag
 				return nil
 			},
 		},
@@ -475,16 +462,16 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return errors.Join(fmt.Errorf("%s could not get entry cell.", entry), err)
 				}
-				cellEntry, ok := cell0.(CellEntry)
+				cellAddr, ok := cell0.(CellAddress)
 				if !ok {
-					return fmt.Errorf("%s expected an entry cell: %s", entry, cellEntry)
+					return fmt.Errorf("%s expected an entry cell: %s", entry, cellAddr)
 				}
 				cellNum, err := vm.Stack.PopNumber()
 				if err != nil {
 					return errors.Join(fmt.Errorf("%s could not get bool cell.", entry), err)
 				}
 				flag := cellNum > 0
-				cellEntry.Entry.Flag.Immediate = flag
+				cellAddr.Entry.Flag.Immediate = flag
 				return nil
 			},
 		},
