@@ -230,7 +230,7 @@ func (vm *VirtualMachine) getCells(name string) ([]Cell, error) {
 	// check in dictionary for the name
 	entry, dictErr := vm.Dictionary.FindName(name)
 	if dictErr == nil {
-		return []Cell{CellAddress{entry, 0}}, nil
+		return []Cell{CellAddress{entry, 0, false}}, nil
 	}
 	// dictionary lookup failed, check if this is a character
 	nameSlice := []byte(name)
@@ -307,8 +307,8 @@ func (n *VMNumber) Setup(vm *VirtualMachine, name string, shared bool) error {
 		Cells: make([]Cell, 2),
 		Entry: &dEntry,
 	}
-	dWord.Cells[0] = CellLiteral{CellAddress{&allocEntry, 0}} // put address on stack
-	dWord.Cells[1] = CellAddress{exit, 0}                     // then exit
+	dWord.Cells[0] = CellLiteral{CellAddress{&allocEntry, 0, false}} // put address on stack
+	dWord.Cells[1] = CellAddress{exit, 0, false}                     // then exit
 	dEntry = DictionaryEntry{
 		Name: name,
 		Word: &dWord,

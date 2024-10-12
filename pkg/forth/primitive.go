@@ -55,11 +55,14 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return errors.Join(fmt.Errorf("%s could not pop name.", entry), err)
 				}
-				cellString, ok := cell.(CellString)
+				cellAddr, ok := cell.(CellAddress)
 				if !ok {
-					return fmt.Errorf("%s requires a counted string.", entry)
+					return fmt.Errorf("%s requires an address cell.", cellAddr)
 				}
-				name := cellString.Memory[cellString.Offset:]
+				name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+				if err != nil {
+					return err
+				}
 				wordEntry, err := vm.Dictionary.FindName(string(name))
 				if err != nil {
 					return errors.Join(fmt.Errorf("%s could not find word.", entry), err)
@@ -75,13 +78,24 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return errors.Join(fmt.Errorf("%s could not pop delimiter.", entry), err)
 				}
-				word, err := vm.ParseArea.Word(byte(n))
+				str, err := vm.ParseArea.Word(byte(n))
 				if err != nil {
 					return errors.Join(fmt.Errorf("%s could not parse.", entry), err)
 				}
-				c := CellString{
-					Memory: word,
-					Offset: 0,
+				var de DictionaryEntry
+				cells, err := bytesToCells(str, true)
+				if err != nil {
+					return err
+				}
+				w := WordForth{cells, &de}
+				de = DictionaryEntry{
+					Word: &w,
+					Flag: Flag{Data: true},
+				}
+				c := CellAddress{
+					Entry:     &de,
+					Offset:    0,
+					UpperByte: false,
 				}
 				return vm.Stack.Push(c)
 			},
@@ -93,11 +107,14 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return errors.Join(fmt.Errorf("%s could not pop name.", entry), err)
 				}
-				cellString, ok := cell.(CellString)
+				cellAddr, ok := cell.(CellAddress)
 				if !ok {
-					return fmt.Errorf("%s requires a counted string.", entry)
+					return fmt.Errorf("%s requires an address cell.", cellAddr)
 				}
-				name := cellString.Memory[cellString.Offset:]
+				name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+				if err != nil {
+					return err
+				}
 				var newEntry DictionaryEntry
 				newEntry = DictionaryEntry{
 					Name: string(name),
@@ -130,7 +147,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			name: "LAST",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				last := vm.Dictionary.Entries[len(vm.Dictionary.Entries)-1]
-				c := CellAddress{last, 0}
+				c := CellAddress{last, 0, false}
 				return vm.Stack.Push(c)
 			},
 		},
@@ -260,16 +277,19 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
 				}
-				cellString, ok := cell.(CellString)
+				cellAddr, ok := cell.(CellAddress)
 				if !ok {
-					return fmt.Errorf("%s requires a counted string.", entry)
+					return fmt.Errorf("%s requires an address cell.", cellAddr)
 				}
-				name := cellString.Memory[cellString.Offset:]
+				name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+				if err != nil {
+					return err
+				}
 				found, err := vm.Dictionary.FindName(string(name))
 				if err != nil {
 					return errors.Join(fmt.Errorf("%s could not find name: %s", entry, name), err)
 				}
-				newCell := CellAddress{found, 0}
+				newCell := CellAddress{found, 0, false}
 				return vm.Stack.Push(newCell)
 			},
 		},
@@ -429,7 +449,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					if !ok {
 						return errors.Join(fmt.Errorf("%s requires the COMPILE, word.", entry), err)
 					}
-					newCells := []Cell{CellLiteral{cellAddr}, CellAddress{compile, 0}}
+					newCells := []Cell{CellLiteral{cellAddr}, CellAddress{compile, 0, false}}
 					last.Cells = append(last.Cells, newCells...)
 				}
 				return nil
@@ -514,14 +534,14 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					case CellNumber:
 						return vm.Stack.Push(CellNumber{l.Number + r.Number})
 					case CellAddress:
-						return vm.Stack.Push(CellAddress{l.Entry, l.Offset + int(r.Number)})
+						return vm.Stack.Push(CellAddress{l.Entry, l.Offset + int(r.Number), false})
 					default:
 						return fmt.Errorf("Cannot add these types")
 					}
 				case CellAddress:
 					switch l := left.(type) {
 					case CellNumber:
-						return vm.Stack.Push(CellAddress{r.Entry, int(l.Number) + r.Offset})
+						return vm.Stack.Push(CellAddress{r.Entry, int(l.Number) + r.Offset, false})
 					default:
 						return fmt.Errorf("Cannot add these types")
 					}
@@ -555,7 +575,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					case CellNumber:
 						return vm.Stack.Push(CellNumber{l.Number - r.Number})
 					case CellAddress:
-						return vm.Stack.Push(CellAddress{l.Entry, l.Offset - int(r.Number)})
+						return vm.Stack.Push(CellAddress{l.Entry, l.Offset - int(r.Number), false})
 					default:
 						return fmt.Errorf("%s cannot add these types", entry)
 					}
