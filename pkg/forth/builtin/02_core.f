@@ -24,6 +24,12 @@
 \ Invert all bits. 0xFFFF becomes 0, 0xFFF0 becomes 0x000F, etc.
 : INVERT ( x -- x^0xFFFF ) NEGATE 1- ;
 : 2* 1 LSHIFT ;
+: 2/
+    DUP
+    0x8000 AND \ isolate the most significant bit
+    SWAP 1 RSHIFT \ right shift
+    OR \ then put back the bit
+;
 : 2DROP DROP DROP ;
 
 : U> SWAP U< ; \ greaterthan is just lessthan with operands swapped

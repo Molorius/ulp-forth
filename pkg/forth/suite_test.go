@@ -219,6 +219,27 @@ func TestSuite(t *testing.T) {
 			`,
 		},
 		{
+			name: "2/",
+			code: `
+				T{          0S 2/ ->   0S }T
+				T{           1 2/ ->    0 }T
+				T{        4000 2/ -> 2000 }T
+				T{          1S 2/ ->   1S }T \ MSB PROPOGATED
+				T{    1S 1 XOR 2/ ->   1S }T
+				T{ MSB 2/ MSB AND ->  MSB }T
+			`,
+		},
+		{
+			name: "2*",
+			code: `
+				T{   0S 2*       ->   0S }T
+				T{    1 2*       ->    2 }T
+				T{ 4000 2*       -> 8000 }T
+				T{   1S 2* 1 XOR ->   1S }T
+				T{  MSB 2*       ->   0S }T
+			`,
+		},
+		{
 			name: "S\"",
 			code: `
 				T{ GC4 SWAP DROP  -> 2 }T
@@ -292,7 +313,6 @@ func TestSuite(t *testing.T) {
 				T{ MAX-INT  0= -> <FALSE> }T
 			`,
 		},
-
 		{
 			name: "0<",
 			code: `
