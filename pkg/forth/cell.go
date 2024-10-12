@@ -51,7 +51,15 @@ func (c CellAddress) Execute(vm *VirtualMachine) error {
 }
 
 func (c CellAddress) String() string {
-	return fmt.Sprintf("{%s %d}", c.Entry, c.Offset)
+	s := fmt.Sprintf("Address{%p", c.Entry)
+	if c.Offset != 0 {
+		s += fmt.Sprintf(" %d", c.Offset)
+	}
+	if c.UpperByte {
+		s += " upper"
+	}
+	s += "}"
+	return s
 }
 
 // A Cell that places the underlying cell on the stack.

@@ -143,6 +143,9 @@ T{ 2 3 defer3 -> 6 }T
 T{ ' + ' defer3 DEFER! -> }T
 T{ 1 2 defer3 -> 3 }T
 
+\ modified from the FIND test
+T{ BL WORD GT1 CONSTANT GT1STRING -> }T
+
 \ from the IS test
 T{ DEFER defer5 -> }T
 T{ : is-defer5 IS defer5 ; -> }T
@@ -150,5 +153,12 @@ T{ ' * IS defer5 -> }T
 T{ 2 3 defer5 -> 6 }T
 T{ ' + is-defer5 -> }T
 T{ 1 2 defer5 -> 3 }T
+
+\ from the S" test
+T{ : GC4 S" XY" ; ->   }T
+T{ GC4 SWAP DROP  -> 2 }T
+T{ GC4 DROP DUP C@ SWAP CHAR+ C@ -> 58 59 }T
+: GC5 S" A String"2DROP ; \ There is no space between the " and 2DROP
+T{ GC5 -> }T
 
 RESET-TEST

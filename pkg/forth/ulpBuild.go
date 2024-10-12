@@ -208,10 +208,13 @@ func (u *Ulp) findUsedCell(cell Cell) (string, error) {
 		return name, nil
 	case CellAddress:
 		name, err := u.findUsedEntry(c.Entry)
-		if c.Offset == 0 {
-			return fmt.Sprintf("%s", name), err
+		if c.Offset != 0 {
+			name = fmt.Sprintf("%s+%d", name, c.Offset)
 		}
-		return fmt.Sprintf("%s+%d", name, c.Offset), err
+		if c.UpperByte {
+			name = name + "+0x8000" // set the highest bit
+		}
+		return name, err
 	case *CellBranch0:
 		return fmt.Sprintf("%s + 0x4000", c.dest.name(u)), nil
 	case *CellBranch:

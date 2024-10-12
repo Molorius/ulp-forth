@@ -147,6 +147,8 @@
     ' \ get the execution token of the next input
     COMPILE, \ and compile it!
 ; IMMEDIATE
+: COUNT ( c-addr -- c-addr+1 n ) DUP CHAR+ SWAP C@ ;
+: S" '"' WORD COUNT SWAP POSTPONE LITERAL POSTPONE LITERAL ; IMMEDIATE
 
 \ : ?DO
 \     POSTPONE 2DUP \ compile 2dup

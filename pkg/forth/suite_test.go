@@ -108,7 +108,12 @@ func TestSuite(t *testing.T) {
 				T{ Y123 -> 123 }T
 			`,
 		},
-		// COUNT
+		{
+			name: "COUNT",
+			code: `
+				T{ GT1STRING COUNT -> GT1STRING CHAR+ 3 }T
+			`,
+		},
 		// CR does not have any tests
 		// CREATE does not have any tests
 		// C! does not have any tests
@@ -211,6 +216,14 @@ func TestSuite(t *testing.T) {
 				T{ MID-UINT+1 1 RSHIFT 2 *               -> MID-UINT+1 }T
 				T{ MID-UINT+1 2 RSHIFT 4 *               -> MID-UINT+1 }T
 				T{ MID-UINT+1 1 RSHIFT MID-UINT+1 OR 2 * -> MID-UINT+1 }T
+			`,
+		},
+		{
+			name: "S\"",
+			code: `
+				T{ GC4 SWAP DROP  -> 2 }T
+				T{ GC4 DROP DUP C@ SWAP CHAR+ C@ -> 58 59 }T
+				T{ GC5 -> }T
 			`,
 		},
 		{

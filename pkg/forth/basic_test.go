@@ -132,6 +132,11 @@ func TestPrimitives(t *testing.T) {
 			asm:    wrapMain("0 . 1 . 2 . 3 . -1 . -2 . -3 ."),
 			expect: "0 1 2 3 -1 -2 -3 ",
 		},
+		{
+			name:   "C@",
+			asm:    ": main [ BL WORD test ] LITERAL C@ u. ESP.DONE ;",
+			expect: "4 ",
+		},
 	}
 	r := asm.Runner{}
 	r.SetDefaults()

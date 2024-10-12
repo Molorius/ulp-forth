@@ -382,7 +382,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					}
 					return vm.Stack.Push(w.Cells[c.Offset])
 				default:
-					return fmt.Errorf("%s can only write address or entry cells: %T", entry, cell)
+					return fmt.Errorf("%s can only write address cells: %T", entry, cell)
 				}
 			},
 			ulpAsm: PrimitiveUlp{
@@ -415,7 +415,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					w.Cells[c.Offset] = n
 					return nil
 				default:
-					return fmt.Errorf("%s can only write address or entry cells: %T", entry, cell)
+					return fmt.Errorf("%s can only write address cells: %T", entry, cell)
 				}
 			},
 			ulpAsm: PrimitiveUlp{
@@ -423,6 +423,176 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"ld r1, r3, 1",  // load the value
 				"st r1, r0, 0",  // store the value in address
 				"add r3, r3, 2", // decrement the stack
+				"jump __next_skip_r2",
+			},
+		},
+		{
+			name: "C@",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				cell, err := vm.Stack.Pop()
+				if err != nil {
+					return err
+				}
+				switch c := cell.(type) {
+				case CellAddress:
+					w, ok := c.Entry.Word.(*WordForth)
+					if !ok {
+						return fmt.Errorf("%s can only read forth data words: %T", entry, w)
+					}
+					if c.Offset < 0 || c.Offset >= len(w.Cells) {
+						return fmt.Errorf("%s reading outside of data range, offset %d", entry, c.Offset)
+					}
+					readCell := w.Cells[c.Offset]
+					numCell, ok := readCell.(CellNumber)
+					if !ok {
+						return fmt.Errorf("%s can only read a number: %T", entry, readCell)
+					}
+					n := numCell.Number
+					if c.UpperByte {
+						n = n >> 8
+					}
+					n = n & 0xFF
+					return vm.Stack.Push(CellNumber{n})
+				default:
+					return fmt.Errorf("%s can only write address or entry cells: %T", entry, cell)
+				}
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 0",                      // load the address
+				"ld r1, r0, 0",                      // load the full value
+				"jumpr __c_ampersand.0, 0x8000, lt", // jump if the "upper" bit is not set
+				"rsh r1, r1, 8",                     // "upper" bit set, shift it down
+				"__c_ampersand.0:",
+				"and r1, r1, 0xFF", // mask off the upper bits
+				"st r1, r3, 0",     // store the masked value
+				"jump next",
+			},
+		},
+		{
+			name: "C!",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				cell, err := vm.Stack.Pop()
+				if err != nil {
+					return err
+				}
+				n, err := vm.Stack.PopNumber()
+				if err != nil {
+					return err
+				}
+				n = n & 0xFF // mask off the upper bits
+				switch c := cell.(type) {
+				case CellAddress:
+					w, ok := c.Entry.Word.(*WordForth)
+					if !ok {
+						return fmt.Errorf("%s can only write to forth data words: %T", entry, w)
+					}
+					if c.Offset < 0 || c.Offset >= len(w.Cells) {
+						return fmt.Errorf("%s writing outside of data range, offset %d", entry, c.Offset)
+					}
+					readCell := w.Cells[c.Offset]
+					numCell, ok := readCell.(CellNumber)
+					if !ok {
+						return fmt.Errorf("%s can only read a number: %T", entry, readCell)
+					}
+					storedN := numCell.Number
+					if c.UpperByte {
+						storedN = storedN & 0x00FF // mask off the upper bits
+						storedN = storedN | (n << 8)
+					} else {
+						storedN = storedN & 0xFF00 // mask off the lower bits
+						storedN = storedN | n
+					}
+					w.Cells[c.Offset] = CellNumber{storedN}
+					return nil
+				default:
+					return fmt.Errorf("%s can only write address cells: %T", entry, cell)
+				}
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 0",                        // load the address
+				"ld r1, r3, 1",                        // load the value
+				"ld r2, r0, 0",                        // load the old value
+				"jumpr __c_exclamation.0, 0x8000, lt", // jump if the upper bit is not set
+				// upper bit set, store the upper value
+				"and r2, r2, 0x00FF", // mask off the upper bits of old value
+				"lsh r1, r1, 8",      // shift over the value
+				"jump __c_exclamation.1",
+				"__c_exclamation.0:",
+				// store the lower value
+				"and r2, r2, 0xFF00", // mask off the lower bits of old value
+				"and r1, r1, 0x00FF", // mask off the value
+				"__c_exclamation.1:",
+				"or r2, r2, r1", // merge the value and old value
+				"st r2, r3, 0",  // store into the address
+				"jump next",
+			},
+		},
+		{
+			name: "CHAR+",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				cell, err := vm.Stack.Pop()
+				if err != nil {
+					return err
+				}
+				switch c := cell.(type) {
+				case CellAddress:
+					n := c.Offset
+					var upper bool
+					if c.UpperByte {
+						upper = false
+						n += 1
+					} else {
+						upper = true
+					}
+					newCell := CellAddress{
+						Entry:     c.Entry,
+						Offset:    n,
+						UpperByte: upper,
+					}
+					return vm.Stack.Push(newCell)
+				default:
+					return fmt.Errorf("%s cannot add type %T", entry, cell)
+				}
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 0",
+				"jumpr __char_plus.0, 0x8000, lt", // jump if the "upper" bit is not set
+				// bit is set!
+				"and r0, r0, 0x7FFF", // remove that upper bit
+				"add r0, r0, 1",      // increment to next position
+				"jump __char_plus.1",
+				"__char_plus.0:",
+				// bit is not set
+				"or r0, r0, 0x8000", // set the bit
+				"__char_plus.1:",
+				"st r0, r3, 0", // store the result
+				"jump __next_skip_r2",
+			},
+		},
+		{
+			name: "ALIGNED",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				cell, err := vm.Stack.Pop()
+				if err != nil {
+					return err
+				}
+				switch c := cell.(type) {
+				case CellAddress:
+					newCell := CellAddress{
+						Entry:     c.Entry,
+						Offset:    c.Offset + 1,
+						UpperByte: false,
+					}
+					return vm.Stack.Push(newCell)
+				default:
+					return fmt.Errorf("%s cannot align type %T", entry, cell)
+				}
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 0",       // load the address
+				"add r0, r0, 1",      // go to the next major position
+				"and r0, r0, 0x7FFF", // mask off the upper bit
+				"st r0, r3, 0",       // store the result
 				"jump __next_skip_r2",
 			},
 		},
