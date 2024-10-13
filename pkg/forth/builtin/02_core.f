@@ -133,6 +133,7 @@
 : 2DUP OVER OVER ;
 : 2>R POSTPONE SWAP POSTPONE >R POSTPONE >R ; IMMEDIATE
 : 2R> POSTPONE R> POSTPONE R> POSTPONE SWAP ; IMMEDIATE
+: R@ POSTPONE R> POSTPONE DUP POSTPONE >R ; IMMEDIATE
 : UNLOOP POSTPONE >R POSTPONE >R POSTPONE 2DROP ; IMMEDIATE
 : I POSTPONE R> POSTPONE DUP POSTPONE >R ; IMMEDIATE
 : ?DUP DUP IF DUP THEN ;
@@ -145,19 +146,19 @@
     - ( [A^B] )
 ;
 : ABS DUP 0< IF NEGATE THEN ;
-
-: --CONSTANT
-    STATE @ IF \ if we're compiling
-        POSTPONE LITERAL \ then compile the value on the stack
-    THEN \ otherwise leave on the stack
+: MAX 2DUP < IF SWAP THEN DROP ;
+: MIN 2DUP > IF SWAP THEN DROP ;
+: S>D 
+    DUP \ duplicate number
+    0x7FFF U> \ if greater then the largest int, set to all 1s
 ;
+: TUCK SWAP OVER ;
+: WITHIN ( test low high -- flag ) OVER - >R - R> U< ;
 
 : CONSTANT
     :
     POSTPONE LITERAL
-    POSTPONE --CONSTANT
     POSTPONE ;
-    IMMEDIATE
 ;
 
 : ACTION-OF

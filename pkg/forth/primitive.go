@@ -578,9 +578,13 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				}
 				switch c := cell.(type) {
 				case CellAddress:
+					offset := c.Offset
+					if c.UpperByte {
+						offset++
+					}
 					newCell := CellAddress{
 						Entry:     c.Entry,
-						Offset:    c.Offset + 1,
+						Offset:    offset,
 						UpperByte: false,
 					}
 					return vm.Stack.Push(newCell)
@@ -589,10 +593,12 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				}
 			},
 			ulpAsm: PrimitiveUlp{
-				"ld r0, r3, 0",       // load the address
+				"ld r0, r3, 0", // load the address
+				"jumpr __aligned.0, 0x8000, lt",
 				"add r0, r0, 1",      // go to the next major position
 				"and r0, r0, 0x7FFF", // mask off the upper bit
 				"st r0, r3, 0",       // store the result
+				"__aligned.0:",
 				"jump __next_skip_r2",
 			},
 		},

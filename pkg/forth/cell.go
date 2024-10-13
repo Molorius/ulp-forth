@@ -51,7 +51,12 @@ func (c CellAddress) Execute(vm *VirtualMachine) error {
 }
 
 func (c CellAddress) String() string {
-	s := fmt.Sprintf("Address{%p", c.Entry)
+	s := ""
+	if c.Entry.Name == "" {
+		s = fmt.Sprintf("Address{%p", c.Entry)
+	} else {
+		s = fmt.Sprintf("Address{%s", c.Entry)
+	}
 	if c.Offset != 0 {
 		s += fmt.Sprintf(" %d", c.Offset)
 	}
