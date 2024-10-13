@@ -1164,11 +1164,11 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				return nil
 			},
 			ulpAsm: PrimitiveUlp{
-				"ld r0, r3, 1",                   // load the value we want to print
-				"ld r1, r3, 0",                   // load the method number
-				"st r0, r2, __boot_data_start+4", // set the value
-				"st r1, r2, __boot_data_start+3", // set the method indicator
-				"add r3, r3, 2",                  // decrease the stack by 2
+				"ld r0, r3, 1",           // load the value we want to print
+				"ld r1, r3, 0",           // load the method number
+				"st r0, r2, HOST_PARAM0", // set the param
+				"st r1, r2, HOST_FUNC",   // set the function indicator
+				"add r3, r3, 2",          // decrease the stack by 2
 				"jump __next_skip_r2",
 			},
 		},
@@ -1178,7 +1178,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				return vm.Stack.Push(CellNumber{0})
 			},
 			ulpAsm: PrimitiveUlp{
-				"ld r0, r2, __boot_data_start+3",
+				"ld r0, r2, HOST_FUNC",
 				"sub r3, r3, 1",
 				"st r0, r3, 0",
 				"jump __next_skip_r2",
@@ -1189,14 +1189,14 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: nop,
 			ulpAsm: PrimitiveUlp{
 				"move r1, 1",
-				"st r1, r2, __boot_data_start",   // flag0 = 1
-				"st r1, r2, __boot_data_start+2", // turn = 1
-				"mutex.take.0:",                  // //while flag1>0 && turn>0
-				"ld r0, r2, __boot_data_start+1", // read flag1
-				"jumpr mutex.take.1, 1, lt",      // exit if flag1<1
-				"ld r0, r2, __boot_data_start+2", // read turn
-				"jumpr mutex.take.0, 0, gt",      // loop if turn>0
-				"mutex.take.1:",
+				"st r1, r2, MUTEX_FLAG0",      // flag0 = 1
+				"st r1, r2, MUTEX_TURN",       // turn = 1
+				"__mutex.take.0:",             // //while flag1>0 && turn>0
+				"ld r0, r2, MUTEX_FLAG1",      // read flag1
+				"jumpr __mutex.take.1, 1, lt", // exit if flag1<1
+				"ld r0, r2, MUTEX_TURN",       // read turn
+				"jumpr __mutex.take.0, 0, gt", // loop if turn>0
+				"__mutex.take.1:",
 				"jump __next_skip_r2",
 			},
 		},
@@ -1204,7 +1204,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			name:   "MUTEX.GIVE",
 			goFunc: nop,
 			ulpAsm: PrimitiveUlp{
-				"st r2, r2, __boot_data_start", // flag0 = 0
+				"st r2, r2, MUTEX_FLAG0", // flag0 = 0
 				"jump __next_skip_r2",
 			},
 		},

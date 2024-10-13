@@ -31,6 +31,12 @@
     OR \ then put back the bit
 ;
 : 2DROP DROP DROP ;
+: CHARS
+    DUP
+    2/ \ divide by 2
+    SWAP 1 AND \ isolate the lowest bit
+    + \ then put back the pit
+;
 
 : U> SWAP U< ; \ greaterthan is just lessthan with operands swapped
 : > 

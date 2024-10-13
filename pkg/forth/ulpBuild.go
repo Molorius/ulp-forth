@@ -265,10 +265,19 @@ func (u *Ulp) buildInterpreter() string {
 	i := []string{
 		// required data, will be placed at the start of .data
 		".boot.data",
-		".int 0, 0, 0",               // mutex
-		".int 0, 0",                  // send to host
-		"__ip: .int __forth_VM.INIT", // instruction pointer starts at word VM.INIT
-		"__rsp: .int __stack_start",  // return stack pointer starts at the beginning of the stack section
+		".global MUTEX_FLAG0",
+		".global MUTEX_FLAG1",
+		".global MUTEX_TURN",
+		".global HOST_FUNC",
+		".global HOST_PARAM0",
+		"MUTEX_FLAG0: .int 0", // DO NOT reorder these, the same address relative to .data
+		"MUTEX_FLAG1: .int 0", // is used to easily find for the esp32 and the emulator.
+		"MUTEX_TURN:  .int 0",
+		"HOST_FUNC:   .int 0",
+		"HOST_PARAM0: .int 0",
+		".data",
+		"__ip:  .int __forth_VM.INIT", // instruction pointer starts at word VM.INIT
+		"__rsp: .int __stack_start",   // return stack pointer starts at the beginning of the stack section
 
 		// boot labels
 		".boot",
