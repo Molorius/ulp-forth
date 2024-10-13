@@ -102,7 +102,7 @@ func (c *CellDestination) name(u *Ulp) string {
 }
 
 func (c *CellDestination) String() string {
-	return fmt.Sprintf("Dest(%p)", c)
+	return fmt.Sprintf("Dest{%p}", c)
 }
 
 // A definite branch.
@@ -114,6 +114,10 @@ func (c *CellBranch) Execute(vm *VirtualMachine) error {
 	addr := c.dest.copyAddress() // probably unsafe, yay for gc!
 	vm.IP = &addr
 	return nil
+}
+
+func (c *CellBranch) String() string {
+	return fmt.Sprintf("Branch{%p}", c.dest)
 }
 
 // A conditional branch.
@@ -131,4 +135,8 @@ func (c *CellBranch0) Execute(vm *VirtualMachine) error {
 		vm.IP = &addr
 	}
 	return nil
+}
+
+func (c *CellBranch0) String() string {
+	return fmt.Sprintf("Branch0{%p}", c.dest)
 }

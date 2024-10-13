@@ -240,7 +240,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				}
 				dest, ok := destCell.(*CellDestination)
 				if !ok {
-					return fmt.Errorf("%s expected a destination: %s", entry, dest)
+					return fmt.Errorf("%s expected a destination: %s %T", entry, destCell, destCell)
 				}
 				switch b := branchCell.(type) {
 				case *CellBranch:

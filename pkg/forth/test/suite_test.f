@@ -162,4 +162,19 @@ T{ GC4 DROP DUP C@ SWAP CHAR+ C@ -> 58 59 }T
 : GC5 S" A String"2DROP ; \ There is no space between the " and 2DROP
 T{ GC5 -> }T
 
+\ from the WHILE test
+T{ : GI3 BEGIN DUP 5 < WHILE DUP 1+ REPEAT ; -> }T
+T{ 0 GI3 -> 0 1 2 3 4 5 }T
+T{ 4 GI3 -> 4 5 }T
+T{ 5 GI3 -> 5 }T
+T{ 6 GI3 -> 6 }T
+T{ : GI5 BEGIN DUP 2 > WHILE
+      DUP 5 < WHILE DUP 1+ REPEAT
+      123 ELSE 345 THEN ; -> }T
+T{ 1 GI5 -> 1 345 }T
+T{ 2 GI5 -> 2 345 }T
+T{ 3 GI5 -> 3 4 5 123 }T
+T{ 4 GI5 -> 4 5 123 }T
+T{ 5 GI5 -> 5 123 }T
+
 RESET-TEST

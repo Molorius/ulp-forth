@@ -82,6 +82,23 @@
     C> RESOLVE-BRANCH
 ; IMMEDIATE
 
+: WHILE
+    BRANCH0 \ create a conditional branch
+    DUP COMPILE, \ compile it
+    C> ( branch0 dest )
+    SWAP ( dest branch0 )
+    >C >C ( C: branch0 dest )
+; IMMEDIATE
+
+: REPEAT
+    BRANCH \ create a branch
+    DUP COMPILE, \ compile it ( repeat-branch )
+    C> RESOLVE-BRANCH \ and resolve it
+    C> \ get the while-branch0
+    DEST DUP COMPILE, \ compile a destination for the while-branch0
+    RESOLVE-BRANCH \ resolve while-branch0
+; IMMEDIATE
+
 : 0= IF FALSE ELSE TRUE THEN ;
 : = - 0= ;
 : 0<> 0= 0= ;

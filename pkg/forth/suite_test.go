@@ -293,6 +293,20 @@ func TestSuite(t *testing.T) {
 			`,
 		},
 		{
+			name: "WHILE",
+			code: `
+				T{ 0 GI3 -> 0 1 2 3 4 5 }T
+				T{ 4 GI3 -> 4 5 }T
+				T{ 5 GI3 -> 5 }T
+				T{ 6 GI3 -> 6 }T
+				T{ 1 GI5 -> 1 345 }T
+				T{ 2 GI5 -> 2 345 }T
+				T{ 3 GI5 -> 3 4 5 123 }T
+				T{ 4 GI5 -> 4 5 123 }T
+				T{ 5 GI5 -> 5 123 }T
+			`,
+		},
+		{
 			name: "XOR",
 			code: `
 				T{ 0S 0S XOR -> 0S }T
