@@ -546,7 +546,12 @@ func TestSuite(t *testing.T) {
 				T{ TRUE -> 0 INVERT }T
 			`,
 		},
-		// TUCK does not have test cases
+		{
+			name: "TUCK",
+			code: `
+				T{ 1 2 TUCK -> 2 1 2 }T
+			`,
+		},
 		// TYPE does not have test cases
 		{
 			name: "'",
@@ -744,7 +749,14 @@ func TestSuite(t *testing.T) {
 				T{ MAX-INT  0<> -> <TRUE>  }T
 			`,
 		},
-		// \ does not have test cases
+		{
+			name: "\\",
+			code: `
+				T{ COMMENT \-postpone-fail
+				-> }T
+				\ \-inline-fail
+			`,
+		},
 		// .
 		{
 			name: "<",

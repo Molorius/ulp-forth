@@ -206,6 +206,10 @@ T{ 2 3 defer5 -> 6 }T
 T{ ' + is-defer5 -> }T
 T{ 1 2 defer5 -> 3 }T
 
+\ for the \ test
+T{ : COMMENT POSTPONE \ ; -> }T IMMEDIATE
+
+
 \ from the LITERAL test
 T{ : GT3 GT2 LITERAL ; -> }T
 T{ GT3 -> ' GT1 }T
