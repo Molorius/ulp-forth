@@ -148,10 +148,11 @@
 : ABS DUP 0< IF NEGATE THEN ;
 : MAX 2DUP < IF SWAP THEN DROP ;
 : MIN 2DUP > IF SWAP THEN DROP ;
-: S>D 
+: S>D  ( n -- d) \ convert the signed number to double-cell
     DUP \ duplicate number
     0x7FFF U> \ if greater then the largest int, set to all 1s
 ;
+: U>D 0 ( u -- d ) ; \ convert the unsigned number to double-cell
 : TUCK SWAP OVER ;
 : WITHIN ( test low high -- flag ) OVER - >R - R> U< ;
 

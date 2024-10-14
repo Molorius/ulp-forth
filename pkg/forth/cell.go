@@ -19,7 +19,7 @@ func (c CellNumber) Execute(vm *VirtualMachine) error {
 }
 
 func (c CellNumber) String() string {
-	return fmt.Sprintf("%d", c.Number)
+	return fmt.Sprintf("#%d", c.Number)
 }
 
 // A Cell representing an address in the dictionary. Used for pointers such
