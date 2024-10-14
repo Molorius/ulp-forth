@@ -74,11 +74,15 @@ FALSE  CONSTANT <FALSE>
 
 HEX \ the test suite runs in hex mode
 
-T{ : GC1 'X' ; -> }T \ should be : GC1 [CHAR] X ;
-T{ : GC2 'H' ; -> }T \ should be : GC2 [CHAR] HELLO ;
-T{ : GC3 [ GC1 ] LITERAL ; }T
-: GN2 ( -- 16 10 )
-    BASE @ >R HEX BASE @ DECIMAL BASE @ R> BASE ! ;
+\ from the [CHAR] test
+T{ : GC1 [CHAR] X     ; -> }T
+T{ : GC2 [CHAR] HELLO ; -> }T
+T{ GC1 -> 58 }T
+T{ GC2 -> 48 }T
+
+T{ : GC3 [ GC1 ] LITERAL ; -> }T
+T{ : GN2 ( -- 16 10 )
+    BASE @ >R HEX BASE @ DECIMAL BASE @ R> BASE ! ; -> }T
 
 \ from the ' test
 T{ : GT1 123 ;   ->     }T
@@ -97,8 +101,8 @@ T{ NOP NOP1 NOP NOP2 -> }T
 T{ : GDX 123 ; : GDX GDX 234 ; -> }T
 
 \ from the :NONAME test
-VARIABLE nn1
-VARIABLE nn2
+T{ VARIABLE nn1 -> }T
+T{ VARIABLE nn2 -> }T
 T{ :NONAME 1234 ; nn1 ! -> }T
 T{ :NONAME 9876 ; nn2 ! -> }T
 
@@ -178,7 +182,7 @@ T{  0 GI2 -> 234 }T
 T{  1 GI2 -> 123 }T
 T{ -1 GI1 -> 123 }T
 \ Multiple ELSEs in an IF statement
-: melse IF 1 ELSE 2 ELSE 3 ELSE 4 ELSE 5 THEN ;
+T{ : melse IF 1 ELSE 2 ELSE 3 ELSE 4 ELSE 5 THEN ; -> }T
 T{ <FALSE> melse -> 2 4 }T
 T{ <TRUE>  melse -> 1 3 5 }T
 
@@ -207,7 +211,7 @@ T{ ' + is-defer5 -> }T
 T{ 1 2 defer5 -> 3 }T
 
 \ for the \ test
-T{ : COMMENT POSTPONE \ ; -> }T IMMEDIATE
+T{ : COMMENT POSTPONE \ ; IMMEDIATE -> }T
 
 
 \ from the LITERAL test
@@ -256,7 +260,7 @@ HEX
 T{ : GC4 S" XY" ; ->   }T
 T{ GC4 SWAP DROP  -> 2 }T
 T{ GC4 DROP DUP C@ SWAP CHAR+ C@ -> 58 59 }T
-: GC5 S" A String"2DROP ; \ There is no space between the " and 2DROP
+T{ : GC5 S" A String"2DROP ; -> }T \ There is no space between the " and 2DROP
 T{ GC5 -> }T
 
 \ from the STATE test
@@ -304,6 +308,6 @@ T{ 123 GR2 -> 123 }T
 T{  1S GR1 ->  1S }T      ( Return stack holds cells )
 
 \ ' EXIT CONSTANT 1ST
-VARIABLE 1ST \ not the same as the test suite
+T{ VARIABLE 1ST -> }T \ not the same as the test suite
 
 RESET-TEST

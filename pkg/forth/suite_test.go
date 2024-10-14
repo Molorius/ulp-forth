@@ -89,6 +89,13 @@ func TestSuite(t *testing.T) {
 			name: "[",
 			code: "T{ GC3 -> 58 }T",
 		},
+		{
+			name: "[CHAR]",
+			code: `
+				T{ GC1 -> 58 }T
+				T{ GC2 -> 48 }T
+			`,
+		},
 		// [CHAR]
 		{
 			name: "[COMPILE]",

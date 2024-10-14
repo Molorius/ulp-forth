@@ -179,6 +179,12 @@
 ; IMMEDIATE
 : COUNT ( c-addr -- c-addr+1 n ) DUP CHAR+ SWAP C@ ;
 : S" '"' WORD COUNT SWAP POSTPONE LITERAL POSTPONE LITERAL ; IMMEDIATE
+: [CHAR]
+    BL WORD \ get the next word
+    COUNT DROP \ get the address of the first letter
+    C@ \ read the letter
+    POSTPONE LITERAL \ then compile it!
+; IMMEDIATE
 
 \ : ?DO
 \     POSTPONE 2DUP \ compile 2dup
