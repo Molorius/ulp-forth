@@ -187,11 +187,29 @@
     POSTPONE LITERAL \ then compile it!
 ; IMMEDIATE
 
-\ : ?DO
-\     POSTPONE 2DUP \ compile 2dup
-\     POSTPONE 2>R \ compile 2>r
-\     POSTPONE <> \ compile <>
-\     BRANCH0 DUP COMPILE, \ compile a conditional branch
-\     DEST DUP COMPILE, \ compile a destination
-\     >C >C \ push destination then branch on control stack
-\ ; IMMEDIATE
+
+: CASE ( C: -- case-sys )
+    0 >C \ put a 0 on the control stack as a marker
+; IMMEDIATE
+
+: OF
+    POSTPONE OVER \ copy the lower number
+    POSTPONE = \ check if upper == lower
+    POSTPONE IF \ create a branch
+    POSTPONE DROP
+; IMMEDIATE
+
+: ENDOF
+    POSTPONE ELSE \ resolve the OF and create a new branch
+; IMMEDIATE
+
+: ENDCASE
+    POSTPONE DROP
+    BEGIN
+        C> ?DUP \ get the top of control flow stack, copy if not 0 (a branch)
+    WHILE
+        >C \ not a 0 so put back on control flow stack
+        POSTPONE THEN \ and resolve the branch
+    REPEAT
+; IMMEDIATE
+

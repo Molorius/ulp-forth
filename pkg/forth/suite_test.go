@@ -110,7 +110,21 @@ func TestSuite(t *testing.T) {
 			name: "[']",
 			code: "T{ POSTPONE GT2 EXECUTE -> 123 }T", // postpone because it's inside "main"
 		},
-		// CASE
+		{
+			name: "CASE",
+			code: `
+				T{ 1 cs1 -> 111 }T
+				T{ 2 cs1 -> 222 }T
+				T{ 3 cs1 -> 333 }T
+				T{ 4 cs1 -> 999 }T
+				T{ -1 1 cs2 ->  100 }T
+				T{ -1 2 cs2 ->  200 }T
+				T{ -1 3 cs2 -> -300 }T
+				T{ -2 1 cs2 ->  -99 }T
+				T{ -2 2 cs2 -> -199 }T
+				T{  0 2 cs2 ->  299 }T
+			`,
+		},
 		// C,
 		// CELL+ doesn't have regular tests
 		// CELLS
@@ -217,8 +231,8 @@ func TestSuite(t *testing.T) {
 		// ."
 		// ELSE does not have any tests
 		// EMIT testing should be done in basic_test.go
-		// ENDCASE
-		// ENDOF
+		// ENDCASE does not have any tests
+		// ENDOF does not have any tests
 		// ENVIRONMENT?
 		// ERASE
 		// EVALUATE
@@ -389,7 +403,7 @@ func TestSuite(t *testing.T) {
 				T{ 1 2 NIP -> 2 }T
 			`,
 		},
-		// OF
+		// OF does not have any tests
 		{
 			name: "OR",
 			code: `

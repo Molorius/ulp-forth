@@ -131,13 +131,17 @@ type CellBranch0 struct {
 }
 
 func (c *CellBranch0) Execute(vm *VirtualMachine) error {
-	n, err := vm.Stack.PopNumber()
+	cellValue, err := vm.Stack.Pop()
 	if err != nil {
 		return err
 	}
-	if n == 0 {
-		addr := c.dest.copyAddress() // probably unsafe, yay for gc!
-		vm.IP = &addr
+	switch value := cellValue.(type) {
+	case CellNumber:
+		if value.Number == 0 {
+			addr := c.dest.copyAddress() // probably unsafe, yay for gc!
+			vm.IP = &addr
+		}
+	default:
 	}
 	return nil
 }
