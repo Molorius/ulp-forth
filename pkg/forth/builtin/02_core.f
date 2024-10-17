@@ -133,9 +133,10 @@
 : 2DUP OVER OVER ;
 : 2>R POSTPONE SWAP POSTPONE >R POSTPONE >R ; IMMEDIATE
 : 2R> POSTPONE R> POSTPONE R> POSTPONE SWAP ; IMMEDIATE
-: R@ POSTPONE R> POSTPONE DUP POSTPONE >R ; IMMEDIATE
+: R@ 0 POSTPONE LITERAL POSTPONE RPICK ; IMMEDIATE
 : UNLOOP POSTPONE >R POSTPONE >R POSTPONE 2DROP ; IMMEDIATE
-: I POSTPONE R> POSTPONE DUP POSTPONE >R ; IMMEDIATE
+: I 0 POSTPONE LITERAL POSTPONE RPICK ; IMMEDIATE
+: J 2 POSTPONE LITERAL POSTPONE RPICK ; IMMEDIATE
 : ?DUP DUP IF DUP THEN ;
 : XOR ( a b -- c )
     \ [a ^ b] = [a|b] - [a&b]
@@ -217,16 +218,33 @@
     POSTPONE 2>R \ compile 2>r
     DEST DUP COMPILE, \ create and compile a destination
     >C \ and push destination on the control flow stack
+    0 >D \ push 0 onto the DO stack
+; IMMEDIATE
+
+: UNLOOP
+    POSTPONE R> POSTPONE R> POSTPONE 2DROP
 ; IMMEDIATE
 
 : +LOOP
     POSTPONE LOOPCHECK \ compile the check
     BRANCH0 DUP COMPILE, \ create and compile a conditional branch
     C> RESOLVE-BRANCH \ and resolve it
-    POSTPONE R> POSTPONE R> POSTPONE 2DROP \ drop from rsp and stack
+    BEGIN
+        D> ?DUP \ get the top of DO stack, copy if not 0
+    WHILE
+        \ the item is a branch!
+        DEST DUP COMPILE, \ create and compile a destination
+        RESOLVE-BRANCH \ and resolve the branch
+    REPEAT
+    POSTPONE UNLOOP \ remove loop items
 ; IMMEDIATE
 
 : LOOP
     1 POSTPONE LITERAL \ compile the number 1
     POSTPONE +LOOP \ and +LOOP
+; IMMEDIATE
+
+: LEAVE
+    BRANCH DUP COMPILE, \ create and compile a branch
+    >D \ also push it onto the DO stack
 ; IMMEDIATE

@@ -18,6 +18,7 @@ type VirtualMachine struct {
 	Stack            Stack        // The data stack.
 	ReturnStack      Stack        // The return stack.
 	ControlFlowStack Stack        // The control flow stack.
+	DoStack          Stack        // A stack for compiling DO loops.
 	ParseArea        ParseArea    // The input parse area.
 	State            VMNumber     // The execution state for the virtual machine. Convert to type State when using.
 	IP               *CellAddress // The interpreter pointer.
@@ -47,6 +48,10 @@ func (vm *VirtualMachine) Setup() error {
 	}
 
 	err = vm.ControlFlowStack.Setup()
+	if err != nil {
+		return err
+	}
+	err = vm.DoStack.Setup()
 	if err != nil {
 		return err
 	}

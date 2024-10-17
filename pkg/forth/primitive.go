@@ -172,6 +172,26 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name: ">D",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				c, err := vm.Stack.Pop()
+				if err != nil {
+					return err
+				}
+				return vm.DoStack.Push(c)
+			},
+		},
+		{
+			name: "D>",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				c, err := vm.DoStack.Pop()
+				if err != nil {
+					return err
+				}
+				return vm.Stack.Push(c)
+			},
+		},
+		{
 			name: ">R",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.Stack.Pop()
@@ -1022,6 +1042,29 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"ld r0, r3, 0",
 				"add r0, r0, r3",
 				"ld r0, r0, 1",
+				"st r0, r3, 0",
+				"jump __next_skip_r2",
+			},
+		},
+		{
+			name: "RPICK",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				n, err := vm.Stack.PopNumber()
+				if err != nil {
+					return err
+				}
+				if int(n) >= len(vm.ReturnStack.stack) {
+					return fmt.Errorf("%s number out of range: %d", entry, n)
+				}
+				index := len(vm.ReturnStack.stack) - int(n) - 1
+				cell := vm.ReturnStack.stack[index]
+				return vm.Stack.Push(cell)
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r2, __rsp",
+				"ld r1, r3, 0",
+				"sub r0, r0, r1",
+				"ld r0, r0, 0",
 				"st r0, r3, 0",
 				"jump __next_skip_r2",
 			},
