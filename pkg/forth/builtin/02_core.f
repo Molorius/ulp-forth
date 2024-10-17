@@ -221,6 +221,17 @@
     0 >D \ push 0 onto the DO stack
 ; IMMEDIATE
 
+: ?DO
+    POSTPONE 2DUP \ dupe the inputs
+    POSTPONE 2>R \ put one copy on return stack
+    POSTPONE <> \ check if the others are equal
+    0 >D \ push 0 on to the DO stack
+    BRANCH0 DUP COMPILE, \ compile a conditional branch
+    >D \ and push onto the DO stack
+    DEST DUP COMPILE, \ compile a destination
+    >C \ and push onto the control flow stack
+; IMMEDIATE
+
 : UNLOOP
     POSTPONE R> POSTPONE R> POSTPONE 2DROP
 ; IMMEDIATE
