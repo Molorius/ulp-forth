@@ -175,9 +175,13 @@ func runOutputTest(code string, expected string, t *testing.T, r *asm.Runner) {
 	// run the test directly on host
 	t.Run("host", func(t *testing.T) {
 		err = vm.execute([]byte(" MAIN "))
-		got := buff.String()
-		if got != expected {
-			t.Errorf("expected \"%s\" got \"%s\"", expected, got)
+		if err != nil {
+			t.Errorf("error while running: %s", err)
+		} else {
+			got := buff.String()
+			if got != expected {
+				t.Errorf("expected \"%s\" got \"%s\"", expected, got)
+			}
 		}
 	})
 	// run the cross compiled test on emulator and hardware

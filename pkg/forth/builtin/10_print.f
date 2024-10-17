@@ -42,5 +42,16 @@ DEFER EMIT \ let us change EMIT
     U. \ print the value
 ;
 
+: TYPE ( c-addr u -- )
+    0 ?DO
+        DUP C@ \ get the current character
+        EMIT   \ emit it
+        CHAR+  \ go to next character
+    LOOP
+    DROP \ remove c-addr
+;
+
+: ." POSTPONE S" POSTPONE TYPE ; IMMEDIATE
+
 \ set EMIT to the system printchar by default
 ' ESP.PRINTCHAR ' EMIT DEFER!

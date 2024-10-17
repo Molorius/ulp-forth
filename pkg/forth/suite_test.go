@@ -108,10 +108,8 @@ func TestSuite(t *testing.T) {
 				\ T{ TBUF1 127 CHAR * TFULL? -> <TRUE> }T
 				\ T{ TBUF1 127 0 FILL   ->        }T
 				\ T{ TBUF1 127 0 TFULL? -> <TRUE> }T
-				HEX
 			`,
 			code: `
-				DECIMAL
 				T{ TBUF1 ALIGNED -> TBUF1 }T \ Buffers do not overlap
 				\ T{ TBUF2 TBUF1 - ABS 127 CHARS < -> <FALSE> }T \ Buffer can be written to
 				\ T{ TBUF1 127 CHAR * FILL   ->        }T
@@ -649,7 +647,7 @@ func TestSuite(t *testing.T) {
 		{
 			name: "+LOOP",
 			setup: `
-				DECIMAL
+				DECIMAL \ these tests run in DECIMAL mode
 				T{ : GD2 DO I -1 +LOOP ; -> }T
 				VARIABLE gditerations
 				VARIABLE gdincrement
@@ -669,10 +667,8 @@ func TestSuite(t *testing.T) {
 				step NEGATE CONSTANT -step
 				VARIABLE bump
 				T{  : gd8 bump ! DO 1+ bump @ +LOOP ; -> }T
-				HEX
 			`,
 			code: `
-				DECIMAL
 				T{        1          4 GD2 -> 4 3 2  1 }T
 				T{       -1          2 GD2 -> 2 1 0 -1 }T
 				T{    4  4  -1 gd7 ->  4                  1  }T
@@ -691,14 +687,12 @@ func TestSuite(t *testing.T) {
 				T{   -1  2   1 gd7 ->  2  3  4  5   6   7 6  }T
 				T{    2 -1   1 gd7 -> -1 0 1              3  }T
 				T{  -20 30 -10 gd7 -> 30 20 10  0 -10 -20 6  }T
-				\ TODO fix the remaining tests when compiling
-				\ T{  -20 31 -10 gd7 -> 31 21 11  1  -9 -19 6  }T
-				\ T{  -20 29 -10 gd7 -> 29 19  9 -1 -11     5  }T
-				\ T{  0 MAX-UINT 0 ustep gd8 -> 256 }T
-				\ T{  0 0 MAX-UINT -ustep gd8 -> 256 }T
-				\ T{  0 MAX-INT MIN-INT step gd8 -> 256 }T
-				\ T{  0 MIN-INT MAX-INT -step gd8 -> 256 }T
-				HEX
+				T{  -20 31 -10 gd7 -> 31 21 11  1  -9 -19 6  }T
+				T{  -20 29 -10 gd7 -> 29 19  9 -1 -11     5  }T
+				T{  0 MAX-UINT 0 ustep gd8 -> 256 }T
+				T{  0 0 MAX-UINT -ustep gd8 -> 256 }T
+				T{  0 MAX-INT MIN-INT step gd8 -> 256 }T
+				T{  0 MIN-INT MAX-INT -step gd8 -> 256 }T
 			`,
 		},
 		{
@@ -714,9 +708,9 @@ func TestSuite(t *testing.T) {
 		{
 			name: "RECURSE",
 			setup: `
+				DECIMAL
 				T{ : GI6 ( N -- 0,1,..N ) 
 					DUP IF DUP >R 1- RECURSE R> THEN ; -> }T
-				DECIMAL
 				T{ :NONAME ( n -- 0, 1, .., n ) 
 					DUP IF DUP >R 1- RECURSE R> THEN 
 				;
@@ -731,7 +725,6 @@ func TestSuite(t *testing.T) {
 				ENDCASE
 				;
 				CONSTANT rn2
-				HEX
 			`,
 			code: `
 				T{ 0 GI6 -> 0 }T
@@ -739,13 +732,12 @@ func TestSuite(t *testing.T) {
 				T{ 2 GI6 -> 0 1 2 }T
 				T{ 3 GI6 -> 0 1 2 3 }T
 				T{ 4 GI6 -> 0 1 2 3 4 }T
-				DECIMAL
 				T{ 0 rn1 EXECUTE -> 0 }T
 				T{ 4 rn1 EXECUTE -> 0 1 2 3 4 }T
 				T{  1 rn2 EXECUTE -> 0 }T
-				\ T{  2 rn2 EXECUTE -> 11 0 }T \ TODO FIXME
-				\ T{  4 rn2 EXECUTE -> 33 22 11 0 }T
-				\ T{ 25 rn2 EXECUTE -> 33 22 11 0 }T
+				T{  2 rn2 EXECUTE -> 11 0 }T
+				T{  4 rn2 EXECUTE -> 33 22 11 0 }T
+				T{ 25 rn2 EXECUTE -> 33 22 11 0 }T
 			`,
 		},
 		// REFILL
@@ -1224,11 +1216,11 @@ func TestSuite(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			code := createTest(tt.setup, tt.code)
-			runOutputTest(code, "", t, &r)
+			runOutputTest(code, "DONE", t, &r)
 		})
 	}
 }
 
 func createTest(setup, code string) string {
-	return fmt.Sprintf("%s %s : MAIN %s ESP.DONE ; ", suite, setup, code)
+	return fmt.Sprintf("%s %s : MAIN %s .\" DONE\" ESP.DONE ; ", suite, setup, code)
 }

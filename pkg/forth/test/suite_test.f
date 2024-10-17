@@ -5,11 +5,30 @@ VARIABLE TEST-DEPTH
 
 \ run this to indicate that a test passes
 : TEST-PASS ( -- ) ;
-\ TODO print better fail messages
+
+\ print the values on the stack
+: printstack
+    1 DEPTH 1- ?DO
+        I 1-   \ get the offset
+        PICK . \ pick the value and print
+    -1 +LOOP
+;
+
+\ print the values on the TEST-STACK buffer
+: printteststack
+    TEST-DEPTH @ 0 ?DO
+        I TEST-STACK + \ get the address
+        @ . \ read the address and print
+    LOOP
+;
+
 : TEST-FAIL ( -- )
-    BL EMIT \ print a space
+    ."  test "
     TEST-COUNT @ U. \ print the test number
-    'F' EMIT \ print an 'F'
+    ." got "
+    printteststack
+    ." expected "
+    printstack
 ;
 
 \ begin a test
