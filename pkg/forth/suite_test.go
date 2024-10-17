@@ -13,8 +13,9 @@ var suite string
 
 func TestSuite(t *testing.T) {
 	tests := []struct {
-		name string // the name of the test
-		code string // any code we want to run in the "main" word
+		name  string // the name of the test
+		setup string // any code that we want to execute outside of the "main" word
+		code  string // any code we want to run in the "main" word
 		// tests that run in the global context should be added to suite_test.f
 	}{
 		// ABORT
@@ -31,6 +32,18 @@ func TestSuite(t *testing.T) {
 		// ACCEPT
 		{
 			name: "ACTION-OF",
+			setup: `
+				T{ DEFER defer1 -> }T
+				T{ : action-defer1 ACTION-OF defer1 ; -> }T
+				T{ ' * ' defer1 DEFER! ->   }T
+				T{          2 3 defer1 -> 6 }T
+				T{ ACTION-OF defer1 -> ' * }T
+				T{    action-defer1 -> ' * }T
+				T{ ' + IS defer1 ->   }T
+				T{    1 2 defer1 -> 3 }T
+				T{ ACTION-OF defer1 -> ' + }T
+				T{    action-defer1 -> ' + }T
+			`,
 			code: `
 				\ uses ['] rather than ' so we can run on ulp
 				T{ ['] * ['] defer1 DEFER! ->   }T
@@ -66,6 +79,10 @@ func TestSuite(t *testing.T) {
 		},
 		{
 			name: "BASE",
+			setup: `
+				T{ : GN2 ( -- 16 10 )
+    			BASE @ >R HEX BASE @ DECIMAL BASE @ R> BASE ! ; -> }T
+			`,
 			code: "T{ GN2 -> 10 A }T",
 		},
 		// BEGIN doesn't have tests
@@ -75,6 +92,24 @@ func TestSuite(t *testing.T) {
 		},
 		{
 			name: "BUFFER:",
+			setup: `
+				DECIMAL
+				T{ 127 CHARS BUFFER: TBUF1 -> }T
+				T{ 127 CHARS BUFFER: TBUF2 -> }T \ Buffer is aligned
+				T{ TBUF1 ALIGNED -> TBUF1 }T \ Buffers do not overlap
+				\ T{ TBUF2 TBUF1 - ABS 127 CHARS < -> <FALSE> }T \ Buffer can be written to
+				\ 1 CHARS CONSTANT /CHAR
+				\ : TFULL? ( c-addr n char -- flag )
+				\    TRUE 2SWAP CHARS OVER + SWAP ?DO
+				\      OVER I C@ = AND
+				\    /CHAR +LOOP NIP
+				\ ;
+				\ T{ TBUF1 127 CHAR * FILL   ->        }T
+				\ T{ TBUF1 127 CHAR * TFULL? -> <TRUE> }T
+				\ T{ TBUF1 127 0 FILL   ->        }T
+				\ T{ TBUF1 127 0 TFULL? -> <TRUE> }T
+				HEX
+			`,
 			code: `
 				DECIMAL
 				T{ TBUF1 ALIGNED -> TBUF1 }T \ Buffers do not overlap
@@ -86,19 +121,28 @@ func TestSuite(t *testing.T) {
 			`,
 		},
 		{
-			name: "[",
-			code: "T{ GC3 -> 58 }T",
+			name:  "[",
+			setup: "T{ : GC3 [ GC1 ] LITERAL ; -> }T",
+			code:  "T{ GC3 -> 58 }T",
 		},
 		{
 			name: "[CHAR]",
+			setup: `
+				T{ : GC2 [CHAR] HELLO ; -> }T
+			`,
 			code: `
 				T{ GC1 -> 58 }T
 				T{ GC2 -> 48 }T
 			`,
 		},
-		// [CHAR]
 		{
 			name: "[COMPILE]",
+			setup: `
+				T{ : [c1] [COMPILE] DUP ; IMMEDIATE -> }T
+				T{ : [c2] [COMPILE] [c1] ; -> }T
+				T{ : [cif] [COMPILE] IF ; IMMEDIATE -> }T
+				T{ : [c3]  [cif] 111 ELSE 222 THEN ; -> }T
+			`,
 			code: `
 				T{ 123 [COMPILE] [c1] -> 123 123 }T
 				T{ 234 [c2] -> 234 234 }T
@@ -112,6 +156,26 @@ func TestSuite(t *testing.T) {
 		},
 		{
 			name: "CASE",
+			setup: `
+				: cs1 CASE 1 OF 111 ENDOF
+					2 OF 222 ENDOF
+					3 OF 333 ENDOF
+					>R 999 R>
+					ENDCASE
+				;
+				: cs2 >R CASE
+				-1 OF CASE R@ 1 OF 100 ENDOF
+								2 OF 200 ENDOF
+								>R -300 R>
+						ENDCASE
+					ENDOF
+				-2 OF CASE R@ 1 OF -99 ENDOF
+								>R -199 R>
+						ENDCASE
+					ENDOF
+					>R 299 R>
+				ENDCASE R> DROP ;
+			`,
 			code: `
 				T{ 1 cs1 -> 111 }T
 				T{ 2 cs1 -> 222 }T
@@ -135,13 +199,19 @@ func TestSuite(t *testing.T) {
 		// COMPILE,
 		{
 			name: "CONSTANT",
+			setup: `
+				T{ 123 CONSTANT X123 -> }T
+				T{ : EQU CONSTANT ; -> }T
+				T{ X123 EQU Y123 -> }T
+			`,
 			code: `
 				T{ X123 -> 123 }T
 				T{ Y123 -> 123 }T
 			`,
 		},
 		{
-			name: "COUNT",
+			name:  "COUNT",
+			setup: "T{ BL WORD GT1 CONSTANT GT1STRING -> }T", // modified from FIND test
 			code: `
 				T{ GT1STRING COUNT -> GT1STRING CHAR+ 3 }T
 			`,
@@ -151,6 +221,11 @@ func TestSuite(t *testing.T) {
 		// C! does not have any tests
 		{
 			name: ":",
+			setup: `
+				T{ : NOP : POSTPONE ; ; -> }T
+				T{ NOP NOP1 NOP NOP2 -> }T
+				T{ : GDX 123 ; : GDX GDX 234 ; -> }T
+			`,
 			code: `
 				T{ NOP1 -> }T
 				T{ NOP2 -> }T
@@ -159,6 +234,12 @@ func TestSuite(t *testing.T) {
 		},
 		{
 			name: ":NONAME",
+			setup: `
+				T{ VARIABLE nn1 -> }T
+				T{ VARIABLE nn2 -> }T
+				T{ :NONAME 1234 ; nn1 ! -> }T
+				T{ :NONAME 9876 ; nn2 ! -> }T
+			`,
 			code: `
 				T{ nn1 @ EXECUTE -> 1234 }T
 				T{ nn2 @ EXECUTE -> 9876 }T
@@ -169,6 +250,13 @@ func TestSuite(t *testing.T) {
 		// DECIMAL does not have any tests
 		{
 			name: "DEFER",
+			setup: `
+				T{ DEFER defer2 -> }T
+				T{ ' * ' defer2 DEFER! -> }T
+				T{   2 3 defer2 -> 6 }T
+				T{ ' + IS defer2 ->   }T
+				T{    1 2 defer2 -> 3 }T
+			`,
 			code: `
 				\ uses ['] rather than ' so we can run on ulp
 				T{ ['] * ['] defer2 DEFER! -> }T
@@ -179,6 +267,15 @@ func TestSuite(t *testing.T) {
 		},
 		{
 			name: "DEFER@",
+			setup: `
+				T{ DEFER defer4 -> }T
+				T{ ' * ' defer4 DEFER! -> }T
+				T{ 2 3 defer4 -> 6 }T
+				T{ ' defer4 DEFER@ -> ' * }T
+				T{ ' + IS defer4 -> }T
+				T{ 1 2 defer4 -> 3 }T
+				T{ ' defer4 DEFER@ -> ' + }T
+			`,
 			code: `
 				\ uses ['] rather than ' so we can run on ulp
 				T{ ['] * ['] defer4 DEFER! -> }T
@@ -192,6 +289,13 @@ func TestSuite(t *testing.T) {
 		},
 		{
 			name: "DEFER!",
+			setup: `
+				T{ DEFER defer3 -> }T
+				T{ ' * ' defer3 DEFER! -> }T
+				T{ 2 3 defer3 -> 6 }T
+				T{ ' + ' defer3 DEFER! -> }T
+				T{ 1 2 defer3 -> 3 }T
+			`,
 			code: `
 				\ uses ['] rather than ' so we can run on ulp
 				T{ ['] * ['] defer3 DEFER! -> }T
@@ -269,6 +373,12 @@ func TestSuite(t *testing.T) {
 		// IF
 		{
 			name: "IF",
+			setup: `
+				T{ : GI1 IF 123 THEN ; -> }T
+				T{ : GI2 IF 123 ELSE 234 THEN ; -> }T
+				\ Multiple ELSEs in an IF statement
+				T{ : melse IF 1 ELSE 2 ELSE 3 ELSE 4 ELSE 5 THEN ; -> }T
+			`,
 			code: `
 				T{  0 GI1 ->     }T
 				T{  1 GI1 -> 123 }T
@@ -282,6 +392,22 @@ func TestSuite(t *testing.T) {
 		},
 		{
 			name: "IMMEDIATE",
+			setup: `
+				T{ 123 CONSTANT iw1 IMMEDIATE iw1 -> 123 }T
+				T{ : iw2 iw1 LITERAL ; iw2 -> 123 }T
+				T{ VARIABLE iw3 IMMEDIATE 234 iw3 ! iw3 @ -> 234 }T
+				T{ : iw4 iw3 [ @ ] LITERAL ; iw4 -> 234 }T
+				T{ :NONAME [ 345 ] iw3 [ ! ] ; DROP iw3 @ -> 345 }T
+				\ T{ CREATE iw5 456 , IMMEDIATE -> }T
+				\ T{ :NONAME iw5 [ @ iw3 ! ] ; DROP iw3 @ -> 456 }T
+				\ T{ : iw6 CREATE , IMMEDIATE DOES> @ 1+ ; -> }T
+				\ T{ 111 iw6 iw7 iw7 -> 112 }T
+				\ T{ : iw8 iw7 LITERAL 1+ ; iw8 -> 113 }T
+				\ T{ : iw9 CREATE , DOES> @ 2 + IMMEDIATE ; -> }T
+				\ : find-iw BL WORD FIND NIP ;
+				\ T{ 222 iw9 iw10 find-iw iw10 -> -1 }T    \ iw10 is not immediate
+				\ T{ iw10 find-iw iw10 -> 224 1 }T          \ iw10 becomes immediate
+			`,
 			code: `
 				\ T{ 222 iw9 iw10 find-iw iw10 -> -1 }T    \ iw10 is not immediate
 				\ T{ iw10 find-iw iw10 -> 224 1 }T          \ iw10 becomes immediate
@@ -296,6 +422,14 @@ func TestSuite(t *testing.T) {
 		},
 		{
 			name: "IS",
+			setup: `
+				T{ DEFER defer5 -> }T
+				T{ : is-defer5 IS defer5 ; -> }T
+				T{ ' * IS defer5 -> }T
+				T{ 2 3 defer5 -> 6 }T
+				T{ ' + is-defer5 -> }T
+				T{ 1 2 defer5 -> 3 }T
+			`,
 			code: `
 				\ uses ['] rather than ' so we can run on ulp
 				T{ ['] * IS defer5 -> }T
@@ -307,6 +441,10 @@ func TestSuite(t *testing.T) {
 		},
 		{
 			name: "J",
+			setup: `
+				T{ : GD3 DO 1 0 DO J LOOP LOOP ; -> }T
+				T{ : GD4 DO 1 0 DO J LOOP -1 +LOOP ; -> }T
+			`,
 			code: `
 				T{          4        1 GD3 ->  1 2 3   }T
 				T{          2       -1 GD3 -> -1 0 1   }T
@@ -319,6 +457,11 @@ func TestSuite(t *testing.T) {
 		// KEY
 		{
 			name: "LEAVE",
+			setup: `
+				T{ : GD5 123 SWAP 0 DO 
+					I 4 > IF DROP 234 LEAVE THEN 
+					LOOP ; -> }T
+			`,
 			code: `
 				T{ 1 GD5 -> 123 }T
 				T{ 5 GD5 -> 123 }T
@@ -327,12 +470,17 @@ func TestSuite(t *testing.T) {
 		},
 		{
 			name: "LITERAL",
+			setup: `
+				T{ : GT3 GT2 LITERAL ; -> }T
+				T{ GT3 -> ' GT1 }T
+			`,
 			code: `
 				T{ GT3 -> ['] GT1 }T
 			`,
 		},
 		{
-			name: "LOOP",
+			name:  "LOOP",
+			setup: "T{ : GD1 DO I LOOP ; -> }T",
 			code: `
 				T{          4        1 GD1 ->  1 2 3   }T
 				T{          2       -1 GD1 -> -1 0 1   }T
@@ -472,6 +620,12 @@ func TestSuite(t *testing.T) {
 		},
 		{
 			name: "POSTPONE",
+			setup: `
+				T{ : GT4 POSTPONE GT1 ; IMMEDIATE -> }T
+				T{ : GT5 GT4 ; -> }T
+				T{ : GT6 345 ; IMMEDIATE -> }T
+				T{ : GT7 POSTPONE GT6 ; -> }T
+			`,
 			code: `
 				T{ GT5 -> 123 }T
 				T{ GT7 -> 345 }T
@@ -494,6 +648,29 @@ func TestSuite(t *testing.T) {
 		},
 		{
 			name: "+LOOP",
+			setup: `
+				DECIMAL
+				T{ : GD2 DO I -1 +LOOP ; -> }T
+				VARIABLE gditerations
+				VARIABLE gdincrement
+				: gd7 ( limit start increment -- )
+					gdincrement !
+					0 gditerations !
+					DO
+						1 gditerations +!
+						I
+						gditerations @ 6 = IF LEAVE THEN
+						gdincrement @
+					+LOOP gditerations @
+				;
+				MAX-UINT 8 RSHIFT 1+ CONSTANT ustep
+				ustep NEGATE CONSTANT -ustep
+				MAX-INT 7 RSHIFT 1+ CONSTANT step
+				step NEGATE CONSTANT -step
+				VARIABLE bump
+				T{  : gd8 bump ! DO 1+ bump @ +LOOP ; -> }T
+				HEX
+			`,
 			code: `
 				DECIMAL
 				T{        1          4 GD2 -> 4 3 2  1 }T
@@ -536,6 +713,26 @@ func TestSuite(t *testing.T) {
 		// QUIT
 		{
 			name: "RECURSE",
+			setup: `
+				T{ : GI6 ( N -- 0,1,..N ) 
+					DUP IF DUP >R 1- RECURSE R> THEN ; -> }T
+				DECIMAL
+				T{ :NONAME ( n -- 0, 1, .., n ) 
+					DUP IF DUP >R 1- RECURSE R> THEN 
+				;
+				CONSTANT rn1 -> }T
+				:NONAME ( n -- n1 )
+				1- DUP
+				CASE 0 OF EXIT ENDOF
+					1 OF 11 SWAP RECURSE ENDOF
+					2 OF 22 SWAP RECURSE ENDOF
+					3 OF 33 SWAP RECURSE ENDOF
+					DROP ABS RECURSE EXIT
+				ENDCASE
+				;
+				CONSTANT rn2
+				HEX
+			`,
 			code: `
 				T{ 0 GI6 -> 0 }T
 				T{ 1 GI6 -> 0 1 }T
@@ -545,6 +742,10 @@ func TestSuite(t *testing.T) {
 				DECIMAL
 				T{ 0 rn1 EXECUTE -> 0 }T
 				T{ 4 rn1 EXECUTE -> 0 1 2 3 4 }T
+				T{  1 rn2 EXECUTE -> 0 }T
+				\ T{  2 rn2 EXECUTE -> 11 0 }T \ TODO FIXME
+				\ T{  4 rn2 EXECUTE -> 33 22 11 0 }T
+				\ T{ 25 rn2 EXECUTE -> 33 22 11 0 }T
 			`,
 		},
 		// REFILL
@@ -580,6 +781,10 @@ func TestSuite(t *testing.T) {
 		// SPACES
 		{
 			name: "STATE",
+			setup: `
+				T{ : GT8 STATE @ ; IMMEDIATE -> }T
+				T{ : GT9 GT8 LITERAL ; -> }T
+			`,
 			code: `
 				T{ GT9 0= -> <FALSE> }T
 			`,
@@ -593,6 +798,10 @@ func TestSuite(t *testing.T) {
 		// ; does not have test cases
 		{
 			name: "S\"",
+			setup: `
+				T{ : GC4 S" XY" ; ->   }T
+				T{ : GC5 S" A String"2DROP ; -> }T \ There is no space between the " and 2DROP
+			`,
 			code: `
 				T{ GC4 SWAP DROP  -> 2 }T
 				T{ GC4 DROP DUP C@ SWAP CHAR+ C@ -> 58 59 }T
@@ -631,8 +840,8 @@ func TestSuite(t *testing.T) {
 		// TYPE does not have test cases
 		{
 			name: "'",
-			code: `
-				\ T{ ['] GT1 EXECUTE -> 123 }T
+			setup: `
+				T{ ' GT1 EXECUTE -> 123 }T
 			`,
 		},
 		{
@@ -704,6 +913,14 @@ func TestSuite(t *testing.T) {
 		// UM*
 		{
 			name: "UNLOOP",
+			setup: `
+				T{ : GD6 ( PAT: {0 0},{0 0}{1 0}{1 1},{0 0}{1 0}{1 1}{2 0}{2 1}{2 2} ) 
+					0 SWAP 0 DO 
+						I 1+ 0 DO 
+						I J + 3 = IF I UNLOOP I UNLOOP EXIT THEN 1+ 
+						LOOP 
+					LOOP ; -> }T
+			`,
 			code: `
 				T{ 1 GD6 -> 1 }T
 				T{ 2 GD6 -> 3 }T
@@ -711,7 +928,8 @@ func TestSuite(t *testing.T) {
 			`,
 		},
 		{
-			name: "UNTIL",
+			name:  "UNTIL",
+			setup: "T{ : GI4 BEGIN DUP 1+ DUP 5 > UNTIL ; -> }T",
 			code: `
 				T{ 3 GI4 -> 3 4 5 6 }T
 				T{ 5 GI4 -> 5 6 }T
@@ -756,7 +974,8 @@ func TestSuite(t *testing.T) {
 		},
 		// VALUE
 		{
-			name: "VARIABLE",
+			name:  "VARIABLE",
+			setup: "T{ VARIABLE V1 ->     }T",
 			code: `
 				T{    123 V1 ! ->     }T
 				T{        V1 @ -> 123 }T
@@ -765,6 +984,12 @@ func TestSuite(t *testing.T) {
 		// VARIABLE
 		{
 			name: "WHILE",
+			setup: `
+				T{ : GI3 BEGIN DUP 5 < WHILE DUP 1+ REPEAT ; -> }T
+				T{ : GI5 BEGIN DUP 2 > WHILE
+					DUP 5 < WHILE DUP 1+ REPEAT
+					123 ELSE 345 THEN ; -> }T
+			`,
 			code: `
 				T{ 0 GI3 -> 0 1 2 3 4 5 }T
 				T{ 4 GI3 -> 4 5 }T
@@ -833,7 +1058,8 @@ func TestSuite(t *testing.T) {
 			`,
 		},
 		{
-			name: "\\",
+			name:  "\\",
+			setup: "T{ : COMMENT POSTPONE \\ ; IMMEDIATE -> }T",
 			code: `
 				T{ COMMENT \-postpone-fail
 				-> }T
@@ -900,10 +1126,12 @@ func TestSuite(t *testing.T) {
 		// #
 		// #S
 		{
-			name: "(",
+			name:  "(",
+			setup: "T{ : pc1 ( A comment)1234 ; -> }T",
 			code: `
 				\ There is no space either side of the ).
 				T{ ( A comment)1234 -> 1234 }T
+				T{ pc1 -> 1234 }T
 			`,
 		},
 		// ?DO
@@ -920,6 +1148,10 @@ func TestSuite(t *testing.T) {
 		// >NUMBER
 		{
 			name: ">R",
+			setup: `
+				T{ : GR1 >R R> ; -> }T
+				T{ : GR2 >R R@ R> DROP ; -> }T
+			`,
 			code: `
 				T{ 123 GR1 -> 123 }T
 				T{ 123 GR2 -> 123 }T
@@ -937,12 +1169,12 @@ func TestSuite(t *testing.T) {
 	defer r.Close()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			code := createTest(tt.code)
+			code := createTest(tt.setup, tt.code)
 			runOutputTest(code, "", t, &r)
 		})
 	}
 }
 
-func createTest(code string) string {
-	return fmt.Sprintf("%s : MAIN %s ESP.DONE ; ", suite, code)
+func createTest(setup, code string) string {
+	return fmt.Sprintf("%s %s : MAIN %s ESP.DONE ; ", suite, setup, code)
 }
