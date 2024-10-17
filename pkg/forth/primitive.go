@@ -1073,6 +1073,66 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name: "LOOPCHECK",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				index, err := vm.ReturnStack.PopNumber()
+				if err != nil {
+					return err
+				}
+				n, err := vm.Stack.PopNumber()
+				if err != nil {
+					return err
+				}
+				limit, err := vm.ReturnStack.PopNumber()
+				if err != nil {
+					return err
+				}
+				vm.ReturnStack.Push(CellNumber{limit}) // we just want to know the limit
+				n_next := index + n
+				vm.ReturnStack.Push(CellNumber{n_next}) // store n+index for next time
+				indLim := index - limit
+				var val32 uint32
+				if int16(n) >= 0 {
+					val32 = uint32(indLim) + uint32(n)
+				} else {
+					val32 = uint32(indLim) - uint32(uint16(-n))
+				}
+				if val32 > 0xFFFF {
+					vm.Stack.Push(CellNumber{0xFFFF})
+				} else {
+					vm.Stack.Push(CellNumber{0})
+				}
+				return nil
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r2, r2, __rsp",                // load rsp
+				"ld r0, r2, 0",                    // load loop index
+				"ld r1, r3, 0",                    // load n
+				"add r1, r1, r0",                  // n+index
+				"st r1, r2, 0",                    // store n+index for next time
+				"ld r1, r2, -1",                   // r1 has limit
+				"sub r1, r0, r1",                  // r1 = index-limit
+				"ld r0, r3, 0",                    // r0 has n
+				"move r2, 0",                      // put r2 back to 0
+				"jumpr __loopcheck.0, 0x7FFF, gt", // check sign of n
+				// positive, add
+				"add r1, r1, r0",
+				"jump __loopcheck.1",
+				"__loopcheck.0:",
+				// negative, negate and subtract
+				"sub r0, r2, r0", // -r0 = 0 - r0
+				"sub r1, r1, r0",
+				"__loopcheck.1:",
+				"move r0, 0xFFFF",        // default to true
+				"jump __loopcheck.2, ov", // check if overflow
+				// no overflow, set to false
+				"move r0, 0",
+				"__loopcheck.2:",
+				"st r0, r3, 0", // save value
+				"jump __next_skip_r2",
+			},
+		},
+		{
 			name: "U<",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.PopNumber()

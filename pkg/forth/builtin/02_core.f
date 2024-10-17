@@ -213,3 +213,20 @@
     REPEAT
 ; IMMEDIATE
 
+: DO ( C: -- dest )
+    POSTPONE 2>R \ compile 2>r
+    DEST DUP COMPILE, \ create and compile a destination
+    >C \ and push destination on the control flow stack
+; IMMEDIATE
+
+: +LOOP
+    POSTPONE LOOPCHECK \ compile the check
+    BRANCH0 DUP COMPILE, \ create and compile a conditional branch
+    C> RESOLVE-BRANCH \ and resolve it
+    POSTPONE R> POSTPONE R> POSTPONE 2DROP \ drop from rsp and stack
+; IMMEDIATE
+
+: LOOP
+    1 POSTPONE LITERAL \ compile the number 1
+    POSTPONE +LOOP \ and +LOOP
+; IMMEDIATE

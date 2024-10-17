@@ -314,7 +314,14 @@ func TestSuite(t *testing.T) {
 				T{ GT3 -> ['] GT1 }T
 			`,
 		},
-		// LOOP
+		{
+			name: "LOOP",
+			code: `
+				T{          4        1 GD1 ->  1 2 3   }T
+				T{          2       -1 GD1 -> -1 0 1   }T
+				T{ MID-UINT+1 MID-UINT GD1 -> MID-UINT }T
+			`,
+		},
 		{
 			name: "LSHIFT",
 			code: `
