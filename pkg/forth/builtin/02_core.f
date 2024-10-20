@@ -125,7 +125,6 @@
 ;
 
 : VARIABLE 1 BUFFER: ;
-: 2VARIABLE 2 BUFFER: ;
 : +! DUP @ ROT + SWAP ! ;
 
 : OVER 1 PICK ;

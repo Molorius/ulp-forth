@@ -18,6 +18,7 @@ func TestSuite(t *testing.T) {
 		code  string // any code we want to run in the "main" word
 		// tests that run in the global context should be added to suite_test.f
 	}{
+		// Core tests
 		// ABORT
 		// ABORT"
 		{
@@ -1222,6 +1223,60 @@ func TestSuite(t *testing.T) {
 				T{  1S GR1 ->  1S }T      ( Return stack holds cells )
 			`,
 		},
+
+		// Double tests
+		// DABS
+		// D.R
+		{
+			name: "D=",
+			code: `
+				T{      -1.      -1. D= -> <TRUE>  }T
+				T{      -1.       0. D= -> <FALSE> }T
+				T{      -1.       1. D= -> <FALSE> }T
+				T{       0.      -1. D= -> <FALSE> }T
+				T{       0.       0. D= -> <TRUE>  }T
+				T{       0.       1. D= -> <FALSE> }T
+				T{       1.      -1. D= -> <FALSE> }T
+				T{       1.       0. D= -> <FALSE> }T
+				T{       1.       1. D= -> <TRUE>  }T
+				T{   0   -1    0  -1 D= -> <TRUE>  }T
+				T{   0   -1    0   0 D= -> <FALSE> }T
+				T{   0   -1    0   1 D= -> <FALSE> }T
+				T{   0    0    0  -1 D= -> <FALSE> }T
+				T{   0    0    0   0 D= -> <TRUE>  }T
+				T{   0    0    0   1 D= -> <FALSE> }T
+				T{   0    1    0  -1 D= -> <FALSE> }T
+				T{   0    1    0   0 D= -> <FALSE> }T
+				T{   0    1    0   1 D= -> <TRUE>  }T
+				T{ MAX-2INT MIN-2INT D= -> <FALSE> }T
+				T{ MAX-2INT       0. D= -> <FALSE> }T
+				T{ MAX-2INT MAX-2INT D= -> <TRUE>  }T
+				T{ MAX-2INT HI-2INT  D= -> <FALSE> }T
+				T{ MAX-2INT MIN-2INT D= -> <FALSE> }T
+				T{ MIN-2INT MIN-2INT D= -> <TRUE>  }T
+				T{ MIN-2INT LO-2INT  D= -> <FALSE> }T
+				T{ MIN-2INT MAX-2INT D= -> <FALSE> }T
+			`,
+		},
+		// DMAX
+		// DMIN
+		// D-
+		// DNEGATE
+		// D+
+		// D2/
+		// D2*
+		// DU<
+		// D0=
+		// D0<
+		// D.
+		// D>S
+		// M+
+		// M*/
+		// 2CONSTANT
+		// 2LITERAL
+		// 2ROT
+		// 2VALUE
+		// 2VARIABLE
 	}
 
 	r := asm.Runner{}
