@@ -880,7 +880,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
-			name: "/MOD",
+			name: "U/MOD",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.PopNumber()
 				if err != nil {

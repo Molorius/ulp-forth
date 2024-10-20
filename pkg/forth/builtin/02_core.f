@@ -259,3 +259,58 @@
     BRANCH DUP COMPILE, \ create and compile a branch
     >D \ also push it onto the DO stack
 ; IMMEDIATE
+
+: F/MOD ( numerator denominator -- remainder quotient )
+    \ we have the unsigned version U/MOD as a primitive
+    DUP 0< DUP >R \ check if denominator is negative and store on return stack
+    IF NEGATE THEN \ if negative then negate
+    SWAP
+    DUP 0< DUP >R \ check if numerator is negative and store on return stack
+    IF NEGATE THEN \ if negative then negate
+    SWAP
+    U/MOD \ unsigned divide!
+    \ R> R> 2DROP
+    R> R@ <> IF NEGATE THEN \ if num and den were different signs then negate the quotient
+    SWAP
+    R> IF NEGATE THEN \ if denominator was negative then negate the remainder
+    SWAP
+;
+
+: S/REM ( n d -- r q )
+    DUP >R ( n d -- ) ( R: -- d )
+    SWAP DUP 0< DUP >R ( d n -- ) ( R: -- d nSign )
+    IF NEGATE THEN
+    SWAP DUP 0< DUP >R ( d n -- ) ( R: -- d nSign dSign )
+    IF NEGATE THEN
+    U/MOD ( rem quo ) ( R: d nSign dSign )
+    SWAP
+    R@ IF NEGATE THEN \ negate remainder if denominator was negative
+
+    R> R> <> IF \ if the signs are different
+        DUP IF \ if the remainder is not zero
+            NEGATE R> + \ add on the demoninator
+            SWAP NEGATE 1- \ negate quotient and subtract 1
+        ELSE \ remainder is zero
+            R> DROP
+            SWAP NEGATE \ just negate quotient
+        THEN
+    ELSE
+        R> DROP SWAP
+    THEN
+;
+
+\ set /MOD to symmetric division by default
+DEFER /MOD
+' S/REM ' /MOD DEFER!
+
+: / /MOD NIP ;
+: MOD /MOD DROP ;
+
+: /_MOD F/MOD ;
+: /_ /_MOD NIP ;
+: _MOD /_MOD DROP ;
+
+: /-REM S/REM ;
+: /- /-REM NIP ;
+: -REM /-REM DROP ;
+

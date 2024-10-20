@@ -23,7 +23,7 @@ DEFER EMIT \ let us change EMIT
 : SPACE BL EMIT ;
 
 : U.NOSPACE ( u -- )
-    BASE @ /MOD \ divide with remainder
+    BASE @ U/MOD \ divide with remainder
     ?DUP IF RECURSE THEN \ if the quotient is nonzero, print that first
     DUP #10 U< IF \ if it's 0-9 then we want those characters
         '0'

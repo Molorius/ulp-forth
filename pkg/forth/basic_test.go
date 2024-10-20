@@ -123,8 +123,8 @@ func TestPrimitives(t *testing.T) {
 			expect: "2 1 123 ",
 		},
 		{
-			name:   "/MOD",
-			asm:    wrapMain("10 2 /MOD U. U. 123 2 /MOD U. U."),
+			name:   "U/MOD",
+			asm:    wrapMain("10 2 U/MOD U. U. 123 2 U/MOD U. U."),
 			expect: "5 0 61 1 ",
 		},
 		{

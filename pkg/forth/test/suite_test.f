@@ -1,75 +1,80 @@
 
 VARIABLE TEST-COUNT
-VARIABLE TEST-DEPTH
-16 BUFFER: TEST-STACK \ might need to increase if tests need more space
+VARIABLE GOT-DEPTH
+VARIABLE WANT-DEPTH
+16 CONSTANT BUFFERDEPTH
+BUFFERDEPTH BUFFER: GOT-STACK \ might need to increase if tests need more space
+BUFFERDEPTH BUFFER: WANT-STACK
+
+\ lets us use // as a comment
+: // POSTPONE \ ; IMMEDIATE
 
 \ run this to indicate that a test passes
 : TEST-PASS ( -- ) ;
 
-\ print the values on the stack
-: printstack
-    1 DEPTH 1- ?DO
-        I 1-   \ get the offset
-        PICK . \ pick the value and print
-    -1 +LOOP
-;
-
-\ print the values on the TEST-STACK buffer
-: printteststack
-    TEST-DEPTH @ 0 ?DO
-        I TEST-STACK + \ get the address
-        @ . \ read the address and print
+: BUFFERPRINT ( addr count -- )
+    0 ?DO
+        DUP I + @ .
     LOOP
+    DROP
 ;
 
 : TEST-FAIL ( -- )
     ."  test "
     TEST-COUNT @ U. \ print the test number
     ." got "
-    printteststack
+    GOT-STACK GOT-DEPTH @ BUFFERPRINT
     ." expected "
-    printstack
+    WANT-STACK WANT-DEPTH @ BUFFERPRINT
 ;
 
 \ begin a test
-: T{ ( -- ) ; IMMEDIATE
+: T{ ( -- ) ;
 
-\ save desired values to compare test result against
-: -> ( -- )
-    DEPTH TEST-DEPTH ! \ record the stack depth
-    DEPTH 0<> IF \ if there are items on the stack
-        TEST-STACK \ get the buffer address
+: BUFFERFILL ( stackn ... stack0 bufaddr countaddr -- )
+    DEPTH 2 - DUP ROT ! \ record the stack depth
+    0<> IF \ if there are items on the stack
+        DEPTH + 2 - \ get to the end
         BEGIN
             DUP ROT SWAP ( addr item addr )
             ! \ store the item into address
-            1+ \ ( addr+1 )
+            1- \ ( addr-1 )
         DEPTH 1 = UNTIL \ loop until the stack only has addr+1
-        DROP \ drop address
     THEN
+    DROP \ drop address
+;
+
+: BUFFEREQUALS ( addr0 count0 addr1 count1 -- bool )
+    2 PICK <> IF \ if count0 != count1
+        FALSE EXIT \ return false
+    THEN
+    SWAP ( addr0 addr1 count )
+    0 ?DO
+        ( addr0 addr1 )
+        OVER I + @ \ get value from addr0
+        OVER I + @ \ get value from addr1
+        <> IF \ if they're not equal
+            2DROP UNLOOP FALSE EXIT \ return false
+        THEN
+    LOOP
+    2DROP
+    TRUE
+;
+
+\ save desired values to compare test result against
+: -> ( -- )
+    GOT-STACK GOT-DEPTH BUFFERFILL
 ;
 
 : TEST ( stackn stackn-1 ... stack0 testdepth testn -- )
-    DEPTH \ get the depth
-    TEST-DEPTH @ \ get the test depth
-    <> IF \ if they're not equal
+    GOT-STACK GOT-DEPTH @ WANT-STACK WANT-DEPTH @ BUFFEREQUALS
+    0= IF
         TEST-FAIL VM.STACK.INIT EXIT \ fail the test, reset stack, exit
-    THEN
-
-    DEPTH 0<> IF \ if there are items on the stack
-        TEST-STACK \ get the buffer address
-        BEGIN
-            SWAP OVER ( addr got addr )
-            @ ( addr got expect )
-            <> IF \ if they're not equal
-                TEST-FAIL VM.STACK.INIT EXIT \ fail!
-            THEN
-            1+ ( addr+1 )
-        DEPTH 1 = UNTIL \ loop until stack only has addr+1
-        DROP \ drop address
     THEN
 ;
 
 : }T ( -- empties-the-stack)
+    WANT-STACK WANT-DEPTH BUFFERFILL \ save the want results
     TEST \ run the test
     1 TEST-COUNT +! \ increment test number
 ;

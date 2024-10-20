@@ -327,7 +327,25 @@ func TestSuite(t *testing.T) {
 			`,
 		},
 		// /
-		// /MOD
+		{
+			name: "/MOD",
+			code: ` \ modified from test suite
+				T{ 0 1 /MOD -> 0 0 }T
+				T{ 1 1 /MOD -> 0 1 }T
+				T{ 2 1 /MOD -> 0 2 }T
+				T{ -1 1 /MOD -> 0 -1 }T
+				T{ -2 1 /MOD -> 0 -2 }T
+				T{ 0 -1 /MOD -> 0 0 }T
+				T{ 1 -1 /MOD -> 0 -1 }T
+				T{ 2 -1 /MOD -> 0 -2 }T
+				T{ -1 -1 /MOD -> 0 1 }T
+				T{ -2 -1 /MOD -> 0 2 }T
+				T{ 2 2 /MOD -> 0 1 }T
+				T{ -2 -2 /MOD -> 0 1 }T
+				T{ 7 3 /MOD -> 1 2 }T
+				T{ 7 -3 /MOD -> -2 -3 }T
+			`,
+		},
 		// .R
 		// .(
 		// ."
