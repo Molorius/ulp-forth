@@ -7,6 +7,36 @@
     = \ return equality
 ;
 
+: DU<
+    ROT
+    2DUP = IF
+        2DROP U<
+    ELSE
+        U> >R 2DROP R>
+    THEN
+;
+
+: DU>
+    ROT
+    2DUP = IF
+        2DROP U>
+    ELSE
+        U< >R 2DROP R>
+    THEN
+;
+
+: D0=
+    OR 0=
+;
+
+: D0<
+    NIP 0<
+;
+
+: D>S
+    DROP
+;
+
 : 2LITERAL
     SWAP
     POSTPONE LITERAL

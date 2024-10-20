@@ -1265,11 +1265,68 @@ func TestSuite(t *testing.T) {
 		// D+
 		// D2/
 		// D2*
-		// DU<
-		// D0=
-		// D0<
+		{
+			name: "DU<",
+			code: `
+				T{       1.       1. DU< -> <FALSE> }T
+				T{       1.      -1. DU< -> <TRUE>  }T
+				T{      -1.       1. DU< -> <FALSE> }T
+				T{      -1.      -2. DU< -> <FALSE> }T
+				T{ MAX-2INT  HI-2INT DU< -> <FALSE> }T
+				T{  HI-2INT MAX-2INT DU< -> <TRUE>  }T
+				T{ MAX-2INT MIN-2INT DU< -> <TRUE>  }T
+				T{ MIN-2INT MAX-2INT DU< -> <FALSE> }T
+				T{ MIN-2INT  LO-2INT DU< -> <TRUE>  }T
+			`,
+		},
+		{
+			name: "DU>",
+			code: `
+				T{       1.       1. DU> -> <FALSE> }T
+				T{       1.      -1. DU> -> <FALSE>  }T
+				T{      -1.       1. DU> -> <TRUE> }T
+				T{      -1.      -2. DU> -> <TRUE> }T
+				T{ MAX-2INT  HI-2INT DU> -> <TRUE> }T
+				T{  HI-2INT MAX-2INT DU> -> <FALSE>  }T
+				T{ MAX-2INT MIN-2INT DU> -> <FALSE>  }T
+				T{ MIN-2INT MAX-2INT DU> -> <TRUE> }T
+				T{ MIN-2INT  LO-2INT DU> -> <FALSE>  }T
+			`,
+		},
+		{
+			name: "D0=",
+			code: `
+				T{               1. D0= -> <FALSE> }T
+				T{ MIN-INT        0 D0= -> <FALSE> }T
+				T{         MAX-2INT D0= -> <FALSE> }T
+				T{      -1  MAX-INT D0= -> <FALSE> }T
+				T{               0. D0= -> <TRUE>  }T
+				T{              -1. D0= -> <FALSE> }T
+				T{       0  MIN-INT D0= -> <FALSE> }T
+			`,
+		},
+		{
+			name: "D0<",
+			code: `
+				T{                0. D0< -> <FALSE> }T
+				T{                1. D0< -> <FALSE> }T
+				T{  MIN-INT        0 D0< -> <FALSE> }T
+				T{        0  MAX-INT D0< -> <FALSE> }T
+				T{          MAX-2INT D0< -> <FALSE> }T
+				T{               -1. D0< -> <TRUE>  }T
+				T{          MIN-2INT D0< -> <TRUE>  }T
+			`,
+		},
 		// D.
-		// D>S
+		{
+			name: "D>S",
+			code: `
+				T{    1234  0 D>S ->  1234   }T
+				T{   -1234 -1 D>S -> -1234   }T
+				T{ MAX-INT  0 D>S -> MAX-INT }T
+				T{ MIN-INT -1 D>S -> MIN-INT }T
+			`,
+		},
 		// M+
 		// M*/
 		// 2CONSTANT

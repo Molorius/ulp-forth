@@ -186,6 +186,8 @@
     C@ \ read the letter
     POSTPONE LITERAL \ then compile it!
 ; IMMEDIATE
+: 2@ DUP @ SWAP CELL+ @ ;
+: 2! SWAP OVER ! CELL+ ! ;
 
 
 : CASE ( C: -- case-sys )
