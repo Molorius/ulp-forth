@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"strconv"
 	"strings"
@@ -105,11 +106,7 @@ func (vm *VirtualMachine) Builtin() error {
 				return err
 			}
 			defer file.Close()
-			data, err := io.ReadAll(file)
-			if err != nil {
-				return err
-			}
-			err = vm.execute(data)
+			err = vm.ExecuteFile(file)
 			if err != nil {
 				return err
 			}
@@ -152,7 +149,6 @@ func (vm *VirtualMachine) Repl() error {
 	}
 	defer rl.Close()
 
-	fmt.Fprintln(vm.Out, "ulp-forth")
 	for {
 		stateUint, err := vm.State.Get()
 		if err != nil {
@@ -167,7 +163,7 @@ func (vm *VirtualMachine) Repl() error {
 			return err
 		}
 		fmt.Fprint(vm.Out, " ")
-		err = vm.execute([]byte(line))
+		err = vm.Execute([]byte(line))
 		if err != nil {
 			fmt.Fprintln(vm.Out)
 			return err
@@ -177,7 +173,7 @@ func (vm *VirtualMachine) Repl() error {
 }
 
 // Execute the given bytes.
-func (vm *VirtualMachine) execute(bytes []byte) error {
+func (vm *VirtualMachine) Execute(bytes []byte) error {
 	err := vm.ParseArea.Fill(bytes)
 	if err != nil {
 		return err
@@ -229,6 +225,25 @@ func (vm *VirtualMachine) execute(bytes []byte) error {
 			return fmt.Errorf("Unknown state %d", state)
 		}
 	}
+}
+
+func (vm *VirtualMachine) ExecuteFile(f fs.File) error {
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return err
+	}
+	return vm.Execute(data)
+}
+
+func (vm *VirtualMachine) Reset() error {
+	// reset all stacks
+	vm.Stack.Reset()
+	vm.ReturnStack.Reset()
+	vm.ControlFlowStack.Reset()
+	vm.DoStack.Reset()
+	// and the instruction pointer
+	vm.IP = nil
+	return nil
 }
 
 func (vm *VirtualMachine) getCells(name string) ([]Cell, error) {

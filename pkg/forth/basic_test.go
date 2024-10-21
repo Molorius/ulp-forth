@@ -161,7 +161,7 @@ func runOutputTest(code string, expected string, t *testing.T, r *asm.Runner) {
 		t.Fatalf("failed to set up vm: %s", err)
 	}
 	// run the code through the interpreter
-	err = vm.execute([]byte(code))
+	err = vm.Execute([]byte(code))
 	if err != nil {
 		t.Fatalf("failed to execute test code: %s", err)
 	}
@@ -174,7 +174,7 @@ func runOutputTest(code string, expected string, t *testing.T, r *asm.Runner) {
 
 	// run the test directly on host
 	t.Run("host", func(t *testing.T) {
-		err = vm.execute([]byte(" MAIN "))
+		err = vm.Execute([]byte(" MAIN "))
 		if err != nil {
 			t.Errorf("error while running: %s", err)
 		} else {

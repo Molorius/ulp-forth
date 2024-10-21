@@ -17,6 +17,10 @@ func (s *Stack) Setup() error {
 	return nil
 }
 
+func (s *Stack) Reset() {
+	s.stack = s.stack[:0]
+}
+
 // Push a cell onto the stack.
 func (s *Stack) Push(c Cell) error {
 	s.stack = append(s.stack, c)
