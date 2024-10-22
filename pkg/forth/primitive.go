@@ -3,6 +3,9 @@ package forth
 import (
 	"errors"
 	"fmt"
+	"slices"
+	"strconv"
+	"strings"
 )
 
 type primitive struct {
@@ -128,6 +131,61 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					return errors.Join(fmt.Errorf("%s could not add new dictionary entry.", entry), err)
 				}
 				return nil
+			},
+		},
+		{
+			name: "--CREATE-ASSEMBLY", // ( asm_n ... asm0 count name -- )
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				cellStr, err := vm.Stack.Pop()
+				if err != nil {
+					return errors.Join(fmt.Errorf("%s could not pop name.", entry), err)
+				}
+				cellAddr, ok := cellStr.(CellAddress)
+				if !ok {
+					return fmt.Errorf("%s requires an address cell.", cellAddr)
+				}
+				name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+				if err != nil {
+					return err
+				}
+				count, err := vm.Stack.PopNumber()
+				if err != nil {
+					return err
+				}
+				asm := make([]string, 0)
+				for i := uint16(0); i < count; i++ {
+					cell, err := vm.Stack.Pop()
+					if err != nil {
+						return err
+					}
+					switch c := cell.(type) {
+					case CellAddress:
+						substr, err := cellsToString(c.Entry.Word.(*WordForth).Cells)
+						if err != nil {
+							return err
+						}
+						asm = append(asm, substr)
+					case CellNumber:
+						asm = append(asm, strconv.Itoa(int(c.Number)))
+					default:
+						return fmt.Errorf("%s unknown type %t", entry, c)
+					}
+				}
+				slices.Reverse(asm)
+				asmStr := strings.Join(asm, "")
+				asmStr = strings.ReplaceAll(asmStr, "\\r", "\r")
+				asmStr = strings.ReplaceAll(asmStr, "\\n", "\n")
+				asm = strings.Split(asmStr, "\n")
+				var newEntry DictionaryEntry
+				newEntry = DictionaryEntry{
+					Name: name,
+					Word: &WordPrimitive{
+						Go:    notImplemented,
+						Ulp:   asm,
+						Entry: &newEntry,
+					},
+				}
+				return vm.Dictionary.AddEntry(&newEntry)
 			},
 		},
 		{
