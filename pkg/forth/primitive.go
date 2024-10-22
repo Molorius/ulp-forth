@@ -1383,6 +1383,56 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"jump __next_skip_r2",
 			},
 		},
+
+		{
+			name: "D-", // ( xlow xhigh ylow yhigh -- zlow zhigh )
+			goFunc: func(vm *VirtualMachine, de *DictionaryEntry) error {
+				yHigh, err := vm.Stack.PopNumber()
+				if err != nil {
+					return err
+				}
+				yLow, err := vm.Stack.PopNumber()
+				if err != nil {
+					return err
+				}
+				xHigh, err := vm.Stack.PopNumber()
+				if err != nil {
+					return err
+				}
+				xLow, err := vm.Stack.PopNumber()
+				if err != nil {
+					return err
+				}
+
+				y := (uint32(yHigh) << 16) | uint32(yLow)
+				x := (uint32(xHigh) << 16) | uint32(xLow)
+				z := x - y
+				zLow := uint16(z)
+				zHigh := uint16(z >> 16)
+				err = vm.Stack.Push(CellNumber{zLow})
+				if err != nil {
+					return err
+				}
+				return vm.Stack.Push(CellNumber{zHigh})
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 2", // xhigh
+				"ld r1, r3, 3", // xlow
+				"ld r2, r3, 1", // ylow
+				"sub r1, r1, r2",
+				"jump __d_minus.0, ov",
+				"jump __d_minus.1",
+				"__d_minus.0:",
+				"sub r0, r0, 1",
+				"__d_minus.1:",
+				"st r1, r3, 3", // store zlow
+				"ld r1, r3, 0", // load xhigh
+				"sub r0, r0, r1",
+				"add r3, r3, 2",
+				"st r0, r3, 0",
+				"jump next",
+			},
+		},
 	}
 	for _, p := range prims {
 		err := primitiveAdd(vm, p.name, p.goFunc, p.ulpAsm, p.flag)
