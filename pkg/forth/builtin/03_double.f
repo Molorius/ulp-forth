@@ -33,6 +33,36 @@
     NIP 0<
 ;
 
+: D0<>
+    OR 0<>
+;
+
+: D0>
+    NIP 0>
+;
+
+: D<
+    ROT
+    2DUP = IF
+        2DROP <
+    ELSE
+        > >R 2DROP R>
+    THEN
+;
+
+: D<>
+    D= 0=
+;
+
+: D>
+    ROT
+    2DUP = IF
+        2DROP >
+    ELSE
+        < >R 2DROP R>
+    THEN
+;
+
 : D>S
     DROP
 ;

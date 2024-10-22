@@ -30,6 +30,11 @@ ulp-forth build --assembly --reserved 1024 file1.f file2.f`,
 			fmt.Println(err)
 			os.Exit(1)
 		}
+		err = vm.BuiltinEsp32()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 		for _, arg := range args {
 			f, err := os.Open(arg)
 			if err != nil {

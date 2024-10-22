@@ -25,6 +25,11 @@ ulp-forth run file1.f`,
 			fmt.Println(err)
 			return
 		}
+		err = vm.BuiltinEsp32()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 		for _, arg := range args {
 			f, err := os.Open(arg)
 			if err != nil {

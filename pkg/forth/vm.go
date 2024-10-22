@@ -80,7 +80,7 @@ func (vm *VirtualMachine) Setup() error {
 		return err
 	}
 
-	err = vm.Builtin()
+	err = vm.builtin()
 	if err != nil {
 		return err
 	}
@@ -91,17 +91,18 @@ func (vm *VirtualMachine) Setup() error {
 //go:embed builtin/*.f
 var builtins embed.FS
 
-func (vm *VirtualMachine) Builtin() error {
-	base := "builtin"
-	dirEntries, err := builtins.ReadDir(base)
+//go:embed esp32/*.f
+var builtinsEsp32 embed.FS
+
+func (vm *VirtualMachine) buildEmbed(f embed.FS, name string) error {
+	dirEntries, err := f.ReadDir(name)
 	if err != nil {
 		return errors.Join(fmt.Errorf("Error while opening embedded directory."), err)
 	}
 	for _, entry := range dirEntries {
 		// don't look in subdirectories (for now)
 		if !entry.IsDir() {
-			name := entry.Name()
-			file, err := builtins.Open(base + "/" + name)
+			file, err := f.Open(name + "/" + entry.Name())
 			if err != nil {
 				return err
 			}
@@ -113,6 +114,16 @@ func (vm *VirtualMachine) Builtin() error {
 		}
 	}
 	return nil
+}
+
+// builtin runs the files necessary for the Forth environment.
+func (vm *VirtualMachine) builtin() error {
+	return vm.buildEmbed(builtins, "builtin")
+}
+
+// BuiltinEsp32 runs the files intended for accessing esp32 hardware.
+func (vm *VirtualMachine) BuiltinEsp32() error {
+	return vm.buildEmbed(builtinsEsp32, "esp32")
 }
 
 // writerNoNewline is an io.Writer that does not print newlines.
