@@ -906,7 +906,10 @@ func TestSuite(t *testing.T) {
 		},
 		// 2R@
 		// 2R> does not have any test cases
-		// 2SWAP
+		{
+			name: "2SWAP",
+			code: "T{ 1 2 3 4 2SWAP -> 3 4 1 2 }T",
+		},
 		// 2!
 		{
 			name: "2*",
@@ -1225,7 +1228,15 @@ func TestSuite(t *testing.T) {
 		},
 
 		// Double tests
-		// DABS
+		{
+			name: "DABS",
+			code: `
+				T{       1. DABS -> 1.       }T
+				T{      -1. DABS -> 1.       }T
+				T{ MAX-2INT DABS -> MAX-2INT }T
+				// T{ MIN-2INT 1. D+ DABS -> MAX-2INT }T
+			`,
+		},
 		// D.R
 		{
 			name: "D=",
@@ -1258,8 +1269,48 @@ func TestSuite(t *testing.T) {
 				T{ MIN-2INT MAX-2INT D= -> <FALSE> }T
 			`,
 		},
-		// DMAX
-		// DMIN
+		{
+			name: "DMAX",
+			code: `
+				T{       1.       2. DMAX ->  2.      }T
+				T{       1.       0. DMAX ->  1.      }T
+				T{       1.      -1. DMAX ->  1.      }T
+				T{       1.       1. DMAX ->  1.      }T
+				T{       0.       1. DMAX ->  1.      }T
+				T{       0.      -1. DMAX ->  0.      }T
+				T{      -1.       1. DMAX ->  1.      }T
+				T{      -1.      -2. DMAX -> -1.      }T
+				T{ MAX-2INT  HI-2INT DMAX -> MAX-2INT }T
+				T{ MAX-2INT MIN-2INT DMAX -> MAX-2INT }T
+				T{ MIN-2INT MAX-2INT DMAX -> MAX-2INT }T
+				T{ MIN-2INT  LO-2INT DMAX -> LO-2INT  }T
+				T{ MAX-2INT       1. DMAX -> MAX-2INT }T
+				T{ MAX-2INT      -1. DMAX -> MAX-2INT }T
+				T{ MIN-2INT       1. DMAX ->  1.      }T
+				T{ MIN-2INT      -1. DMAX -> -1.      }T
+			`,
+		},
+		{
+			name: "DMIN",
+			code: `
+				T{       1.       2. DMIN ->  1.      }T
+				T{       1.       0. DMIN ->  0.      }T
+				T{       1.      -1. DMIN -> -1.      }T
+				T{       1.       1. DMIN ->  1.      }T
+				T{       0.       1. DMIN ->  0.      }T
+				T{       0.      -1. DMIN -> -1.      }T
+				T{      -1.       1. DMIN -> -1.      }T
+				T{      -1.      -2. DMIN -> -2.      }T
+				T{ MAX-2INT  HI-2INT DMIN -> HI-2INT  }T
+				T{ MAX-2INT MIN-2INT DMIN -> MIN-2INT }T
+				T{ MIN-2INT MAX-2INT DMIN -> MIN-2INT }T
+				T{ MIN-2INT  LO-2INT DMIN -> MIN-2INT }T
+				T{ MAX-2INT       1. DMIN ->  1.      }T
+				T{ MAX-2INT      -1. DMIN -> -1.      }T
+				T{ MIN-2INT       1. DMIN -> MIN-2INT }T
+				T{ MIN-2INT      -1. DMIN -> MIN-2INT }T
+			`,
+		},
 		{
 			name: "D-",
 			code: `
@@ -1284,14 +1335,23 @@ func TestSuite(t *testing.T) {
 				// T{ MIN-INT S>D MAX-INT 0D- -> 1 1s }T
 				T{ MAX-2INT max-2INT D- -> 0. }T    \ large integers
 				T{ MIN-2INT min-2INT D- -> 0. }T
-				// T{ MAX-2INT  hi-2INT D- -> lo-2INT DNEGATE }T
+				T{ MAX-2INT  hi-2INT D- -> lo-2INT DNEGATE }T
 				T{  HI-2INT  lo-2INT D- -> max-2INT }T
 				// T{  LO-2INT  hi-2INT D- -> min-2INT 1. D+ }T
 				T{ MIN-2INT min-2INT D- -> 0. }T
 				// T{ MIN-2INT  lo-2INT D- -> lo-2INT }T \ TODO fixme
 			`,
 		},
-		// DNEGATE
+		{
+			name: "DNEGATE",
+			code: `
+				T{   0. DNEGATE ->  0. }T
+				T{   1. DNEGATE -> -1. }T
+				T{  -1. DNEGATE ->  1. }T
+				T{ max-2int DNEGATE -> min-2int SWAP 1+ SWAP }T
+				T{ min-2int SWAP 1+ SWAP DNEGATE -> max-2int }T
+			`,
+		},
 		// D+
 		// D2/
 		// D2*

@@ -15,7 +15,7 @@ STRING" __RTC_CLOCK.0:\n"
 RTC_CNTL_TIME0_REG 0 16
 READ_RTC_REG.BUILDER >C
 \ store result
-STRING" stack_st r0, 1\n"
+STRING" st r0, r3, 1\n"
 \ read 16..31
 RTC_CNTL_TIME0_REG 16 16
 READ_RTC_REG.BUILDER >C
@@ -24,8 +24,14 @@ STRING" st r0, r3, 0\njump __next_skip_r2"
 5 C> C> C> C> + + + + \ add up the strings and the built instructions
 BL WORD RTC_CLOCK --CREATE-ASSEMBLY \ create RTC_CLOCK
 
-: TIMER POSTPONE 2VARIABLE ;
-
-: TIMER.START ( t -- )
-    RTC_CLOCK ROT 2!
+\ delay for d ticks
+: RTC_CLOCK_DELAY ( d -- )
+    RTC_CLOCK ( d cycles ) \ read the current cycles
+    BEGIN
+        2OVER 2OVER ( d cycles d cycles )
+        RTC_CLOCK ( d cycles d cycles new )
+        2SWAP D- ( d cycles d diff )
+        DU< ( d cycles bool )
+    UNTIL
+    2DROP 2DROP \ clean up stack
 ;

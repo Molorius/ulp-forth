@@ -1,4 +1,7 @@
 
+: DNEGATE 0. 2SWAP D- ;
+: DABS DUP 0< IF DNEGATE THEN ;
+
 : D= ( x1 x2 y1 y2 -- bool )
     ROT ( x1 y1 y2 x2 )
     <> IF \ if not equal then drop the rest
@@ -8,21 +11,16 @@
 ;
 
 : DU<
-    ROT
-    2DUP = IF
-        2DROP U<
-    ELSE
-        U> >R 2DROP R>
-    THEN
+    ROT SWAP \ move the high cells to the top
+    2DUP <> IF \ if the high cells are not equal
+        2SWAP \ then ignore the low cells
+    THEN \ drop the top
+    2DROP
+    U< \ compare the bottom
 ;
 
 : DU>
-    ROT
-    2DUP = IF
-        2DROP U>
-    ELSE
-        U< >R 2DROP R>
-    THEN
+    2SWAP DU<
 ;
 
 : D0=
@@ -41,31 +39,26 @@
     NIP 0>
 ;
 
-: D<
-    ROT
-    2DUP = IF
-        2DROP <
-    ELSE
-        > >R 2DROP R>
-    THEN
-;
-
 : D<>
     D= 0=
 ;
 
 : D>
-    ROT
-    2DUP = IF
-        2DROP >
-    ELSE
-        < >R 2DROP R>
-    THEN
+    0x80000000. D-
+    2SWAP 0x80000000. D-
+    DU<
+;
+
+: D<
+    2SWAP D>
 ;
 
 : D>S
     DROP
 ;
+
+: DMAX 2OVER 2OVER D< IF 2SWAP THEN 2DROP ;
+: DMIN 2OVER 2OVER D> IF 2SWAP THEN 2DROP ;
 
 : 2LITERAL
     SWAP

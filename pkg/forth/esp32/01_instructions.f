@@ -14,7 +14,7 @@
 
 : REG_RD.BUILDER
     >R >R >R ( R: low high addr )
-    C" REG_RD "
+    C" reg_rd "
     R> \ addr
     C" , "
     R> \ high
