@@ -53,10 +53,16 @@ func (uForth ulpForth) build() string {
 }
 
 type Ulp struct {
+	// output strings
 	assembly []ulpAsm
 	forth    []ulpForth
 	data     map[string]string
 	outCount int
+
+	// output definitions
+	forthWords    []*WordForth
+	assemblyWords []*WordPrimitive
+	dataWords     []*WordForth
 }
 
 func (u *Ulp) build() string {
@@ -102,6 +108,10 @@ func (u *Ulp) BuildAssembly(vm *VirtualMachine, word string) (string, error) {
 		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)
 	}
 	vmInitEntry := vm.Dictionary.Entries[len(vm.Dictionary.Entries)-1]
+	err = u.buildLists(vmInitEntry)
+	if err != nil {
+		return "", err
+	}
 	_, err = u.findUsedEntry(vmInitEntry)
 	str := u.build()
 	return str, err
@@ -183,6 +193,14 @@ func (u *Ulp) findUsedEntry(entry *DictionaryEntry) (string, error) {
 	default:
 		return "", fmt.Errorf("Type %T not supported for cross compile, word: %s", w, w)
 	}
+}
+
+func (u *Ulp) buildLists(entry *DictionaryEntry) error {
+	u.forthWords = make([]*WordForth, 0)
+	u.assemblyWords = make([]*WordPrimitive, 0)
+	u.dataWords = make([]*WordForth, 0)
+
+	return entry.AddToList(u)
 }
 
 func (u *Ulp) findUsedCell(cell Cell) (string, error) {

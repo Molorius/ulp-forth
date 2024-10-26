@@ -21,6 +21,10 @@ func (d DictionaryEntry) Details() string {
 	return fmt.Sprintf("%s", d.Word)
 }
 
+func (d *DictionaryEntry) AddToList(u *Ulp) error {
+	return d.Word.AddToList(u)
+}
+
 // The Forth Dictionary. This architecture uses individual entries
 // representing words rather than a flat cell structure.
 type Dictionary struct {

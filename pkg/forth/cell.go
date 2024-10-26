@@ -1,12 +1,15 @@
 package forth
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // A Cell is the smallest unit of address within Forth.
 // Cells are what constitute words, stack entries, etc.
 type Cell interface {
 	Execute(*VirtualMachine) error
 	// Compile(*Ulp) (string, error) // The compiled string for the output assembly.
+	AddToList(*Ulp) error
 }
 
 // A Cell representing a number.
@@ -20,6 +23,12 @@ func (c CellNumber) Execute(vm *VirtualMachine) error {
 
 func (c CellNumber) String() string {
 	return fmt.Sprintf("#%d", c.Number)
+}
+
+func (c CellNumber) AddToList(u *Ulp) error {
+	// Numbers directly in a word are not executed,
+	// so we don't add to a list.
+	return nil
 }
 
 // A Cell representing an address in the dictionary. Used for pointers such
@@ -48,6 +57,10 @@ func (c CellAddress) Execute(vm *VirtualMachine) error {
 	default:
 		return fmt.Errorf("Cannot execute word type %t", c.Entry.Word)
 	}
+}
+
+func (c CellAddress) AddToList(u *Ulp) error {
+	return c.Entry.AddToList(u)
 }
 
 func (c CellAddress) String() string {
@@ -81,6 +94,12 @@ func (c CellLiteral) String() string {
 	return fmt.Sprintf("Literal(%s)", c.cell)
 }
 
+func (c CellLiteral) AddToList(u *Ulp) error {
+	// Don't create the literal yet, just start with
+	// adding the pointed value to a list.
+	return c.cell.AddToList(u)
+}
+
 // A destination to branch to. Only used during compilation.
 type CellDestination struct {
 	ulpName string      // the name we're going to compile this into
@@ -89,6 +108,11 @@ type CellDestination struct {
 
 func (c *CellDestination) Execute(vm *VirtualMachine) error {
 	return nil
+}
+
+func (c *CellDestination) AddToList(u *Ulp) error {
+	// Add the destination word to a list.
+	return c.Addr.AddToList(u)
 }
 
 func (c *CellDestination) copyAddress() CellAddress {
@@ -121,6 +145,11 @@ func (c *CellBranch) Execute(vm *VirtualMachine) error {
 	return nil
 }
 
+func (c *CellBranch) AddToList(u *Ulp) error {
+	// Add the destination to the list.
+	return c.dest.AddToList(u)
+}
+
 func (c *CellBranch) String() string {
 	return fmt.Sprintf("Branch{%p}", c.dest)
 }
@@ -144,6 +173,11 @@ func (c *CellBranch0) Execute(vm *VirtualMachine) error {
 	default:
 	}
 	return nil
+}
+
+func (c *CellBranch0) AddToList(u *Ulp) error {
+	// Add the destination to the list.
+	return c.dest.AddToList(u)
 }
 
 func (c *CellBranch0) String() string {

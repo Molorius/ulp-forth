@@ -8,6 +8,7 @@ import (
 // An executable Forth Word.
 type Word interface {
 	Execute(*VirtualMachine) error // Execute the word.
+	AddToList(*Ulp) error
 }
 
 // A Word built using other Forth words/numbers.
@@ -66,6 +67,28 @@ func (w *WordForth) Execute(vm *VirtualMachine) error {
 	return w.ExecuteOffset(vm, 0)
 }
 
+func (w *WordForth) AddToList(u *Ulp) error {
+	if w.Entry.Flag.addedToList {
+		return nil
+	}
+	// add this word to the list
+	w.Entry.Flag.addedToList = true
+	if w.Entry.Flag.Data {
+		u.dataWords = append(u.dataWords, w)
+	} else {
+		u.forthWords = append(u.forthWords, w)
+	}
+
+	// add every cell
+	for _, c := range w.Cells {
+		err := c.AddToList(u)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // The Go code for a primitive Word.
 type PrimitiveGo func(*VirtualMachine, *DictionaryEntry) error
 
@@ -81,4 +104,13 @@ type WordPrimitive struct {
 
 func (w *WordPrimitive) Execute(vm *VirtualMachine) error {
 	return w.Go(vm, w.Entry)
+}
+
+func (w *WordPrimitive) AddToList(u *Ulp) error {
+	if w.Entry.Flag.addedToList {
+		return nil
+	}
+	u.assemblyWords = append(u.assemblyWords, w)
+	w.Entry.Flag.addedToList = true
+	return nil
 }
