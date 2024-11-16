@@ -24,7 +24,7 @@ STRING" st r0, r3, 0\njump __next_skip_r2"
 5 C> C> C> C> + + + + \ add up the strings and the built instructions
 BL WORD RTC_CLOCK --CREATE-ASSEMBLY \ create RTC_CLOCK
 
-\ delay for d ticks
+\ delay for d rtc_slow ticks
 : RTC_CLOCK_DELAY ( d -- )
     RTC_CLOCK ( d cycles ) \ read the current cycles
     BEGIN
@@ -34,4 +34,30 @@ BL WORD RTC_CLOCK --CREATE-ASSEMBLY \ create RTC_CLOCK
         DU< ( d cycles bool )
     UNTIL
     2DROP 2DROP \ clean up stack
+;
+
+STRING" ld r0, r3, 0\n"
+STRING" jumpr __busy_delay.1, 1, lt\n" \ don't enter loop if input is 0
+STRING" __busy_delay.0:\n"
+    STRING" sub r0, r0, 1\n" \ 6 cycles
+    STRING" jumpr __busy_delay.0, 0, gt\n" \ 4 cycles, loop if greater than 0
+STRING" __busy_delay.1:\n"
+STRING" add r3, r3, 1\n" \ decrement stack
+STRING" jump __next_skip_r2\n" \ exit
+8 BL WORD BUSY_DELAY --CREATE-ASSEMBLY \ create BUSY_DELAY
+
+\ TODO check this with oscilloscope. 800
+\ should get us to 1 ms inside the loop but
+\ oscilloscope will help get exact number.
+: DELAY_1MS ( -- )
+    800 BUSY_DELAY
+;
+
+: DELAY_MS ( n -- )
+    BEGIN
+        DUP
+    WHILE \ while n is not 0
+        DELAY_1MS
+        1-
+    REPEAT
 ;
