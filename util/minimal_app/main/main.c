@@ -16,7 +16,6 @@ static void init_ulp(void)
 
     // start the ulp
     err = ulp_run(&ulp_entry - RTC_SLOW_MEM);
-    err = ulp_run(RTC_SLOW_MEM);
     ESP_ERROR_CHECK(err);
 }
 

@@ -467,7 +467,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"ld r0, r3, 0", // get the address from stack
 				"ld r0, r0, 0", // load the value
 				"st r0, r3, 0", // store the address on stack
-				"jump __next_skip_r2",
+				"jump __next_skip_load",
 			},
 		},
 		{
@@ -677,7 +677,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"and r0, r0, 0x7FFF", // mask off the upper bit
 				"st r0, r3, 0",       // store the result
 				"__aligned.0:",
-				"jump __next_skip_r2",
+				"jump __next_skip_load",
 			},
 		},
 		{
@@ -1079,7 +1079,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"ld r0, r3, 0",
 				"sub r3, r3, 1",
 				"st r0, r3, 0",
-				"jump __next_skip_r2",
+				"jump __next_skip_load",
 			},
 		},
 		{
@@ -1101,7 +1101,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"add r0, r0, r3",
 				"ld r0, r0, 1",
 				"st r0, r3, 0",
-				"jump __next_skip_r2",
+				"jump __next_skip_load",
 			},
 		},
 		{
@@ -1170,7 +1170,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 			ulpAsm: PrimitiveUlp{
 				"add r3, r3, 1",
-				"jump __next_skip_r2",
+				"jump __next_skip_load",
 			},
 		},
 		{
@@ -1281,7 +1281,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"sub r0, r0, r3",
 				"sub r3, r3, 1",
 				"st r0, r3, 0",
-				"jump __next_skip_r2",
+				"jump __next_skip_load",
 			},
 		},
 		{
@@ -1292,14 +1292,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 			ulpAsm: PrimitiveUlp{
 				"move r3, __stack_end", // set the stack pointer to the end of the stack
-				"jump __next_skip_r2",
-			},
-		},
-		{
-			name:   "VM.STOP", // stop executing
-			goFunc: notImplemented,
-			ulpAsm: PrimitiveUlp{
-				"jump .", // loop indefinitely
+				"jump __next_skip_load",
 			},
 		},
 		{
@@ -1348,7 +1341,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"ld r0, r2, HOST_FUNC",
 				"sub r3, r3, 1",
 				"st r0, r3, 0",
-				"jump __next_skip_r2",
+				"jump __next_skip_load",
 			},
 		},
 		{
@@ -1372,15 +1365,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: nop,
 			ulpAsm: PrimitiveUlp{
 				"st r2, r2, MUTEX_FLAG0", // flag0 = 0
-				"jump __next_skip_r2",
-			},
-		},
-		{
-			name:   "DEBUG.PAUSE", // temporarily used while we don't have jumps
-			goFunc: nop,
-			ulpAsm: PrimitiveUlp{
-				"wait 0xFFFF",
-				"jump __next_skip_r2",
+				"jump __next_skip_load",
 			},
 		},
 

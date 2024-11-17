@@ -309,46 +309,45 @@ func (u *Ulp) buildInterpreter() string {
 		"ld r1, r2, __ip",   // load the instruction pointer
 		"__next_skip_load:", // address to skip loading IP
 		"add r1, r1, 1",     // increment the pointer to the next instruction
-		"st r1, r2, __ip",   // store the pointer
 		"ld r0, r1, -1",     // load the current instruction
 
 		// determine instruction type
 		"__ins_asm:",
 		"jumpr __ins_forth, __forthwords_start, ge",
-		// it's assembly, execute immediately
-		"jump r0",
+		// it's assembly
+		"st r1, r2, __ip", // store the instruction pointer so asm can use r1
+		"jump r0",         // jump to the assembly
 
 		"__ins_forth:",
 		"jumpr __ins_num, __forthdata_start, ge",
 		// it's forth
-		"st r0, r2, __ip",  // put the address into the instruction pointer
-		"ld r0, r2, __rsp", // load the return stack pointer
-		"add r0, r0, 1",    // increment the rsp
-		"st r1, r0, 0",     // store the instruction we were about to execute onto the return stack
-		"st r0, r2, __rsp", // store the rsp
-		"jump next",        // then start the vm again at the defined instruction
+		"st r0, r2, __ip",     // put the address into the instruction pointer
+		"ld r0, r2, __rsp",    // load the return stack pointer
+		"add r0, r0, 1",       // increment the rsp
+		"st r1, r0, 0",        // store the instruction we were about to execute onto the return stack
+		"st r0, r2, __rsp",    // store the rsp
+		"jump __next_skip_r2", // then start the vm again at the defined instruction
 
 		"__ins_num:",
 		"jumpr __ins_branch0, __forthdata_end, gt",
 		// it's a number or variable
-		"ld r0, r0, 0",  // load the number
-		"sub r3, r3, 1", // increase the stack by 1
-		"st r0, r3, 0",  // store the number
-		"jump next",     // next!
+		"ld r0, r0, 0",          // load the number
+		"sub r3, r3, 1",         // increase the stack by 1
+		"st r0, r3, 0",          // store the number
+		"jump __next_skip_load", // next!
 
 		"__ins_branch0:",
 		"jumpr __ins_branch, 0x8000, ge",
 		// it's a conditional branch, check stack
-		"ld r1, r3, 0",            // get value from stack
-		"add r3, r3, 1",           // decrement stack
-		"add r1, r1, 0xFFFF",      // add number with all bits set
-		"jump __next_skip_r2, ov", // if overflow then number wasn't 0, continue vm. Otherwise jump.
+		"ld r0, r3, 0",                  // get value from stack
+		"add r3, r3, 1",                 // decrement stack
+		"jumpr __next_skip_load, 1, ge", // continue forth execution if not 0
+		"ld r0, r1, -1",                 // otherwise reload the address and branch!
 
 		"__ins_branch:",
 		// it's a definite branch
 		"and r1, r0, 0x3FFF",    // get the lowest 14 bits
 		"jump __next_skip_load", // then continue vm at this newer address
-		"",                      // newline at end
 	}
-	return strings.Join(i, "\r\n")
+	return strings.Join(i, "\r\n") + "\r\n"
 }

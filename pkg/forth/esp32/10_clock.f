@@ -20,7 +20,7 @@ STRING" st r0, r3, 1\n"
 RTC_CNTL_TIME0_REG 16 16
 READ_RTC_REG.BUILDER >C
 \ store result and exit
-STRING" st r0, r3, 0\njump __next_skip_r2"
+STRING" st r0, r3, 0\njump __next_skip_load"
 5 C> C> C> C> + + + + \ add up the strings and the built instructions
 BL WORD RTC_CLOCK --CREATE-ASSEMBLY \ create RTC_CLOCK
 
@@ -43,7 +43,7 @@ STRING" __busy_delay.0:\n"
     STRING" jumpr __busy_delay.0, 0, gt\n" \ 4 cycles, loop if greater than 0
 STRING" __busy_delay.1:\n"
 STRING" add r3, r3, 1\n" \ decrement stack
-STRING" jump __next_skip_r2\n" \ exit
+STRING" jump __next_skip_load\n" \ exit
 8 BL WORD BUSY_DELAY --CREATE-ASSEMBLY \ create BUSY_DELAY
 
 \ TODO check this with oscilloscope. 800

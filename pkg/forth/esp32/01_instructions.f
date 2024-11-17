@@ -26,7 +26,7 @@
 
 : REG_RD ( addr high low -- )
     REG_RD.BUILDER
-    C" sub r3, r3, 1\nst r0, r3, 0\njump __next_skip_r2" \ increase stack, store result, next
+    C" sub r3, r3, 1\nst r0, r3, 0\njump __next_skip_load" \ increase stack, store result, next
     SWAP 1 + \ number of inputs
     BL WORD --CREATE-ASSEMBLY
 ;
@@ -46,7 +46,7 @@
 
 : READ_RTC_REG ( addr low width )
     READ_RTC_REG.BUILDER
-    C" sub r3, r3, 1\nst r0, r3, 0\njump __next_skip_r2" \ increase stack, store result, next
+    C" sub r3, r3, 1\nst r0, r3, 0\njump __next_skip_load" \ increase stack, store result, next
     SWAP 1 + \ number of inputs
     BL WORD --CREATE-ASSEMBLY
 ;
@@ -68,7 +68,7 @@
 \ create an assembly word that writes to an RTC register
 : REG_WR ( addr high low data )
     REG_WR.BUILDER
-    C" jump __next_skip_r2"
+    C" jump __next_skip_load"
     SWAP 1 +
     BL WORD --CREATE-ASSEMBLY
 ;
@@ -79,7 +79,7 @@
     REG_WR.BUILDER >C \ put on control flow stack for now
     R> R> R> R>
     REG_WR.BUILDER C> +
-    C" jump __next_skip_r2"
+    C" jump __next_skip_load"
     SWAP 1 +
     BL WORD --CREATE-ASSEMBLY
 ;
@@ -100,7 +100,7 @@
 \ create an assembly word that writes to an RTC register
 : WRITE_RTC_REG ( addr low width data -- )
     WRITE_RTC_REG.BUILDER
-    C" jump __next_skip_r2"
+    C" jump __next_skip_load"
     SWAP 1 +
     BL WORD --CREATE-ASSEMBLY
 ;
@@ -111,7 +111,7 @@
     WRITE_RTC_REG.BUILDER >C
     R> R> R> R>
     WRITE_RTC_REG.BUILDER C> +
-    C" jump __next_skip_r2"
+    C" jump __next_skip_load"
     SWAP 1 +
     BL WORD --CREATE-ASSEMBLY
 ;
