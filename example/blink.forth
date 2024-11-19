@@ -1,8 +1,8 @@
 
-\ Initializes the led. Change to whichever gpio you
+\ Initializes the led pin. Change to whichever gpio you
 \ want to use.
 \ You can save space by initializing this with the esp32.
-: led_init ( -- )
+: pin_init ( -- )
     gpio2.enable
     gpio2.output_enable
     \ or use the rtc_gpio equivalents:
@@ -23,13 +23,14 @@
 1000 constant ms
 
 : main
-    led_init
+    pin_init
     begin
-        \ set high
-        1 led_set
+        1 led_set \ set high
+        \ gpio2.set_high \ or set high directly
         ms delay_ms
-        \ set low
-        0 led_set
+
+        0 led_set \ set low
+        \ gpio2.set_low \ or set low directly
         ms delay_ms
     again
 ;

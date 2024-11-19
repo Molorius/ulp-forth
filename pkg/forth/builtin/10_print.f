@@ -21,6 +21,7 @@
 
 DEFER EMIT \ let us change EMIT
 : SPACE BL EMIT ;
+: CR 10 13 EMIT EMIT ;
 
 : U.NOSPACE ( u -- )
     BASE @ U/MOD \ divide with remainder
