@@ -43,21 +43,14 @@ STRING" __busy_delay.0:\n"
     STRING" jumpr __busy_delay.0, 0, gt\n" \ 4 cycles, loop if greater than 0
 STRING" __busy_delay.1:\n"
 STRING" add r3, r3, 1\n" \ decrement stack
-STRING" jump __next_skip_load\n" \ exit
+STRING" jump __next_skip_load" \ exit
 8 BL WORD BUSY_DELAY --CREATE-ASSEMBLY \ create BUSY_DELAY
-
-\ TODO check this with oscilloscope. 800
-\ should get us to 1 ms inside the loop but
-\ oscilloscope will help get exact number.
-: DELAY_1MS ( -- )
-    800 BUSY_DELAY
-;
 
 : DELAY_MS ( n -- )
     BEGIN
         DUP
     WHILE \ while n is not 0
-        DELAY_1MS
+        1033 BUSY_DELAY \ calibrated at 21 C
         1-
     REPEAT
     DROP \ remove n
