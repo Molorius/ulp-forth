@@ -4,7 +4,6 @@
 \ 4K7 Ohm is a good value for general use.
 
 \ Initializes the pins.
-\ This can be done on the esp32 to save ulp space.
 : pin_init
     \ serial pin
     gpio13.enable
