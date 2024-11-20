@@ -959,37 +959,36 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			ulpAsm: PrimitiveUlp{
 				// 'd' on 0
 				// 'n' on 1
-				// 'r' on r1
-				// 'q' on r2
+				// 'q' on r1
+				// 'r' on r2 (already set to 0)
 				// loop on stage_cnt
 
-				"move r1, 0", // r = 0, r2 already set to 0
-				"stage_rst",  // stage_cnt = 0
+				"stage_rst", // stage_cnt = 0
 
 				"__divmod.0:",
 				// shift n into r, shift r, shift q
-				"lsh r1, r1, 1",                // r = r<<1
-				"lsh r2, r2, 1",                // q = q<<1
+				"lsh r2, r2, 1",                // r = r<<1
+				"lsh r1, r1, 1",                // q = q<<1
 				"ld r0, r3, 1",                 // load n
 				"jumpr __divmod.1, 0x8000, lt", // jump if the top bit is not set
-				"or r1, r1, 1",                 // if bit is set, "shift" this bit into r
+				"or r2, r2, 1",                 // if bit is set, "shift" this bit into r
 				"__divmod.1:",                  // then
 				"lsh r0, r0, 1",                // n = n<<1
 				"st r0, r3, 1",                 // store n
 				// attempt subtracting
 				"ld r0, r3, 0",        // load d
-				"sub r0, r1, r0",      // r0 = r - d
+				"sub r0, r2, r0",      // r0 = r - d
 				"jump __divmod.2, ov", // jump ahead if that overflowed
 				// no overflow
-				"move r1, r0",  // store result into r
-				"or r2, r2, 1", // set the lowest bit of q
+				"move r2, r0",  // store result into r
+				"or r1, r1, 1", // set the lowest bit of q
 				"__divmod.2:",
 				"stage_inc 1",              // increase the stage counter
 				"jumps __divmod.0, 16, lt", // loop over each bit
 
 				// done! store r and q
-				"st r1, r3, 1", // r
-				"st r2, r3, 0", // q
+				"st r2, r3, 1", // r
+				"st r1, r3, 0", // q
 				"jump next",
 			},
 		},
