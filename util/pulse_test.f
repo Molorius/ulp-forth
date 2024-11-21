@@ -15,8 +15,7 @@ string" reg_wr 257, 28, 28, 1\nreg_wr 258, 28, 28, 1\n"
 string" unique_label_to_skip_assembly_optimizations_in_pulse_test_f:\n"
 string" jump __next_skip_load"
 3 \ 3 assembly objects to compile
-bl word asm-pulse \ name it "asm-pulse"
---create-assembly \ create the assembly word!
+assembly asm-pulse \ create the assembly word named "asm-pulse"
 
 : main
     pin_init

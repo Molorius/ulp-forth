@@ -8,7 +8,7 @@
 \ may change later with optimization passes, assembly
 \ is consistent. It's also difficult to tune high baud
 \ rates in forth without taking a lot of space.
-: SERIAL.WRITE_CREATE ( pin wait-time )
+: SERIAL.WRITE_CREATE ( pin wait-time "<spaces>name" -- )
     2>R \ put arguments on return stack while building
     C" ld r0, r3, 0\n" \ load the character
     C" add r3, r3, 1\n" \ decrement the return stack
@@ -30,15 +30,17 @@
             RTCIO_RTC_GPIO_OUT_DATA_W1TC_S 1 RPICK +
             1 1
             WRITE_RTC_REG.BUILDER >C
+            \ jump so it takes the same time
             C" jump __serial_write_2_" 1 RPICK C" _" 0 RPICK C" \n"
         C" __serial_write_2_" 1 RPICK C" _" 0 RPICK C" :\n"
-        C" wait " R@ C" \n"
-        C" rsh r0, r0, 1\n"
+        C" wait " R@ C" \n" \ wait for wait-time ticks
+        C" rsh r0, r0, 1\n" \ go to next bit
+        \ loop 8 times
         C" stage_inc 1\n"
         C" jumps __serial_write_0_" 1 RPICK C" _" 0 RPICK C" , 10, lt\n"
     C" jump __next_skip_r2"
     47 C> C> + + \ get the total number of inputs
-    BL WORD --CREATE-ASSEMBLY \ create the assembly
+    ASSEMBLY \ create the assembly
     2R> 2DROP \ clean up the return stack
 ;
 

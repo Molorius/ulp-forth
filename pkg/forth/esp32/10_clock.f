@@ -22,7 +22,7 @@ READ_RTC_REG.BUILDER >C
 \ store result and exit
 STRING" st r0, r3, 0\njump __next_skip_load"
 5 C> C> C> C> + + + + \ add up the strings and the built instructions
-BL WORD RTC_CLOCK --CREATE-ASSEMBLY \ create RTC_CLOCK
+ASSEMBLY RTC_CLOCK \ create RTC_CLOCK
 
 \ delay for d rtc_slow ticks
 : RTC_CLOCK_DELAY ( d -- )
@@ -44,7 +44,7 @@ STRING" __busy_delay.0:\n"
 STRING" __busy_delay.1:\n"
 STRING" add r3, r3, 1\n" \ decrement stack
 STRING" jump __next_skip_load" \ exit
-8 BL WORD BUSY_DELAY --CREATE-ASSEMBLY \ create BUSY_DELAY
+8 ASSEMBLY BUSY_DELAY \ create BUSY_DELAY
 
 : DELAY_MS ( n -- )
     BEGIN

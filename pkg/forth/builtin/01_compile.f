@@ -60,3 +60,9 @@ EXIT [ IMMEDIATE
     LAST \ put the execution token on the stack
     ] \ and put in compile mode
 ;
+
+\ Parse the next word, create a new assembly definition for
+\ that word using the previous n stack values.
+\ The values can either be string references or numbers.
+: ASSEMBLY ( objn ... obj0 n "\<spaces\>name" -- )
+    BL WORD --CREATE-ASSEMBLY ;
