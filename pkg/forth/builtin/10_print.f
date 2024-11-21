@@ -59,4 +59,4 @@ DEFER EMIT \ let us change EMIT
 : ." POSTPONE S" POSTPONE TYPE ; IMMEDIATE
 
 \ set EMIT to the system printchar by default
-' ESP.PRINTCHAR ' EMIT DEFER!
+' ESP.PRINTCHAR IS EMIT

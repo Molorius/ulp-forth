@@ -17,7 +17,7 @@
 \ 13 gpio_number_to_rtc serial.write_115200_baud serial.write_create tx
 
 \ use our tx word for printing
-' tx ' emit defer!
+' tx is emit
 
 \ The number of milliseconds between loops.
 1000 constant ms

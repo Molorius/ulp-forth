@@ -26,17 +26,17 @@
 
 \ uses gpio 13 to serial write at the desired baud.
 13 gpio_number_to_rtc serial.write_9600_baud serial.write_create tx
-' tx ' emit defer!
+' tx is emit
 
 \ sda pin declarations
-' gpio26.output_disable ' i2c.sda_high defer!
-' gpio26.output_enable ' i2c.sda_low defer!
-' gpio26.get ' i2c.sda_get defer!
+' gpio26.output_disable is i2c.sda_high
+' gpio26.output_enable is i2c.sda_low
+' gpio26.get is i2c.sda_get
 
 \ scl pin declarations
-' gpio27.output_disable ' i2c.scl_high defer!
-' gpio27.output_enable ' i2c.scl_low defer!
-' gpio27.get ' i2c.scl_get defer!
+' gpio27.output_disable is i2c.scl_high
+' gpio27.output_enable is i2c.scl_low
+' gpio27.get is i2c.scl_get
 
 : main
     pin_init

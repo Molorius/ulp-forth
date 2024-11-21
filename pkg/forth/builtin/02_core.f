@@ -310,7 +310,7 @@
 
 \ set /MOD to symmetric division by default
 DEFER /MOD
-' S/REM ' /MOD DEFER!
+' S/REM IS /MOD
 
 : / /MOD NIP ;
 : MOD /MOD DROP ;
