@@ -1,4 +1,7 @@
-
+\ Copyright 2024 Blake Felt blake.w.felt@gmail.com
+\ This Source Code Form is subject to the terms of the Mozilla Public
+\ License, v. 2.0. If a copy of the MPL was not distributed with this
+\ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 \ Create word RTC_CLOCK to read the lower 32 bits of the rtc clock.
 \ tell rtc timer to update

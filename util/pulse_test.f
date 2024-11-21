@@ -1,3 +1,8 @@
+\ Copyright 2024 Blake Felt blake.w.felt@gmail.com
+\ This Source Code Form is subject to the terms of the Mozilla Public
+\ License, v. 2.0. If a copy of the MPL was not distributed with this
+\ file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 \ Pulses out on a pin, used to calibrate the millisecond delay
 \ and to compare the fastest assembly to fastest forth.
 \ Should be compiled without optimizations.

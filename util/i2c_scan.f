@@ -1,3 +1,8 @@
+\ Copyright 2024 Blake Felt blake.w.felt@gmail.com
+\ This Source Code Form is subject to the terms of the Mozilla Public
+\ License, v. 2.0. If a copy of the MPL was not distributed with this
+\ file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 \ This uses a bit-banged i2c implementation to
 \ scan for all devices on the bus.
 \ The bus should be pulled up with a resistor,
