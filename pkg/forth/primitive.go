@@ -8,7 +8,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 package forth
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -33,7 +32,11 @@ func primitiveAdd(vm *VirtualMachine, name string, goFunc PrimitiveGo, ulpAsm Pr
 		},
 		Flag: flag,
 	}
-	return vm.Dictionary.AddEntry(&entry)
+	err := vm.Dictionary.AddEntry(&entry)
+	if err != nil {
+		return JoinEntryError(err, &entry, "error adding primitive entry to dictionary, please file a bug report")
+	}
+	return nil
 }
 
 func PrimitiveSetup(vm *VirtualMachine) error {
@@ -63,19 +66,19 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not pop name.", entry), err)
+					return JoinEntryError(err, entry, "could not pop name")
 				}
 				cellAddr, ok := cell.(CellAddress)
 				if !ok {
-					return fmt.Errorf("%s requires an address cell.", cellAddr)
+					return EntryError(entry, "requires an address cell")
 				}
 				name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
 				if err != nil {
-					return err
+					return JoinEntryError(err, entry, "could not parse name")
 				}
 				wordEntry, err := vm.Dictionary.FindName(string(name))
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not find word.", entry), err)
+					return JoinEntryError(err, entry, "could not find word")
 				}
 				fmt.Fprint(vm.Out, "\r\n", wordEntry.Details())
 				return nil
@@ -86,16 +89,16 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				n, err := vm.Stack.PopNumber()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not pop delimiter.", entry), err)
+					return JoinEntryError(err, entry, "could not pop delimiter")
 				}
 				str, err := vm.ParseArea.Word(byte(n))
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not parse.", entry), err)
+					return JoinEntryError(err, entry, "could not parse string")
 				}
 				var de DictionaryEntry
 				cells, err := bytesToCells(str, true)
 				if err != nil {
-					return err
+					return JoinEntryError(err, entry, "could not convert bytes to cells")
 				}
 				w := WordForth{cells, &de}
 				de = DictionaryEntry{
@@ -107,7 +110,11 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					Offset:    0,
 					UpperByte: false,
 				}
-				return vm.Stack.Push(c)
+				err = vm.Stack.Push(c)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not push address")
+				}
+				return nil
 			},
 		},
 		{
@@ -115,15 +122,15 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not pop name.", entry), err)
+					return JoinEntryError(err, entry, "could not pop name")
 				}
 				cellAddr, ok := cell.(CellAddress)
 				if !ok {
-					return fmt.Errorf("%s requires an address cell.", cellAddr)
+					return EntryError(entry, "requires an address cell")
 				}
 				name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
 				if err != nil {
-					return err
+					return JoinEntryError(err, entry, "could not parse name")
 				}
 				var newEntry DictionaryEntry
 				newEntry = DictionaryEntry{
@@ -135,7 +142,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				}
 				err = vm.Dictionary.AddEntry(&newEntry)
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not add new dictionary entry.", entry), err)
+					return JoinEntryError(err, entry, "could not add entry to dictionary")
 				}
 				return nil
 			},
@@ -145,37 +152,37 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cellStr, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not pop name.", entry), err)
+					return JoinEntryError(err, entry, "could not pop name")
 				}
 				cellAddr, ok := cellStr.(CellAddress)
 				if !ok {
-					return fmt.Errorf("%s requires an address cell.", cellAddr)
+					return EntryError(entry, "name argument needs to be an address to a string")
 				}
 				name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
 				if err != nil {
-					return err
+					return JoinEntryError(err, entry, "could not parse name")
 				}
 				count, err := vm.Stack.PopNumber()
 				if err != nil {
-					return err
+					return JoinEntryError(err, entry, "count argument requires a number")
 				}
 				asm := make([]string, 0)
 				for i := uint16(0); i < count; i++ {
 					cell, err := vm.Stack.Pop()
 					if err != nil {
-						return err
+						return JoinEntryError(err, entry, "could not pop object")
 					}
 					switch c := cell.(type) {
 					case CellAddress:
 						substr, err := cellsToString(c.Entry.Word.(*WordForth).Cells)
 						if err != nil {
-							return err
+							return JoinEntryError(err, entry, "could not convert input to string")
 						}
 						asm = append(asm, substr)
 					case CellNumber:
 						asm = append(asm, strconv.Itoa(int(c.Number)))
 					default:
-						return fmt.Errorf("%s unknown type %t", entry, c)
+						return EntryError(entry, "unknown argument type %T argument %s", c, c)
 					}
 				}
 				slices.Reverse(asm)
@@ -192,20 +199,42 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 						Entry: &newEntry,
 					},
 				}
-				return vm.Dictionary.AddEntry(&newEntry)
+				err = vm.Dictionary.AddEntry(&newEntry)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not add entry to dictionary")
+				}
+				return nil
 			},
 		},
 		{
 			name: "[",
 			flag: Flag{Immediate: true},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
-				return vm.State.Set(uint16(StateInterpret))
+				err := vm.State.Set(uint16(StateInterpret))
+				if err != nil {
+					return JoinEntryError(err, entry, "could not set state to interpret mode")
+				}
+				return nil
 			},
 		},
 		{
 			name: "]",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
-				return vm.State.Set(uint16(StateCompile))
+				err := vm.State.Set(uint16(StateCompile))
+				if err != nil {
+					return JoinEntryError(err, entry, "could not set state to compile mode")
+				}
+				return nil
+			},
+		},
+		{
+			name: "BYE",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				err := vm.State.Set(uint16(StateExit))
+				if err != nil {
+					return JoinEntryError(err, entry, "could not set state to exit mode")
+				}
+				return nil
 			},
 		},
 		{
@@ -213,7 +242,11 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				last := vm.Dictionary.Entries[len(vm.Dictionary.Entries)-1]
 				c := CellAddress{last, 0, false}
-				return vm.Stack.Push(c)
+				err := vm.Stack.Push(c)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 		},
 		{
@@ -221,9 +254,13 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
-				return vm.ControlFlowStack.Push(c)
+				err = vm.ControlFlowStack.Push(c)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not push on control flow stack")
+				}
+				return nil
 			},
 		},
 		{
@@ -231,29 +268,41 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.ControlFlowStack.Pop()
 				if err != nil {
-					return err
+					return JoinEntryError(err, entry, "could not pop from control flow stack")
 				}
-				return vm.Stack.Push(c)
+				err = vm.Stack.Push(c)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 		},
 		{
-			name: ">D",
+			name: ">DO",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
-				return vm.DoStack.Push(c)
+				err = vm.DoStack.Push(c)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not push on do stack")
+				}
+				return nil
 			},
 		},
 		{
-			name: "D>",
+			name: "DO>",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.DoStack.Pop()
 				if err != nil {
-					return err
+					return JoinEntryError(err, entry, "could not pop from do stack")
 				}
-				return vm.Stack.Push(c)
+				err = vm.Stack.Push(c)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 		},
 		{
@@ -261,9 +310,13 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
-				return vm.ReturnStack.Push(c)
+				err = vm.ReturnStack.Push(c)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not push on return stack")
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 0",     // get value from stack
@@ -280,9 +333,13 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.ReturnStack.Pop()
 				if err != nil {
-					return err
+					return JoinEntryError(err, entry, "could not pop from return stack")
 				}
-				return vm.Stack.Push(c)
+				err = vm.Stack.Push(c)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r1, r2, __rsp", // load rsp
@@ -297,19 +354,31 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		{
 			name: "BRANCH",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
-				return vm.Stack.Push(&CellBranch{})
+				err := vm.Stack.Push(&CellBranch{})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 		},
 		{
 			name: "BRANCH0",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
-				return vm.Stack.Push(&CellBranch0{})
+				err := vm.Stack.Push(&CellBranch0{})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 		},
 		{
 			name: "DEST",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
-				return vm.Stack.Push(&CellDestination{})
+				err := vm.Stack.Push(&CellDestination{})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 		},
 		{
@@ -317,15 +386,15 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				destCell, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return JoinEntryError(err, entry, "could not pop destination")
 				}
 				branchCell, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return JoinEntryError(err, entry, "could not pop branch")
 				}
 				dest, ok := destCell.(*CellDestination)
 				if !ok {
-					return fmt.Errorf("%s expected a destination: %s %T", entry, destCell, destCell)
+					return EntryError(entry, "expected a destination found %s type %T", destCell, destCell)
 				}
 				switch b := branchCell.(type) {
 				case *CellBranch:
@@ -333,7 +402,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				case *CellBranch0:
 					b.dest = dest
 				default:
-					return fmt.Errorf("%s expected a branch: %s", entry, branchCell)
+					return EntryError(entry, "expected a branch found %s type %T", branchCell, branchCell)
 				}
 				return nil
 			},
@@ -344,12 +413,12 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
+					return PopError(err, entry)
 				}
 				newCell := CellLiteral{c}
 				last, err := vm.Dictionary.LastForthWord()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get last forth word.", entry), err)
+					return JoinEntryError(err, entry, "could not get last forth word")
 				}
 				last.Cells = append(last.Cells, newCell)
 				return nil
@@ -360,22 +429,26 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
+					return PopError(err, entry)
 				}
 				cellAddr, ok := cell.(CellAddress)
 				if !ok {
-					return fmt.Errorf("%s requires an address cell.", cellAddr)
+					return EntryError(entry, "requires an address cell")
 				}
 				name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
 				if err != nil {
-					return err
+					return JoinEntryError(err, entry, "could not convert input to string")
 				}
 				found, err := vm.Dictionary.FindName(string(name))
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not find name: %s", entry, name), err)
+					return JoinEntryError(err, entry, "could not find name: %s", name)
 				}
 				newCell := CellAddress{found, 0, false}
-				return vm.Stack.Push(newCell)
+				err = vm.Stack.Push(newCell)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 		},
 		{
@@ -383,11 +456,11 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
+					return PopError(err, entry)
 				}
 				last, err := vm.Dictionary.LastForthWord()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get last forth word.", entry), err)
+					return JoinEntryError(err, entry, "could not get last forth word")
 				}
 				last.Cells = append(last.Cells, c)
 				dest, ok := c.(*CellDestination)
@@ -405,13 +478,17 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				cellAddr, ok := c.(CellAddress)
 				if !ok {
-					return fmt.Errorf("unable to execute cell %s", c)
+					return EntryError(entry, "unable to execute cell %s", c)
 				}
-				return cellAddr.Execute(vm)
+				err = cellAddr.Execute(vm)
+				if err != nil {
+					return JoinEntryError(err, entry, "error while executing")
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 0",   // load the token into r0
@@ -424,7 +501,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				n, err := vm.Stack.PopNumber()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				var de DictionaryEntry // note that we don't put this entry into the dictionary
 				w := WordForth{
@@ -444,9 +521,13 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				}
 				err = vm.Stack.Push(cell)
 				if err != nil {
-					return err
+					return PushError(err, entry)
 				}
-				return vm.Stack.Push(CellNumber{0})
+				err = vm.Stack.Push(CellNumber{0})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 		},
 		{
@@ -454,20 +535,24 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				switch c := cell.(type) {
 				case CellAddress:
 					w, ok := c.Entry.Word.(*WordForth)
 					if !ok {
-						return fmt.Errorf("%s can only read forth data words: %T", entry, w)
+						return EntryError(entry, "can only read forth data words found %s type %T", w, w)
 					}
 					if c.Offset < 0 || c.Offset >= len(w.Cells) {
-						return fmt.Errorf("%s reading outside of data range, offset %d", entry, c.Offset)
+						return EntryError(entry, "reading outside of data range, offset %d", c.Offset)
 					}
-					return vm.Stack.Push(w.Cells[c.Offset])
+					err = vm.Stack.Push(w.Cells[c.Offset])
+					if err != nil {
+						return PushError(err, entry)
+					}
+					return nil
 				default:
-					return fmt.Errorf("%s can only write address cells: %T", entry, cell)
+					return EntryError(entry, "can only read address cells found %s type %T", cell, cell)
 				}
 			},
 			ulpAsm: PrimitiveUlp{
@@ -482,25 +567,25 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				n, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				switch c := cell.(type) {
 				case CellAddress:
 					w, ok := c.Entry.Word.(*WordForth)
 					if !ok {
-						return fmt.Errorf("%s can only write forth data words: %T", entry, w)
+						return EntryError(entry, "can only write forth data words found %s type %T", w, w)
 					}
 					if c.Offset < 0 || c.Offset >= len(w.Cells) {
-						return fmt.Errorf("%s writing outside of data range, offset %d", entry, c.Offset)
+						return EntryError(entry, "writing outside of data range, offset %d", c.Offset)
 					}
 					w.Cells[c.Offset] = n
 					return nil
 				default:
-					return fmt.Errorf("%s can only write address cells: %T", entry, cell)
+					return EntryError(entry, "can only write address cells found %s type %T", cell, cell)
 				}
 			},
 			ulpAsm: PrimitiveUlp{
@@ -522,24 +607,28 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				case CellAddress:
 					w, ok := c.Entry.Word.(*WordForth)
 					if !ok {
-						return fmt.Errorf("%s can only read forth data words: %T", entry, w)
+						return EntryError(entry, "can only read forth data words found %s type %T", w, w)
 					}
 					if c.Offset < 0 || c.Offset >= len(w.Cells) {
-						return fmt.Errorf("%s reading outside of data range, offset %d", entry, c.Offset)
+						return EntryError(entry, "reading outside of data range, offset %d", c.Offset)
 					}
 					readCell := w.Cells[c.Offset]
 					numCell, ok := readCell.(CellNumber)
 					if !ok {
-						return fmt.Errorf("%s can only read a number: %T", entry, readCell)
+						return EntryError(entry, "can only read a number found %s type %T", readCell, readCell)
 					}
 					n := numCell.Number
 					if c.UpperByte {
 						n = n >> 8
 					}
 					n = n & 0xFF
-					return vm.Stack.Push(CellNumber{n})
+					err = vm.Stack.Push(CellNumber{n})
+					if err != nil {
+						return PushError(err, entry)
+					}
+					return nil
 				default:
-					return fmt.Errorf("%s can only write address or entry cells: %T", entry, cell)
+					return EntryError(entry, "can only read address cells found %s type %T", cell, cell)
 				}
 			},
 			ulpAsm: PrimitiveUlp{
@@ -558,26 +647,26 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				n, err := vm.Stack.PopNumber()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				n = n & 0xFF // mask off the upper bits
 				switch c := cell.(type) {
 				case CellAddress:
 					w, ok := c.Entry.Word.(*WordForth)
 					if !ok {
-						return fmt.Errorf("%s can only write to forth data words: %T", entry, w)
+						return EntryError(entry, "can only write forth data words found %s type %T", w, w)
 					}
 					if c.Offset < 0 || c.Offset >= len(w.Cells) {
-						return fmt.Errorf("%s writing outside of data range, offset %d", entry, c.Offset)
+						return EntryError(entry, "writing outside of data range, offset %d", c.Offset)
 					}
 					readCell := w.Cells[c.Offset]
 					numCell, ok := readCell.(CellNumber)
 					if !ok {
-						return fmt.Errorf("%s can only read a number: %T", entry, readCell)
+						return EntryError(entry, "can only write a number found %s type %T", readCell, readCell)
 					}
 					storedN := numCell.Number
 					if c.UpperByte {
@@ -590,7 +679,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					w.Cells[c.Offset] = CellNumber{storedN}
 					return nil
 				default:
-					return fmt.Errorf("%s can only write address cells: %T", entry, cell)
+					return EntryError(entry, "can only write address cells found %s type %T", cell, cell)
 				}
 			},
 			ulpAsm: PrimitiveUlp{
@@ -617,7 +706,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				switch c := cell.(type) {
 				case CellAddress:
@@ -634,9 +723,13 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 						Offset:    n,
 						UpperByte: upper,
 					}
-					return vm.Stack.Push(newCell)
+					err = vm.Stack.Push(newCell)
+					if err != nil {
+						return PushError(err, entry)
+					}
+					return nil
 				default:
-					return fmt.Errorf("%s cannot add type %T", entry, cell)
+					return EntryError(entry, "cannot add %s type %T", cell, cell)
 				}
 			},
 			ulpAsm: PrimitiveUlp{
@@ -659,7 +752,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				switch c := cell.(type) {
 				case CellAddress:
@@ -672,9 +765,13 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 						Offset:    offset,
 						UpperByte: false,
 					}
-					return vm.Stack.Push(newCell)
+					err = vm.Stack.Push(newCell)
+					if err != nil {
+						return PushError(err, entry)
+					}
+					return nil
 				default:
-					return fmt.Errorf("%s cannot align type %T", entry, cell)
+					return EntryError(entry, "cannot align %s type %T", cell, cell)
 				}
 			},
 			ulpAsm: PrimitiveUlp{
@@ -692,15 +789,15 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
+					return PopError(err, entry)
 				}
 				cellAddr, ok := cell.(CellAddress)
 				if !ok {
-					return fmt.Errorf("%s requires an entry cell: %s", entry, cell)
+					return EntryError(entry, "requires an address cell, found %s type %T", cell, cell)
 				}
 				last, err := vm.Dictionary.LastForthWord()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get last forth word.", entry), err)
+					return JoinEntryError(err, entry, "could not get last forth word")
 				}
 				if cellAddr.Entry.Flag.Immediate {
 					last.Cells = append(last.Cells, cellAddr)
@@ -708,7 +805,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				} else {
 					compile, err := vm.Dictionary.FindName("COMPILE,")
 					if !ok {
-						return errors.Join(fmt.Errorf("%s requires the COMPILE, word.", entry), err)
+						JoinEntryError(err, entry, "requires the word COMPILE,")
 					}
 					newCells := []Cell{CellLiteral{cellAddr}, CellAddress{compile, 0, false}}
 					last.Cells = append(last.Cells, newCells...)
@@ -721,17 +818,17 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell0, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get address cell.", entry), err)
+					return PopError(err, entry)
 				}
 				cellAddr, ok := cell0.(CellAddress)
 				if !ok {
-					return fmt.Errorf("%s expected an address cell: %s", entry, cellAddr)
+					return EntryError(entry, "requires an address cell, found %s type %T", cell0, cell0)
 				}
 				cellNum, err := vm.Stack.PopNumber()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get bool cell.", entry), err)
+					return JoinEntryError(err, entry, "could not get boolean")
 				}
-				flag := cellNum > 0
+				flag := cellNum != 0
 				cellAddr.Entry.Flag.Hidden = flag
 				return nil
 			},
@@ -741,17 +838,17 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell0, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get entry cell.", entry), err)
+					return PopError(err, entry)
 				}
 				cellAddr, ok := cell0.(CellAddress)
 				if !ok {
-					return fmt.Errorf("%s expected an entry cell: %s", entry, cellAddr)
+					return EntryError(entry, "requires an address cell, found %s type %T", cell0, cell0)
 				}
 				cellNum, err := vm.Stack.PopNumber()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get bool cell.", entry), err)
+					return JoinEntryError(err, entry, "could not get boolean")
 				}
-				flag := cellNum > 0
+				flag := cellNum != 0
 				cellAddr.Entry.Flag.Immediate = flag
 				return nil
 			},
@@ -761,11 +858,11 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				ret, err := vm.ReturnStack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not pop return address.", entry), err)
+					return PopError(err, entry)
 				}
 				addr, ok := ret.(*CellAddress)
 				if !ok {
-					return fmt.Errorf("%s expected a return address on the return stack.: %v", entry, ret)
+					return EntryError(entry, "requires a return address, found %s type %T", ret, ret)
 				}
 				vm.IP = addr
 				return nil
@@ -783,31 +880,43 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				left, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				switch r := right.(type) {
 				case CellNumber:
 					switch l := left.(type) {
 					case CellNumber:
-						return vm.Stack.Push(CellNumber{l.Number + r.Number})
+						err = vm.Stack.Push(CellNumber{l.Number + r.Number})
+						if err != nil {
+							return PushError(err, entry)
+						}
+						return nil
 					case CellAddress:
-						return vm.Stack.Push(CellAddress{l.Entry, l.Offset + int(r.Number), false})
+						err = vm.Stack.Push(CellAddress{l.Entry, l.Offset + int(r.Number), false})
+						if err != nil {
+							return PushError(err, entry)
+						}
+						return nil
 					default:
-						return fmt.Errorf("Cannot add these types")
+						return EntryError(entry, "could not add %s type %T and %s type %T due to types", left, left, right, right)
 					}
 				case CellAddress:
 					switch l := left.(type) {
 					case CellNumber:
-						return vm.Stack.Push(CellAddress{r.Entry, int(l.Number) + r.Offset, false})
+						err = vm.Stack.Push(CellAddress{r.Entry, int(l.Number) + r.Offset, false})
+						if err != nil {
+							return PushError(err, entry)
+						}
+						return nil
 					default:
-						return fmt.Errorf("Cannot add these types")
+						return EntryError(entry, "could not add %s type %T and %s type %T due to types", left, left, right, right)
 					}
 				default:
-					return fmt.Errorf("Cannot add these types")
+					return EntryError(entry, "could not add %s type %T and %s type %T due to types", left, left, right, right)
 				}
 			},
 			ulpAsm: PrimitiveUlp{
@@ -824,34 +933,46 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				left, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				switch r := right.(type) {
 				case CellNumber:
 					switch l := left.(type) {
 					case CellNumber:
-						return vm.Stack.Push(CellNumber{l.Number - r.Number})
+						err = vm.Stack.Push(CellNumber{l.Number - r.Number})
+						if err != nil {
+							return PushError(err, entry)
+						}
+						return nil
 					case CellAddress:
-						return vm.Stack.Push(CellAddress{l.Entry, l.Offset - int(r.Number), false})
+						err = vm.Stack.Push(CellAddress{l.Entry, l.Offset - int(r.Number), false})
+						if err != nil {
+							return PushError(err, entry)
+						}
+						return nil
 					default:
-						return fmt.Errorf("%s cannot add these types", entry)
+						return EntryError(entry, "could not subtract %s type %T from %s type %T due to types", right, right, left, left)
 					}
 				case CellAddress:
 					switch l := left.(type) {
 					case CellAddress:
 						if l.Entry == r.Entry {
-							return vm.Stack.Push(CellNumber{uint16(l.Offset) - uint16(r.Offset)})
+							err = vm.Stack.Push(CellNumber{uint16(l.Offset) - uint16(r.Offset)})
+							if err != nil {
+								return PushError(err, entry)
+							}
+							return nil
 						}
-						return fmt.Errorf("%s cannot subtract addresses from different words.", entry)
+						return EntryError(entry, "could not subtract %s type %T from %s type %T due to types", right, right, left, left)
 					default:
-						return fmt.Errorf("%s cannot subtract these types", entry)
+						return EntryError(entry, "could not subtract %s type %T from %s type %T due to types", right, right, left, left)
 					}
 				default:
-					return fmt.Errorf("%s cannot subtract these types", entry)
+					return EntryError(entry, "could not subtract %s type %T from %s type %T due to types", right, right, left, left)
 				}
 			},
 			ulpAsm: PrimitiveUlp{
@@ -868,13 +989,17 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.PopNumber()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+					return PopError(err, entry)
 				}
 				left, err := vm.Stack.PopNumber()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+					return PopError(err, entry)
 				}
-				return vm.Stack.Push(CellNumber{left & right})
+				err = vm.Stack.Push(CellNumber{left & right})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 1",
@@ -890,13 +1015,17 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.PopNumber()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+					return PopError(err, entry)
 				}
 				left, err := vm.Stack.PopNumber()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+					return PopError(err, entry)
 				}
-				return vm.Stack.Push(CellNumber{left | right})
+				err = vm.Stack.Push(CellNumber{left | right})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 1",
@@ -912,13 +1041,17 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.PopNumber()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+					return PopError(err, entry)
 				}
 				left, err := vm.Stack.PopNumber()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+					return PopError(err, entry)
 				}
-				return vm.Stack.Push(CellNumber{left * right})
+				err = vm.Stack.Push(CellNumber{left * right})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				// x * y = z
@@ -938,7 +1071,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"__mult.1:",             // then
 				"lsh r1, r1, 1",         // x = x<<1
 				"rsh r0, r0, 1",         // y = y>>1
-				"jumpr __mult.0, 0, gt", // loop if y > 0
+				"jumpr __mult.0, 0, gt", // loop if y != 0
 				// finalize
 				"add r3, r3, 1", // decrement stack, z already in place
 				"jump next",
@@ -949,19 +1082,23 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.PopNumber()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+					return PopError(err, entry)
 				}
 				left, err := vm.Stack.PopNumber()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+					return PopError(err, entry)
 				}
 				quotient := left / right
 				remainder := left % right
 				err = vm.Stack.Push(CellNumber{remainder})
 				if err != nil {
-					return err
+					return PushError(err, entry)
 				}
-				return vm.Stack.Push(CellNumber{quotient})
+				err = vm.Stack.Push(CellNumber{quotient})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				// 'd' on 0
@@ -1004,13 +1141,17 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				amount, err := vm.Stack.PopNumber()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				num, err := vm.Stack.PopNumber()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
-				return vm.Stack.Push(CellNumber{num << amount})
+				err = vm.Stack.Push(CellNumber{num << amount})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 1",
@@ -1026,13 +1167,17 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				amount, err := vm.Stack.PopNumber()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				num, err := vm.Stack.PopNumber()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
-				return vm.Stack.Push(CellNumber{num >> amount})
+				err = vm.Stack.Push(CellNumber{num >> amount})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 1",
@@ -1048,17 +1193,21 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+					return PopError(err, entry)
 				}
 				left, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+					return PopError(err, entry)
 				}
 				err = vm.Stack.Push(right)
 				if err != nil {
-					return err
+					return PushError(err, entry)
 				}
-				return vm.Stack.Push(left)
+				err = vm.Stack.Push(left)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r1, r3, 0",
@@ -1073,13 +1222,17 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.Stack.Pop()
 				if err != nil {
-					return err
+					return PopError(err, entry)
+				}
+				err = vm.Stack.Push(c)
+				if err != nil {
+					return PushError(err, entry)
 				}
 				err = vm.Stack.Push(c)
 				if err != nil {
 					return err
 				}
-				return vm.Stack.Push(c)
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 0",
@@ -1093,14 +1246,18 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				n, err := vm.Stack.PopNumber()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				if int(n) >= len(vm.Stack.stack) {
-					return fmt.Errorf("%s number out of range: %d", entry, n)
+					return EntryError(entry, "number out of range: %d", n)
 				}
 				index := len(vm.Stack.stack) - int(n) - 1
 				cell := vm.Stack.stack[index]
-				return vm.Stack.Push(cell)
+				err = vm.Stack.Push(cell)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return err
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 0",
@@ -1115,14 +1272,18 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				n, err := vm.Stack.PopNumber()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				if int(n) >= len(vm.ReturnStack.stack) {
-					return fmt.Errorf("%s number out of range: %d", entry, n)
+					return EntryError(entry, "number out of range: %d", n)
 				}
 				index := len(vm.ReturnStack.stack) - int(n) - 1
 				cell := vm.ReturnStack.stack[index]
-				return vm.Stack.Push(cell)
+				err = vm.Stack.Push(cell)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r2, __rsp",
@@ -1138,22 +1299,29 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get c value.", entry), err)
+					return PopError(err, entry)
 				}
 				b, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get b value.", entry), err)
+					return PopError(err, entry)
 				}
 				a, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get a value.", entry), err)
+					return PopError(err, entry)
 				}
 				err = vm.Stack.Push(b)
 				if err != nil {
-					return err
+					return PushError(err, entry)
 				}
 				err = vm.Stack.Push(c)
-				return vm.Stack.Push(a)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				err = vm.Stack.Push(a)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 0",
@@ -1170,7 +1338,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				_, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
+					return PopError(err, entry)
 				}
 				return nil
 			},
@@ -1184,19 +1352,25 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				index, err := vm.ReturnStack.PopNumber()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				n, err := vm.Stack.PopNumber()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				limit, err := vm.ReturnStack.PopNumber()
 				if err != nil {
-					return err
+					return JoinEntryError(err, entry, "could not pop from return stack")
 				}
-				vm.ReturnStack.Push(CellNumber{limit}) // we just want to know the limit
+				err = vm.ReturnStack.Push(CellNumber{limit}) // we just want to know the limit
+				if err != nil {
+					return JoinEntryError(err, entry, "could not push on return stack")
+				}
 				n_next := index + n
-				vm.ReturnStack.Push(CellNumber{n_next}) // store n+index for next time
+				err = vm.ReturnStack.Push(CellNumber{n_next}) // store n+index for next time
+				if err != nil {
+					return JoinEntryError(err, entry, "could not push on return stack")
+				}
 				indLim := index - limit
 				var val32 uint32
 				if int16(n) >= 0 {
@@ -1205,9 +1379,12 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					val32 = uint32(indLim) - uint32(uint16(-n))
 				}
 				if val32 > 0xFFFF {
-					vm.Stack.Push(CellNumber{0xFFFF})
+					err = vm.Stack.Push(CellNumber{0xFFFF})
 				} else {
-					vm.Stack.Push(CellNumber{0})
+					err = vm.Stack.Push(CellNumber{0})
+				}
+				if err != nil {
+					return PushError(err, entry)
 				}
 				return nil
 			},
@@ -1244,17 +1421,21 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.PopNumber()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get right value.", entry), err)
+					return PopError(err, entry)
 				}
 				left, err := vm.Stack.PopNumber()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get left value.", entry), err)
+					return PopError(err, entry)
 				}
 				val := 0
 				if left < right {
 					val = 0xFFFF
 				}
-				return vm.Stack.Push(CellNumber{uint16(val)})
+				err = vm.Stack.Push(CellNumber{uint16(val)})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r2, r3, 1",            // left
@@ -1270,17 +1451,15 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
-			name: "BYE",
-			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
-				return vm.State.Set(uint16(StateExit))
-			},
-		},
-		{
 			name: "DEPTH",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				depth := len(vm.Stack.stack)
 				cell := CellNumber{uint16(depth)}
-				return vm.Stack.Push(cell)
+				err := vm.Stack.Push(cell)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"move r0, __stack_end",
@@ -1306,11 +1485,11 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				funcType, err := vm.Stack.PopNumber()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not get function type from stack.", entry), err)
+					return PopError(err, entry)
 				}
 				cell, err := vm.Stack.Pop()
 				if err != nil {
-					return errors.Join(fmt.Errorf("%s could not pop from stack.", entry), err)
+					return PopError(err, entry)
 				}
 				switch funcType {
 				case 0: // nothing
@@ -1320,12 +1499,12 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				case 3: // print char
 					num, ok := cell.(CellNumber)
 					if !ok {
-						return fmt.Errorf("%s expected a number: %s", entry, num)
+						return EntryError(entry, "exected a number got %s type %T", cell, cell)
 					}
 					c := byte(num.Number)
 					fmt.Fprintf(vm.Out, "%c", c)
 				default:
-					return fmt.Errorf("%s unknown function type %d", entry, funcType)
+					return EntryError(entry, "unknown function %d", funcType)
 				}
 				return nil
 			},
@@ -1341,7 +1520,11 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		{
 			name: "ESP.FUNC.READ.UNSAFE",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
-				return vm.Stack.Push(CellNumber{0})
+				err := vm.Stack.Push(CellNumber{0}) // always return 0
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r2, HOST_FUNC",
@@ -1377,22 +1560,22 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 
 		{
 			name: "D-", // ( xlow xhigh ylow yhigh -- zlow zhigh )
-			goFunc: func(vm *VirtualMachine, de *DictionaryEntry) error {
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				yHigh, err := vm.Stack.PopNumber()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				yLow, err := vm.Stack.PopNumber()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				xHigh, err := vm.Stack.PopNumber()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 				xLow, err := vm.Stack.PopNumber()
 				if err != nil {
-					return err
+					return PopError(err, entry)
 				}
 
 				y := (uint32(yHigh) << 16) | uint32(yLow)
@@ -1402,9 +1585,13 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				zHigh := uint16(z >> 16)
 				err = vm.Stack.Push(CellNumber{zLow})
 				if err != nil {
-					return err
+					return PushError(err, entry)
 				}
-				return vm.Stack.Push(CellNumber{zHigh})
+				err = vm.Stack.Push(CellNumber{zHigh})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
 			},
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 2", // xhigh
@@ -1435,7 +1622,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 }
 
 func notImplemented(vm *VirtualMachine, entry *DictionaryEntry) error {
-	return fmt.Errorf("%s cannot be executed on the host.", entry)
+	return EntryError(entry, "cannot be executed on the host")
 }
 
 func nop(vm *VirtualMachine, entry *DictionaryEntry) error {

@@ -53,7 +53,7 @@ func (s *Stack) PopNumber() (uint16, error) {
 	}
 	cellNumber, ok := cell.(CellNumber)
 	if !ok {
-		return 0, fmt.Errorf("Could not convert cell to number: %s", cell)
+		return 0, fmt.Errorf("Could not convert cell to number: %s type %T", cell, cell)
 	}
 	return cellNumber.Number, nil
 }

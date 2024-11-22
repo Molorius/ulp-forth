@@ -36,17 +36,26 @@ func (d *DictionaryEntry) AddToList(u *Ulp) error {
 // representing words rather than a flat cell structure.
 type Dictionary struct {
 	Entries []*DictionaryEntry
+	vm      *VirtualMachine
 }
 
 // Set up the empty dictionary.
-func (d *Dictionary) Setup() error {
+func (d *Dictionary) Setup(vm *VirtualMachine) error {
 	d.Entries = make([]*DictionaryEntry, 0)
+	d.vm = vm
 	return nil
 }
 
 func (d *Dictionary) AddEntry(entry *DictionaryEntry) error {
 	if d.Entries == nil {
 		return fmt.Errorf("Dictionary not set up when adding entry, please file a bug report.")
+	}
+	name := entry.Name
+	if name != "" {
+		previous, _ := d.FindName(name)
+		if previous != nil {
+			fmt.Fprintf(d.vm.Out, "Redefining %s ", name)
+		}
 	}
 	d.Entries = append(d.Entries, entry)
 	return nil

@@ -230,12 +230,12 @@ func TestSuite(t *testing.T) {
 			setup: `
 				T{ : NOP : POSTPONE ; ; -> }T
 				T{ NOP NOP1 NOP NOP2 -> }T
-				T{ : GDX 123 ; : GDX GDX 234 ; -> }T
+				T{ : GDX 123 ; : GDX2 GDX 234 ; -> }T
 			`,
 			code: `
 				T{ NOP1 -> }T
 				T{ NOP2 -> }T
-				T{ GDX -> 123 234 }T
+				T{ GDX2 -> 123 234 }T
 			`,
 		},
 		{

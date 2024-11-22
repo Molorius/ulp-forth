@@ -138,7 +138,7 @@
 : 2R> POSTPONE R> POSTPONE R> POSTPONE SWAP ; IMMEDIATE
 : R@ 0 POSTPONE LITERAL POSTPONE RPICK ; IMMEDIATE
 : 2R@ 1 POSTPONE LITERAL POSTPONE RPICK POSTPONE R@ ; IMMEDIATE
-: UNLOOP POSTPONE >R POSTPONE >R POSTPONE 2DROP ; IMMEDIATE
+: UNLOOP POSTPONE R> POSTPONE R> POSTPONE 2DROP ; IMMEDIATE
 : I 0 POSTPONE LITERAL POSTPONE RPICK ; IMMEDIATE
 : J 2 POSTPONE LITERAL POSTPONE RPICK ; IMMEDIATE
 : ?DUP DUP IF DUP THEN ;
@@ -227,22 +227,18 @@
     POSTPONE 2>R \ compile 2>r
     DEST DUP COMPILE, \ create and compile a destination
     >C \ and push destination on the control flow stack
-    0 >D \ push 0 onto the DO stack
+    0 >DO \ push 0 onto the DO stack
 ; IMMEDIATE
 
 : ?DO
     POSTPONE 2DUP \ dupe the inputs
     POSTPONE 2>R \ put one copy on return stack
     POSTPONE <> \ check if the others are equal
-    0 >D \ push 0 on to the DO stack
+    0 >DO \ push 0 on to the DO stack
     BRANCH0 DUP COMPILE, \ compile a conditional branch
-    >D \ and push onto the DO stack
+    >DO \ and push onto the DO stack
     DEST DUP COMPILE, \ compile a destination
     >C \ and push onto the control flow stack
-; IMMEDIATE
-
-: UNLOOP
-    POSTPONE R> POSTPONE R> POSTPONE 2DROP
 ; IMMEDIATE
 
 : +LOOP
@@ -250,7 +246,7 @@
     BRANCH0 DUP COMPILE, \ create and compile a conditional branch
     C> RESOLVE-BRANCH \ and resolve it
     BEGIN
-        D> ?DUP \ get the top of DO stack, copy if not 0
+        DO> ?DUP \ get the top of DO stack, copy if not 0
     WHILE
         \ the item is a branch!
         DEST DUP COMPILE, \ create and compile a destination
@@ -266,7 +262,7 @@
 
 : LEAVE
     BRANCH DUP COMPILE, \ create and compile a branch
-    >D \ also push it onto the DO stack
+    >DO \ also push it onto the DO stack
 ; IMMEDIATE
 
 : F/MOD ( numerator denominator -- remainder quotient )

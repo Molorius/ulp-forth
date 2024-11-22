@@ -40,7 +40,7 @@ func (vm *VirtualMachine) Setup() error {
 		vm.Out = os.Stdout
 	}
 
-	err := vm.Dictionary.Setup()
+	err := vm.Dictionary.Setup(vm)
 	if err != nil {
 		return err
 	}
