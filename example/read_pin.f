@@ -22,7 +22,7 @@
 \ Invert the value to the logical inverse !a
 \ so we can convert the pulled up input to
 \ our led output.
-: ! ( a -- !a )
+: not ( a -- !a )
     0= \ if 0 then this outputs -1, otherwise it outputs 0
 ;
 
@@ -31,7 +31,7 @@
 
     begin
         gpio32.get \ get the value of the pin
-        ! \ invert the value
+        not \ invert the value
         gpio2.set \ light the led if the button is pressed
     again
 ;

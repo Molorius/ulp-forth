@@ -29,7 +29,7 @@ void app_main(void)
 {
     const char *TAG = "app_main";
 
-    ESP_LOGI(TAG, "starting ulp");
+    ESP_LOGI(TAG, "starting ulp minimal");
     init_ulp();
     ESP_LOGI(TAG, "entering deep sleep");
     esp_deep_sleep_start();
