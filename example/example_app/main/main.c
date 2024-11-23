@@ -7,9 +7,13 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
 #include "driver/uart.h"
 #include "driver/gpio.h"
+#include "esp_private/rtc_ctrl.h"
+#include "soc/rtc_cntl_reg.h"
 #include "esp_log.h"
 #include "ulp.h"
 #include "ulp_main.h"
+
+#define ULP_WAKEUP_PERIOD_US 1000000
 
 // Used to read the ULP serial out pin,
 // wire this to the GPIO the ULP uses.
@@ -22,6 +26,8 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #define UART_BUF_SIZE 1024 
 #define UART_READ_TASK_SIZE 2048
 #define UART_READ_TASK_PRIORITY 10
+#define WAKE_TASK_SIZE 2048
+#define WAKE_TASK_PRIORITY 9
 
 static void uart_read_task(void *arg)
 {
@@ -65,7 +71,45 @@ static void init_uart(void)
     ESP_ERROR_CHECK(uart_param_config(UART_PORT, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(UART_PORT, UART_TXD, UART_RXD, UART_RTS, UART_CTS));
 
-    xTaskCreate(uart_read_task, "uart_read_task", 2048, NULL, UART_READ_TASK_PRIORITY, NULL);
+    xTaskCreate(uart_read_task, "uart_read_task", UART_READ_TASK_SIZE, NULL, UART_READ_TASK_PRIORITY, NULL);
+}
+
+SemaphoreHandle_t ulp_wake_sem = NULL;
+
+static void ulp_wake_isr(void *arg)
+{
+    BaseType_t yield = 0;
+    xSemaphoreGiveFromISR(ulp_wake_sem, &yield);
+    if (yield) {
+        portYIELD_FROM_ISR();
+    }
+}
+
+static void ulp_wake_task(void *arg)
+{
+    const char *TAG = "ulp_wake_task";
+
+    ESP_LOGI(TAG, "waiting for the ulp to wake us");
+    for (;;) {
+        if (xSemaphoreTake(ulp_wake_sem, portMAX_DELAY) == pdTRUE) {
+            ESP_LOGI(TAG, "ulp used the wake instruction");
+        }
+    }
+}
+
+static void init_wake(void)
+{
+    ulp_wake_sem = xSemaphoreCreateBinary();
+    if (ulp_wake_sem == NULL) {
+        ESP_ERROR_CHECK(ESP_ERR_NO_MEM);
+    }
+    
+    // set up the isr
+    ESP_ERROR_CHECK(rtc_isr_register(&ulp_wake_isr, NULL, RTC_CNTL_SAR_INT_ST_M, 0));
+    // allow the interrupt to occur
+    REG_SET_BIT(RTC_CNTL_INT_ENA_REG, RTC_CNTL_ULP_CP_INT_ENA_M);
+    xTaskCreate(ulp_wake_task, "ulp_wake_task", WAKE_TASK_SIZE, NULL, WAKE_TASK_PRIORITY, NULL);
+    
 }
 
 extern const uint8_t ulp_main_bin_start[] asm("_binary_ulp_main_bin_start");
@@ -75,9 +119,14 @@ static void init_ulp(void)
 {
     const char *TAG = "init_ulp";
     // load the program
+    ESP_LOGI(TAG, "loading program");
     esp_err_t err = ulp_load_binary(0, ulp_main_bin_start,
         (ulp_main_bin_end - ulp_main_bin_start) / sizeof(uint32_t));
     ESP_ERROR_CHECK(err);
+
+    // set wakeup period
+    ESP_LOGI(TAG, "setting ulp wakeup period to %d microseconds", ULP_WAKEUP_PERIOD_US);
+    ESP_ERROR_CHECK(ulp_set_wakeup_period(0, ULP_WAKEUP_PERIOD_US));
 
     // start the ulp
     ESP_LOGI(TAG, "starting ulp");
@@ -92,5 +141,6 @@ void app_main(void)
     ESP_LOGI(TAG, "starting ulp example app");
 
     init_uart();
+    init_wake();
     init_ulp();
 }
