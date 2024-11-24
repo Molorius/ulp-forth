@@ -1438,16 +1438,16 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				return nil
 			},
 			ulpAsm: PrimitiveUlp{
-				"ld r2, r3, 1",            // left
-				"ld r1, r3, 0",            // right
+				"ld r1, r3, 1",            // left
+				"ld r0, r3, 0",            // right
+				"sub r1, r1, r0",          // subtract
 				"move r0, 0xFFFF",         // default to true
-				"sub r2, r2, r1",          // subtract
 				"jump __u_lessthan.0, ov", // jump if overflow
 				"move r0, 0",              // no overflow: false
 				"__u_lessthan.0:",         // then
 				"add r3, r3, 1",           // decrement stack
 				"st r0, r3, 0",            // store the result
-				"jump next",
+				"jump __next_skip_r2",
 			},
 		},
 		{
