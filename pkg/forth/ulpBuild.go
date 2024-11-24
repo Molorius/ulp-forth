@@ -170,22 +170,30 @@ func (u *Ulp) findUsedEntry(entry *DictionaryEntry) (string, error) {
 		entry.ulpName = name
 		forth := ulpForth{
 			name:  name,
-			cells: make([]ulpForthCell, len(w.Cells)),
+			cells: make([]ulpForthCell, 0),
 		}
 
-		for i, c := range w.Cells {
+		for _, c := range w.Cells {
 			str, err := u.findUsedCell(c)
 			if err != nil {
 				return "", errors.Join(fmt.Errorf("%s error while compiling", entry.Name), err)
 			}
-			forth.cells[i] = ulpForthCell{
+			if str == "DOCOL" {
+				continue
+			}
+
+			cell := ulpForthCell{
 				cell: c,
 				name: str,
 			}
+			forth.cells = append(forth.cells, cell)
 		}
 		u.forth = append(u.forth, forth)
 		return name, nil
 	case *WordPrimitive:
+		if entry.Name == "DOCOL" {
+			return "DOCOL", nil
+		}
 		name := u.name("asm", entry.Name, true)
 		entry.ulpName = name
 		if w.Ulp == nil {

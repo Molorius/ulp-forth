@@ -1,6 +1,6 @@
 
-32 WORD IMMEDIATE --CREATE-FORTH ] -1 LAST SET-IMMEDIATE EXIT [
-32 WORD \ --CREATE-FORTH ] 10 WORD DROP EXIT [ IMMEDIATE \ End of line comments work now.
+32 WORD IMMEDIATE --CREATE-FORTH ] DOCOL -1 LAST SET-IMMEDIATE EXIT [
+32 WORD \ --CREATE-FORTH ] DOCOL 10 WORD DROP EXIT [ IMMEDIATE \ End of line comments work now.
 
 \ Copyright 2024 Blake Felt blake.w.felt@gmail.com
 \ This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,18 +9,26 @@
 
 \ The word IMMEDIATE sets the previously defined word to immediate mode,
 \ which means it will run as soon as it's parsed when compiling.
-32 WORD ( --CREATE-FORTH ] ')' WORD DROP EXIT [ IMMEDIATE ( inline comments work now )
+32 WORD ( --CREATE-FORTH ] DOCOL ')' WORD DROP EXIT [ IMMEDIATE ( inline comments work now )
 
 \ This file contains words related to compilation. More specifically, all of the 
 \ brackets and parantheses confuse my editor so the offending words (and their dependencies)
 \ are put in this file.
 
 \ BL places the character for a space on the stack.
-32 WORD BL ( -- char ) --CREATE-FORTH ] 32 EXIT [
+32 WORD BL ( -- char ) --CREATE-FORTH ] DOCOL 32 EXIT [
 
-\ CREATE parses the next name and creates an empty Forth definition
-\ for that name.
-BL WORD CREATE ( -- ) --CREATE-FORTH ] BL WORD --CREATE-FORTH EXIT [
+\ ' (tick) parses the next name and places the execution token of that name
+\ onto the stack.
+32 WORD ' --CREATE-FORTH ] DOCOL BL WORD FIND-WORD EXIT [
+
+\ POSTPONE parses the next name and compiles the compilation semantics of that word
+\ onto the latest word. Immediate.
+32 WORD POSTPONE --CREATE-FORTH ] DOCOL ' --POSTPONE EXIT [ IMMEDIATE
+
+\ CREATE parses the next name and creates a Forth definition
+\ for that name with just the DOCOL word.
+BL WORD CREATE ( -- ) --CREATE-FORTH ] DOCOL BL WORD --CREATE-FORTH POSTPONE DOCOL EXIT [
 
 \ SEE parses the next name and prints the definition of that word.
 \ An error is thrown if there is not a word with that name in the dictionary.
@@ -31,14 +39,6 @@ CREATE TRUE ( -- true ) ] -1 EXIT [
 
 \ FALSE places the 'false' value onto the stack.
 CREATE FALSE ( -- false ) ] 0 EXIT [
-
-\ ' (tick) parses the next name and places the execution token of that name
-\ onto the stack.
-CREATE ' ] BL WORD FIND-WORD EXIT [
-
-\ POSTPONE parses the next name and compiles the compilation semantics of that word
-\ onto the latest word. Immediate.
-CREATE POSTPONE ] ' --POSTPONE EXIT [ IMMEDIATE
 
 \ : parses the next name, creates a dictionary entry for it, hides that word,
 \ and puts the VM into compile state. 

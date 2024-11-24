@@ -228,6 +228,10 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name:   "DOCOL",
+			goFunc: nop,
+		},
+		{
 			name: "BYE",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				err := vm.State.Set(uint16(StateExit))
