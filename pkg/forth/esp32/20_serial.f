@@ -20,29 +20,32 @@
     C" lsh r0, r0, 1\n" \ set the start bit
     C" stage_rst\n" \ reset the stage counter
     C" __serial_write_0_" 1 RPICK C" _" 0 RPICK C" :\n"
-        C" and r1, r0, 1\n" \ get the lowest bit
-        C" jump __serial_write_1_" 1 RPICK C" _" 0 RPICK C" , eq\n"
-            \ set high
+        C" and r1, r0, 1\n" \ get the lowest bit, 4 cycles
+        C" jump __serial_write_1_" 1 RPICK C" _" 0 RPICK C" , eq\n" \ 4 cycles
+            \ set high, 12 cycles
             RTCIO_RTC_GPIO_OUT_W1TS_REG
             RTCIO_RTC_GPIO_OUT_DATA_W1TS_S 1 RPICK +
             1 1
             WRITE_RTC_REG.BUILDER >C
-            C" jump __serial_write_2_" 1 RPICK C" _" 0 RPICK C" \n"
+            C" jump __serial_write_2_" 1 RPICK C" _" 0 RPICK C" \n" \ 4 cycles
         C" __serial_write_1_" 1 RPICK C" _" 0 RPICK C" :\n"
-            \ set low
+            \ set low, 12 cycles
             RTCIO_RTC_GPIO_OUT_W1TC_REG
             RTCIO_RTC_GPIO_OUT_DATA_W1TC_S 1 RPICK +
             1 1
             WRITE_RTC_REG.BUILDER >C
-            \ jump so it takes the same time
+            \ jump so it takes the same time, 4 cycles
             C" jump __serial_write_2_" 1 RPICK C" _" 0 RPICK C" \n"
         C" __serial_write_2_" 1 RPICK C" _" 0 RPICK C" :\n"
-        C" wait " R@ C" \n" \ wait for wait-time ticks
-        C" rsh r0, r0, 1\n" \ go to next bit
+        C" wait " R@ C" \n" \ wait for wait-time ticks, 6+n cycles
+        C" rsh r0, r0, 1\n" \ go to next bit, 4 cycles
         \ loop 8 times
-        C" stage_inc 1\n"
-        C" jumps __serial_write_0_" 1 RPICK C" _" 0 RPICK C" , 10, lt\n"
+        C" stage_inc 1\n" \ 4 cycles
+        C" jumps __serial_write_0_" 1 RPICK C" _" 0 RPICK C" , 10, lt\n" \ 4 cycles
     C" jump __next_skip_r2"
+    \ time from reg_wr to reg_wr (only 1 reg_wr):
+    \ 12+4 + 6+n+4+4+4 + 4+4
+    \ = 42+n cycles
     47 C> C> + + \ get the total number of inputs
     ASSEMBLY \ create the assembly
     2R> 2DROP \ clean up the return stack
