@@ -198,7 +198,15 @@ func TestSuite(t *testing.T) {
 		// C,
 		// CELL+ doesn't have regular tests
 		// CELLS
-		// C@
+		{
+			name:  "C@", // not in test suite
+			setup: "T{ VARIABLE c1 -> }T",
+			code: `
+				T{ 0x1234 c1 ! ->      }T
+				T{ c1 C@       -> 0x34 }T
+				T{ c1 CHAR+ C@ -> 0x12 }T
+			`,
+		},
 		// CHAR
 		// CHAR+
 		// CHARS
@@ -224,7 +232,15 @@ func TestSuite(t *testing.T) {
 		},
 		// CR does not have any tests
 		// CREATE does not have any tests
-		// C! does not have any tests
+		{
+			name:  "C!", // not in test suite
+			setup: "T{ VARIABLE c1 -> }T",
+			code: `
+				T{ 0x34 c1 C!       ->        }T
+				T{ 0x12 c1 CHAR+ C! ->        }T
+				T{ c1 @             -> 0x1234 }T
+			`,
+		},
 		{
 			name: ":",
 			setup: `

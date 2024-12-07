@@ -15,20 +15,22 @@ import (
 )
 
 type primitive struct {
-	name   string
-	goFunc PrimitiveGo
-	ulpAsm PrimitiveUlp
-	flag   Flag
+	name      string
+	goFunc    PrimitiveGo
+	ulpAsm    PrimitiveUlp
+	ulpAsmSrt PrimitiveUlpSrt
+	flag      Flag
 }
 
-func primitiveAdd(vm *VirtualMachine, name string, goFunc PrimitiveGo, ulpAsm PrimitiveUlp, flag Flag) error {
+func primitiveAdd(vm *VirtualMachine, name string, goFunc PrimitiveGo, ulpAsm PrimitiveUlp, ulpAsmSrt PrimitiveUlpSrt, flag Flag) error {
 	var entry DictionaryEntry
 	entry = DictionaryEntry{
 		Name: name,
 		Word: &WordPrimitive{
-			Go:    goFunc,
-			Ulp:   ulpAsm,
-			Entry: &entry,
+			Go:     goFunc,
+			Ulp:    ulpAsm,
+			UlpSrt: ulpAsmSrt,
+			Entry:  &entry,
 		},
 		Flag: flag,
 	}
@@ -331,6 +333,17 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"add r3, r3, 1",    // decrement stack
 				"jump __next_skip_r2",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"move r0, __rsp", // set pointer to rsp location
+					"ld r1, r0, 0",   // load rsp
+					"add r1, r1, 1",  // increment rsp
+					"st r1, r0, 0",   // store rsp
+					"ld r0, r3, 0",   // load value from stack
+					"st r0, r1, 0",   // store value on rsp
+					"add r3, r3, 1",  // decrement stack
+				},
+			},
 		},
 		{
 			name: "R>",
@@ -353,6 +366,17 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"sub r3, r3, 1",    // increment stack
 				"st r0, r3, 0",     // store value on stack
 				"jump __next_skip_r2",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"move r0, __rsp", // set pointer to rsp location
+					"ld r1, r0, 0",   // load rsp
+					"sub r1, r1, 1",  // decrement rsp
+					"st r1, r0, 0",   // store rsp
+					"ld r0, r1, 1",   // load value from rsp
+					"sub r3, r3, 1",  // increment stack
+					"st r0, r3, 0",   // store value on stack
+				},
 			},
 		},
 		{
@@ -499,6 +523,30 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"add r3, r3, 1",  // decrement stack pointer
 				"jump __ins_asm", // start execution of the token
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					// Each assembly word is just the address,
+					// each forth word is the address plus 0x8000,
+					// which denotes that it is a forth word
+					// with the 0x8000.
+					"ld r0, r3, 0",                  // load the token into r0
+					"add r3, r3, 1",                 // decrement stack pointer
+					"jumpr __execute.0, 0x8000, ge", // jump if the forth tag is there
+					// it's an assembly word, execute it
+					"jump r0",
+					"__execute.0:",
+					// it's a forth word, put r2 on return stack
+					"move r1, __rsp", // put pointer on rsp
+					"ld r1, r1, 0",   // load rsp
+					"add r1, r1, 1",  // increment rsp
+					"st r2, r1, 0",   // store return address
+					"move r2, __rsp", // put pointer on rsp
+					"st r1, r2, 0",   // store rsp
+					"add r0, r0, 1",  // go past the DOCOL
+					"jump r0",        // jump to the forth word, past the DOCOL
+				},
+				NonStandardNext: true,
+			},
 		},
 		{
 			name: "ALLOCATE",
@@ -562,8 +610,15 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			ulpAsm: PrimitiveUlp{
 				"ld r0, r3, 0", // get the address from stack
 				"ld r0, r0, 0", // load the value
-				"st r0, r3, 0", // store the address on stack
+				"st r0, r3, 0", // store the value on stack
 				"jump __next_skip_load",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 0", // get the address from stack
+					"ld r0, r0, 0", // load the value
+					"st r0, r3, 0", // store the value on stack
+				},
 			},
 		},
 		{
@@ -598,6 +653,14 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r1, r0, 0",  // store the value in address
 				"add r3, r3, 2", // decrement the stack
 				"jump __next_skip_r2",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 0",  // load the address
+					"ld r1, r3, 1",  // load the value
+					"st r1, r0, 0",  // store the value in address
+					"add r3, r3, 2", // decrement the stack
+				},
 			},
 		},
 		{
@@ -643,7 +706,18 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"__c_ampersand.0:",
 				"and r1, r1, 0xFF", // mask off the upper bits
 				"st r1, r3, 0",     // store the masked value
-				"jump next",
+				"jump __next_skip_r2",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 0",                      // load the address
+					"ld r1, r0, 0",                      // load the full value
+					"jumpr __c_ampersand.0, 0x8000, lt", // jump if the "upper" bit is not set
+					"rsh r1, r1, 8",                     // "upper" bit set, shift it down
+					"__c_ampersand.0:",
+					"and r1, r1, 0xFF", // mask off the upper bits
+					"st r1, r3, 0",     // store the masked value
+				},
 			},
 		},
 		{
@@ -700,9 +774,32 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"and r2, r2, 0xFF00", // mask off the lower bits of old value
 				"and r1, r1, 0x00FF", // mask off the value
 				"__c_exclamation.1:",
-				"or r2, r2, r1", // merge the value and old value
-				"st r2, r3, 0",  // store into the address
+				"or r2, r2, r1", // merge the new value and old value
+				"st r2, r0, 0",  // store into the address
+				"add r3, r3, 2", // decrement stack
 				"jump next",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"st r2, r3, -1",                       // store r2 on stack
+					"ld r0, r3, 0",                        // load the address
+					"ld r1, r3, 1",                        // load the value
+					"ld r2, r0, 0",                        // load the old value
+					"jumpr __c_exclamation.0, 0x8000, lt", // jump if the upper bit is not set
+					// upper bit set, store the upper value
+					"and r2, r2, 0x00FF", // mask off the upper bits of old value
+					"lsh r1, r1, 8",      // shift over the value
+					"jump __c_exclamation.1",
+					"__c_exclamation.0:",
+					// store the lower value
+					"and r2, r2, 0xFF00", // mask off the lower bits of old value
+					"and r1, r1, 0x00FF", // mask off the value
+					"__c_exclamation.1:",
+					"or r2, r2, r1", // merge the value and old value
+					"st r2, r3, 0",  // store into the address
+					"ld r2, r3, -1", // restore r2
+					"add r3, r3, 2", // decrement stack
+				},
 			},
 		},
 		{
@@ -750,6 +847,21 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r3, 0", // store the result
 				"jump __next_skip_r2",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 0",
+					"jumpr __char_plus.0, 0x8000, lt", // jump if the "upper" bit is not set
+					// bit is set!
+					"and r0, r0, 0x7FFF", // remove that upper bit
+					"add r0, r0, 1",      // increment to next position
+					"jump __char_plus.1",
+					"__char_plus.0:",
+					// bit is not set
+					"or r0, r0, 0x8000", // set the bit
+					"__char_plus.1:",
+					"st r0, r3, 0", // store the result
+				},
+			},
 		},
 		{
 			name: "ALIGNED",
@@ -786,6 +898,16 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r3, 0",       // store the result
 				"__aligned.0:",
 				"jump __next_skip_load",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 0", // load the address
+					"jumpr __aligned.0, 0x8000, lt",
+					"add r0, r0, 1",      // go to the next major position
+					"and r0, r0, 0x7FFF", // mask off the upper bit
+					"st r0, r3, 0",       // store the result
+					"__aligned.0:",
+				},
 			},
 		},
 		{
@@ -878,6 +1000,16 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r2, __rsp",      // store the updated return stack pointer
 				"jump __next_skip_load", // skip loading, r1 and r2 are already fine
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"move r0, __rsp", // point to the return stack pointer
+					"ld r1, r0, 0",   // load the return stack pointer
+					"ld r2, r1, 0",   // load the return address
+					"sub r1, r1, 1",  // decrement rsp
+					"st r1, r0, 0",   // store the rsp
+					// we will continue executing at the return address
+				},
+			},
 		},
 		{
 			name: "+",
@@ -930,6 +1062,15 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"add r3, r3, 1",
 				"st r0, r3, 0",
 				"jump __next_skip_r2",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 0",
+					"ld r1, r3, 1",
+					"add r0, r0, r1",
+					"add r3, r3, 1",
+					"st r0, r3, 0",
+				},
 			},
 		},
 		{
@@ -987,6 +1128,15 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r3, 0",
 				"jump __next_skip_r2",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 1",
+					"ld r1, r3, 0",
+					"sub r0, r0, r1",
+					"add r3, r3, 1",
+					"st r0, r3, 0",
+				},
+			},
 		},
 		{
 			name: "AND",
@@ -1013,6 +1163,15 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r3, 0",
 				"jump __next_skip_r2",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 1",
+					"ld r1, r3, 0",
+					"and r0, r0, r1",
+					"add r3, r3, 1",
+					"st r0, r3, 0",
+				},
+			},
 		},
 		{
 			name: "OR",
@@ -1038,6 +1197,15 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"add r3, r3, 1",
 				"st r0, r3, 0",
 				"jump __next_skip_r2",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 1",
+					"ld r1, r3, 0",
+					"or r0, r0, r1",
+					"add r3, r3, 1",
+					"st r0, r3, 0",
+				},
 			},
 		},
 		{
@@ -1079,6 +1247,33 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				// finalize
 				"add r3, r3, 1", // decrement stack, z already in place
 				"jump next",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					// x * y = z
+					// x on r1
+					// y on r0
+					// z on 1, 0 after stack decrement
+					"st r2, r3, -1", // store r2
+					"ld r1, r3, 1",  // load x
+					"ld r0, r3, 0",  // load y
+					"move r2, 0",    // r2 = 0
+					"st r2, r3, 1",  // initialize z to 0
+					"__mult.0:",
+					"and r2, r0, 1",     // get the lowest bit of y
+					"jump __mult.1, eq", // check if the bit is set
+					// bit is set! z = z + x
+					"ld r2, r3, 1",          // load z
+					"add r2, r2, r1",        // z = z+x
+					"st r2, r3, 1",          // store z
+					"__mult.1:",             // then
+					"lsh r1, r1, 1",         // x = x<<1
+					"rsh r0, r0, 1",         // y = y>>1
+					"jumpr __mult.0, 0, gt", // loop if y != 0
+					// finalize
+					"ld r2, r3, -1", // reload r2
+					"add r3, r3, 1", // decrement stack, z already in place
+				},
 			},
 		},
 		{
@@ -1139,6 +1334,45 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r1, r3, 0", // q
 				"jump next",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					// 'd' on 0
+					// 'n' on 1
+					// 'q' on r1
+					// 'r' on r2
+					// loop on stage_cnt
+
+					"st r2, r3, -1", // store r2
+					"move r2, 0",    // initialize r2 to 0
+					"stage_rst",     // stage_cnt = 0
+
+					"__divmod.0:",
+					// shift n into r, shift r, shift q
+					"lsh r2, r2, 1",                // r = r<<1
+					"lsh r1, r1, 1",                // q = q<<1
+					"ld r0, r3, 1",                 // load n
+					"jumpr __divmod.1, 0x8000, lt", // jump if the top bit is not set
+					"or r2, r2, 1",                 // if bit is set, "shift" this bit into r
+					"__divmod.1:",                  // then
+					"lsh r0, r0, 1",                // n = n<<1
+					"st r0, r3, 1",                 // store n
+					// attempt subtracting
+					"ld r0, r3, 0",        // load d
+					"sub r0, r2, r0",      // r0 = r - d
+					"jump __divmod.2, ov", // jump ahead if that overflowed
+					// no overflow
+					"move r2, r0",  // store result into r
+					"or r1, r1, 1", // set the lowest bit of q
+					"__divmod.2:",
+					"stage_inc 1",              // increase the stage counter
+					"jumps __divmod.0, 16, lt", // loop over each bit
+
+					// done! store r and q
+					"st r2, r3, 1",  // r
+					"st r1, r3, 0",  // q
+					"ld r2, r3, -1", // reload r2
+				},
+			},
 		},
 		{
 			name: "LSHIFT",
@@ -1165,6 +1399,15 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r3, 0",
 				"jump __next_skip_r2",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 1",
+					"ld r1, r3, 0",
+					"lsh r0, r0, r1",
+					"add r3, r3, 1",
+					"st r0, r3, 0",
+				},
+			},
 		},
 		{
 			name: "RSHIFT",
@@ -1190,6 +1433,15 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"add r3, r3, 1",
 				"st r0, r3, 0",
 				"jump __next_skip_r2",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 1",
+					"ld r1, r3, 0",
+					"rsh r0, r0, r1",
+					"add r3, r3, 1",
+					"st r0, r3, 0",
+				},
 			},
 		},
 		{
@@ -1220,6 +1472,14 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r3, 0",
 				"jump __next_skip_r2",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r1, r3, 0",
+					"ld r0, r3, 1",
+					"st r1, r3, 1",
+					"st r0, r3, 0",
+				},
+			},
 		},
 		{
 			name: "DUP",
@@ -1243,6 +1503,13 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"sub r3, r3, 1",
 				"st r0, r3, 0",
 				"jump __next_skip_load",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 0",
+					"sub r3, r3, 1",
+					"st r0, r3, 0",
+				},
 			},
 		},
 		{
@@ -1270,6 +1537,14 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r3, 0",
 				"jump __next_skip_load",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 0",
+					"add r0, r0, r3",
+					"ld r0, r0, 1",
+					"st r0, r3, 0",
+				},
+			},
 		},
 		{
 			name: "RPICK",
@@ -1296,6 +1571,15 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"ld r0, r0, 0",
 				"st r0, r3, 0",
 				"jump __next_skip_r2",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r2, __rsp",
+					"ld r1, r3, 0",
+					"sub r0, r0, r1",
+					"ld r0, r0, 0",
+					"st r0, r3, 0",
+				},
 			},
 		},
 		{
@@ -1336,6 +1620,16 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r3, 0",
 				"jump __next_skip_r2",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 0",
+					"ld r1, r3, 1",
+					"st r0, r3, 1",
+					"ld r0, r3, 2",
+					"st r1, r3, 2",
+					"st r0, r3, 0",
+				},
+			},
 		},
 		{
 			name: "DROP",
@@ -1349,6 +1643,11 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			ulpAsm: PrimitiveUlp{
 				"add r3, r3, 1",
 				"jump __next_skip_load",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"add r3, r3, 1",
+				},
 			},
 		},
 		{
@@ -1419,6 +1718,37 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r3, 0", // save value
 				"jump __next_skip_r2",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"st r2, r3, -1",                   // save r2
+					"move r2, __rsp",                  // put r2 on rsp address
+					"ld r2, r2, 0",                    // load rsp
+					"ld r0, r2, 0",                    // load loop index
+					"ld r1, r3, 0",                    // load n
+					"add r1, r1, r0",                  // n+index
+					"st r1, r2, 0",                    // store n+index for next time
+					"ld r1, r2, -1",                   // r1 has limit
+					"sub r1, r0, r1",                  // r1 = index-limit
+					"ld r0, r3, 0",                    // r0 has n
+					"jumpr __loopcheck.0, 0x7FFF, gt", // check sign of n
+					// positive, add
+					"add r1, r1, r0",
+					"jump __loopcheck.1",
+					"__loopcheck.0:",
+					// negative, negate and subtract
+					"move r2, 0",     // set r2 to 0
+					"sub r0, r2, r0", // -r0 = 0 - r0
+					"sub r1, r1, r0",
+					"__loopcheck.1:",
+					"move r0, 0xFFFF",        // default to true
+					"jump __loopcheck.2, ov", // check if overflow
+					// no overflow, set to false
+					"move r0, 0",
+					"__loopcheck.2:",
+					"ld r2, r3, -1", // restore r2
+					"st r0, r3, 0",  // save value
+				},
+			},
 		},
 		{
 			name: "U<",
@@ -1453,6 +1783,19 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r3, 0",            // store the result
 				"jump __next_skip_r2",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r1, r3, 1",            // left
+					"ld r0, r3, 0",            // right
+					"sub r1, r1, r0",          // subtract
+					"move r0, 0xFFFF",         // default to true
+					"jump __u_lessthan.0, ov", // jump if overflow
+					"move r0, 0",              // no overflow: false
+					"__u_lessthan.0:",         // then
+					"add r3, r3, 1",           // decrement stack
+					"st r0, r3, 0",            // store the result
+				},
+			},
 		},
 		{
 			name: "DEPTH",
@@ -1472,6 +1815,14 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r3, 0",
 				"jump __next_skip_load",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"move r0, __stack_end",
+					"sub r0, r0, r3",
+					"sub r3, r3, 1",
+					"st r0, r3, 0",
+				},
+			},
 		},
 		{
 			name: "VM.STACK.INIT", // initialize the ulp stack
@@ -1482,6 +1833,11 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			ulpAsm: PrimitiveUlp{
 				"move r3, __stack_end", // set the stack pointer to the end of the stack
 				"jump __next_skip_load",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"move r3, __stack_end", // set the stack pointer to the end of the stack
+				},
 			},
 		},
 		{
@@ -1520,6 +1876,16 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"add r3, r3, 2",          // decrease the stack by 2
 				"jump __next_skip_r2",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"move r1, 0",
+					"ld r0, r3, 1",           // load the value we want to print
+					"st r0, r1, HOST_PARAM0", // set the param
+					"ld r0, r3, 0",           // load the method number
+					"st r0, r1, HOST_FUNC",   // set the function indicator
+					"add r3, r3, 2",          // decrease the stack by 2
+				},
+			},
 		},
 		{
 			name: "ESP.FUNC.READ.UNSAFE",
@@ -1536,14 +1902,22 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"st r0, r3, 0",
 				"jump __next_skip_load",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"move r0, HOST_FUNC",
+					"ld r0, r0, 0",
+					"sub r3, r3, 1",
+					"st r0, r3, 0",
+				},
+			},
 		},
 		{
 			name:   "MUTEX.TAKE",
 			goFunc: nop,
 			ulpAsm: PrimitiveUlp{
-				"move r1, 1",
-				"st r1, r2, MUTEX_FLAG0",      // flag0 = 1
-				"st r1, r2, MUTEX_TURN",       // turn = 1
+				"move r0, 1",
+				"st r0, r2, MUTEX_FLAG0",      // flag0 = 1
+				"st r0, r2, MUTEX_TURN",       // turn = 1
 				"__mutex.take.0:",             // //while flag1>0 && turn>0
 				"ld r0, r2, MUTEX_FLAG1",      // read flag1
 				"jumpr __mutex.take.1, 1, lt", // exit if flag1<1
@@ -1552,6 +1926,20 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				"__mutex.take.1:",
 				"jump __next_skip_r2",
 			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"move r1, 0", // use r1 as a global pointer
+					"move r0, 1",
+					"st r0, r1, MUTEX_FLAG0",      // flag0 = 1
+					"st r0, r1, MUTEX_TURN",       // turn = 1
+					"__mutex.take.0:",             // //while flag1>0 && turn>0
+					"ld r0, r1, MUTEX_FLAG1",      // read flag1
+					"jumpr __mutex.take.1, 1, lt", // exit if flag1<1
+					"ld r0, r1, MUTEX_TURN",       // read turn
+					"jumpr __mutex.take.0, 0, gt", // loop if turn>0
+					"__mutex.take.1:",
+				},
+			},
 		},
 		{
 			name:   "MUTEX.GIVE",
@@ -1559,6 +1947,12 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			ulpAsm: PrimitiveUlp{
 				"st r2, r2, MUTEX_FLAG0", // flag0 = 0
 				"jump __next_skip_load",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"move r0, 0",
+					"st r0, r0, MUTEX_FLAG0", // flag0 = 0
+				},
 			},
 		},
 
@@ -1598,26 +1992,44 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				return nil
 			},
 			ulpAsm: PrimitiveUlp{
-				"ld r0, r3, 2", // xhigh
-				"ld r1, r3, 3", // xlow
-				"ld r2, r3, 1", // ylow
-				"sub r1, r1, r2",
+				"ld r0, r3, 3",   // xlow
+				"ld r1, r3, 1",   // ylow
+				"sub r0, r0, r1", // subtract low
+				"st r0, r3, 3",   // store zlow
+				"ld r0, r3, 2",   // load xhigh
+				"ld r1, r3, 0",   // load yhigh
 				"jump __d_minus.0, ov",
 				"jump __d_minus.1",
 				"__d_minus.0:",
-				"sub r0, r0, 1",
+				"sub r0, r0, 1", // overload, subtract the carry bit
 				"__d_minus.1:",
-				"st r1, r3, 3", // store zlow
-				"ld r1, r3, 0", // load xhigh
-				"sub r0, r0, r1",
-				"add r3, r3, 2",
-				"st r0, r3, 0",
-				"jump next",
+				"sub r0, r0, r1", // subtract high
+				"add r3, r3, 2",  // decrement stack
+				"st r0, r3, 0",   // store zhigh
+				"jump __next_skip_r2",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 3",   // xlow
+					"ld r1, r3, 1",   // ylow
+					"sub r0, r0, r1", // subtract low
+					"st r0, r3, 3",   // store zlow
+					"ld r0, r3, 2",   // load xhigh
+					"ld r1, r3, 0",   // load yhigh
+					"jump __d_minus.0, ov",
+					"jump __d_minus.1",
+					"__d_minus.0:",
+					"sub r0, r0, 1", // overload, subtract the carry bit
+					"__d_minus.1:",
+					"sub r0, r0, r1", // subtract high
+					"add r3, r3, 2",  // decrement stack
+					"st r0, r3, 0",   // store zhigh
+				},
 			},
 		},
 	}
 	for _, p := range prims {
-		err := primitiveAdd(vm, p.name, p.goFunc, p.ulpAsm, p.flag)
+		err := primitiveAdd(vm, p.name, p.goFunc, p.ulpAsm, p.ulpAsmSrt, p.flag)
 		if err != nil {
 			return err
 		}

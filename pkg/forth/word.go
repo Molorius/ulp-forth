@@ -99,14 +99,21 @@ func (w *WordForth) AddToList(u *Ulp) error {
 // The Go code for a primitive Word.
 type PrimitiveGo func(*VirtualMachine, *DictionaryEntry) error
 
-// The ULP assembly for a primitive Word.
+// The ULP assembly for a primitive Word that uses token threading.
 type PrimitiveUlp []string
+
+// The ULP assembly for a primitive Word that uses subroutine threading
+type PrimitiveUlpSrt struct {
+	Asm             []string // the assembly, not including NEXT if standard
+	NonStandardNext bool     // this word uses a nonstandard NEXT ending
+}
 
 // A Word defined using Go and ULP assembly.
 type WordPrimitive struct {
-	Go    PrimitiveGo      // The Go function to be executed.
-	Ulp   PrimitiveUlp     // The ULP assembly to be compiled.
-	Entry *DictionaryEntry // The associated dictionary entry.
+	Go     PrimitiveGo      // The Go function to be executed.
+	Ulp    PrimitiveUlp     // The ULP assembly to be compiled.
+	UlpSrt PrimitiveUlpSrt  // The ULP assembly using subroutine threading to be compiled.
+	Entry  *DictionaryEntry // The associated dictionary entry.
 }
 
 func (w *WordPrimitive) Execute(vm *VirtualMachine) error {
