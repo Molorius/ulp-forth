@@ -17,6 +17,7 @@ import (
 type Word interface {
 	Execute(*VirtualMachine) error // Execute the word.
 	AddToList(*Ulp) error
+	BuildAssembly(*Ulp) (string, error)
 }
 
 // A Word built using other Forth words/numbers.
@@ -32,6 +33,9 @@ func (w *WordForth) ExecuteOffset(vm *VirtualMachine, offset int) error {
 	err := vm.ReturnStack.Push(previous)
 	if err != nil {
 		return errors.Join(fmt.Errorf("%s could not push instruction pointer to return stack.", w.Entry), err)
+	}
+	if len(w.Cells) == 0 {
+		return EntryError(w.Entry, "This forth word doesn't have a definition")
 	}
 	vm.IP = &CellAddress{Entry: w.Entry, Offset: offset} // create a new instruction pointer
 
@@ -106,6 +110,30 @@ func (w *WordForth) AddToList(u *Ulp) error {
 	return nil
 }
 
+func (w *WordForth) BuildAssembly(u *Ulp) (string, error) {
+	output := make([]string, 1)
+	output[0] = w.Entry.ulpName + ":"
+	if w.Entry.Flag.Data { // data word
+		for _, cell := range w.Cells {
+			ref, err := cell.OutputReference(u)
+			if err != nil {
+				return "", err
+			}
+			val := ".int " + ref
+			output = append(output, val)
+		}
+	} else { // executable forth word
+		for _, cell := range w.Cells {
+			asm, err := cell.BuildExecution(u)
+			if err != nil {
+				return "", err
+			}
+			output = append(output, asm)
+		}
+	}
+	return strings.Join(output, "\r\n"), nil
+}
+
 // The Go code for a primitive Word.
 type PrimitiveGo func(*VirtualMachine, *DictionaryEntry) error
 
@@ -142,11 +170,16 @@ func (w *WordPrimitive) AddToList(u *Ulp) error {
 	return nil
 }
 
-func (w *WordPrimitive) SubroutineOutput() string {
-	standardNext := "\r\nadd r2, r2, 1\r\njump r2"
-	i := strings.Join(w.UlpSrt.Asm, "\r\n")
-	if !w.UlpSrt.NonStandardNext {
-		i += standardNext
+func (w *WordPrimitive) BuildAssembly(*Ulp) (string, error) {
+	out := w.Entry.ulpName + ":" + "\r\n"
+	asm := w.UlpSrt.Asm
+	if asm == nil {
+		return "", EntryError(w.Entry, "No assembly created")
 	}
-	return i
+	out += strings.Join(w.UlpSrt.Asm, "\r\n")
+	if !w.UlpSrt.NonStandardNext {
+		standardNext := "\r\nadd r2, r2, 1\r\njump r2"
+		out += standardNext
+	}
+	return out, nil
 }

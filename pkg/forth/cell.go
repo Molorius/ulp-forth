@@ -11,12 +11,21 @@ import (
 	"fmt"
 )
 
+func safeCall() string {
+	return "__safe_call: "
+}
+
 // A Cell is the smallest unit of address within Forth.
 // Cells are what constitute words, stack entries, etc.
 type Cell interface {
 	Execute(*VirtualMachine) error
 	// Compile(*Ulp) (string, error) // The compiled string for the output assembly.
 	AddToList(*Ulp) error
+	// Build the assembly necessary to execute this cell.
+	BuildExecution(*Ulp) (string, error)
+	// The string reference for this cell, used for literals
+	// and when the cell is stored as data.
+	OutputReference(*Ulp) (string, error)
 }
 
 // A Cell representing a number.
@@ -29,13 +38,24 @@ func (c CellNumber) Execute(vm *VirtualMachine) error {
 }
 
 func (c CellNumber) String() string {
-	return fmt.Sprintf("#%d", c.Number)
+	// return fmt.Sprintf("#%d", c.Number)
+	return fmt.Sprintf("%d", c.Number)
 }
 
 func (c CellNumber) AddToList(u *Ulp) error {
 	// Numbers directly in a word are not executed,
 	// so we don't add to a list.
 	return nil
+}
+
+func (c CellNumber) BuildExecution(u *Ulp) (string, error) {
+	return fmt.Sprintf(
+		"move r0, %d\r\n%sjump __add_to_stack", c.Number, safeCall(),
+	), nil
+}
+
+func (c CellNumber) OutputReference(u *Ulp) (string, error) {
+	return fmt.Sprintf("%d", c.Number), nil
 }
 
 // A Cell representing an address in the dictionary. Used for pointers such
@@ -68,6 +88,25 @@ func (c CellAddress) Execute(vm *VirtualMachine) error {
 
 func (c CellAddress) AddToList(u *Ulp) error {
 	return c.Entry.AddToList(u)
+}
+
+func (c CellAddress) BuildExecution(u *Ulp) (string, error) {
+	name, err := c.OutputReference(u)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%sjump %s", safeCall(), name), nil
+}
+
+func (c CellAddress) OutputReference(u *Ulp) (string, error) {
+	name := c.Entry.ulpName
+	if c.Offset != 0 {
+		name = fmt.Sprintf("%s+%d", name, c.Offset)
+	}
+	if c.UpperByte {
+		name = name + "+0x8000"
+	}
+	return name, nil
 }
 
 func (c CellAddress) String() string {
@@ -107,6 +146,20 @@ func (c CellLiteral) AddToList(u *Ulp) error {
 	return c.cell.AddToList(u)
 }
 
+func (c CellLiteral) BuildExecution(u *Ulp) (string, error) {
+	name, err := c.cell.OutputReference(u)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(
+		"move r0, %s\r\n%sjump __add_to_stack", name, safeCall(),
+	), nil
+}
+
+func (c CellLiteral) OutputReference(u *Ulp) (string, error) {
+	return "", fmt.Errorf("Cannot refer to a CellLiteral, please file a bug report")
+}
+
 // A destination to branch to. Only used during compilation.
 type CellDestination struct {
 	ulpName string      // the name we're going to compile this into
@@ -120,6 +173,14 @@ func (c *CellDestination) Execute(vm *VirtualMachine) error {
 func (c *CellDestination) AddToList(u *Ulp) error {
 	// Add the destination word to a list.
 	return c.Addr.AddToList(u)
+}
+
+func (c *CellDestination) BuildExecution(u *Ulp) (string, error) {
+	return c.name(u) + ":", nil
+}
+
+func (c *CellDestination) OutputReference(u *Ulp) (string, error) {
+	return "", fmt.Errorf("Cannot refer to a destination, please file a bug report")
 }
 
 func (c *CellDestination) copyAddress() CellAddress {
@@ -157,6 +218,15 @@ func (c *CellBranch) AddToList(u *Ulp) error {
 	return c.dest.AddToList(u)
 }
 
+func (c *CellBranch) BuildExecution(u *Ulp) (string, error) {
+	asm := fmt.Sprintf("move r2, %s\r\njump r2", c.dest.name(u))
+	return asm, nil
+}
+
+func (c *CellBranch) OutputReference(u *Ulp) (string, error) {
+	return "", fmt.Errorf("Cannot refer to a branch, please file a bug report")
+}
+
 func (c *CellBranch) String() string {
 	return fmt.Sprintf("Branch{%p}", c.dest)
 }
@@ -185,6 +255,15 @@ func (c *CellBranch0) Execute(vm *VirtualMachine) error {
 func (c *CellBranch0) AddToList(u *Ulp) error {
 	// Add the destination to the list.
 	return c.dest.AddToList(u)
+}
+
+func (c *CellBranch0) BuildExecution(u *Ulp) (string, error) {
+	asm := fmt.Sprintf("move r1, %s\r\n%sjump __branch_if", c.dest.name(u), safeCall())
+	return asm, nil
+}
+
+func (c *CellBranch0) OutputReference(u *Ulp) (string, error) {
+	return "", fmt.Errorf("Cannot refer to a conditional branch, please file a bug report")
 }
 
 func (c *CellBranch0) String() string {

@@ -10,7 +10,24 @@
 \ Immediate.
 : RECURSE ( -- ) LAST COMPILE, ; IMMEDIATE
 
-: >BODY ( xt -- a-addr ) ; \ the address is the same as the xt in this kernel
+\ Parse the next word delimited by a space. Allocate n cells. Create
+\ a definition for the word that places the address of the allocated
+\ memory onto the stack.
+: BUFFER: ( n -- )
+    ALLOCATE DROP \ allocate n words, drop the superfluous "ok" indicator but keep address
+    : \ parse the next input, create a word with that name
+    POSTPONE LITERAL \ compile the allocated address literal
+    POSTPONE ; \ end the definition
+;
+
+: VARIABLE 1 BUFFER: ;
+
+\ the header size is 0 when token threading, so
+\ we need to set this as a variable
+VARIABLE HEADER-SIZE
+1 HEADER-SIZE !
+
+: >BODY ( xt -- a-addr ) HEADER-SIZE @ + ; \ skip past the header
 
 : DEFER ( "<spaces>name" -- )
     CREATE \ create a new dictionary entry
@@ -118,17 +135,6 @@
     THEN
 ; IMMEDIATE
 
-\ Parse the next word delimited by a space. Allocate n cells. Create
-\ a definition for the word that places the address of the allocated
-\ memory onto the stack.
-: BUFFER: ( n -- )
-    ALLOCATE DROP \ allocate n words, drop the superfluous "ok" indicator but keep address
-    : \ parse the next input, create a word with that name
-    POSTPONE LITERAL \ compile the allocated address literal
-    POSTPONE ; \ end the definition
-;
-
-: VARIABLE 1 BUFFER: ;
 : +! DUP @ ROT + SWAP ! ;
 
 : OVER 1 PICK ;

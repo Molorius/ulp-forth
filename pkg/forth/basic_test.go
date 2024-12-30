@@ -111,9 +111,14 @@ func TestPrimitives(t *testing.T) {
 			expect: "123 234 ",
 		},
 		{
-			name:   "EXECUTE",
-			asm:    wrapMain("['] U. 123 SWAP EXECUTE"),
-			expect: "123 ",
+			name:   "EXECUTE primitive",
+			asm:    wrapMain("1 2 ['] + EXECUTE U."),
+			expect: "3 ",
+		},
+		{
+			name:   "EXECUTE word",
+			asm:    wrapMain("['] FALSE EXECUTE U."),
+			expect: "0 ",
 		},
 		{
 			name:   "@ !",
@@ -136,6 +141,11 @@ func TestPrimitives(t *testing.T) {
 			expect: "5 0 61 1 ",
 		},
 		{
+			name:   "NEGATE",
+			asm:    wrapMain("-1 NEGATE U. -2 NEGATE U."),
+			expect: "1 2 ",
+		},
+		{
 			name:   ".",
 			asm:    wrapMain("0 . 1 . 2 . 3 . -1 . -2 . -3 ."),
 			expect: "0 1 2 3 -1 -2 -3 ",
@@ -144,6 +154,11 @@ func TestPrimitives(t *testing.T) {
 			name:   "C@",
 			asm:    ": main [ BL WORD test ] LITERAL C@ u. ESP.DONE ;",
 			expect: "4 ",
+		},
+		{
+			name:   "BASE",
+			asm:    wrapMain("BASE @ U."),
+			expect: "10 ",
 		},
 	}
 	r := asm.Runner{}

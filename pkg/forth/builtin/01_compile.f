@@ -62,6 +62,7 @@ EXIT [ IMMEDIATE
     [ 'A' WORD A ] \ put an empty string on the stack
     LITERAL \ compile it into :noname
     --CREATE-FORTH \ later create a definition with the empty name
+    POSTPONE DOCOL \ add a DOCOL
     TRUE LAST SET-HIDDEN \ hide it
     LAST \ put the execution token on the stack
     ] \ and put in compile mode

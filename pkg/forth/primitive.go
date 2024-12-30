@@ -196,8 +196,12 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				newEntry = DictionaryEntry{
 					Name: name,
 					Word: &WordPrimitive{
-						Go:    notImplemented,
-						Ulp:   asm,
+						Go:  notImplemented,
+						Ulp: asm,
+						UlpSrt: PrimitiveUlpSrt{
+							Asm:             asm,
+							NonStandardNext: true,
+						},
 						Entry: &newEntry,
 					},
 				}
@@ -541,9 +545,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					// each forth word is the address plus 0x8000,
 					// which denotes that it is a forth word
 					// with the 0x8000.
-					"ld r0, r3, 0",                  // load the token into r0
-					"add r3, r3, 1",                 // decrement stack pointer
-					"jumpr __execute.0, 0x8000, ge", // jump if the forth tag is there
+					"ld r0, r3, 0",                         // load the token into r0
+					"add r3, r3, 1",                        // decrement stack pointer
+					"jumpr __execute.0, __forth_words, ge", // jump if the address is past assembly words
 					// it's an assembly word, execute it
 					"jump r0",
 					"__execute.0:",
@@ -554,8 +558,8 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					"st r2, r1, 0",   // store return address
 					"move r2, __rsp", // put pointer on rsp
 					"st r1, r2, 0",   // store rsp
-					"add r0, r0, 1",  // go past the DOCOL
-					"jump r0",        // jump to the forth word, past the DOCOL
+					"add r2, r0, 1",  // go past the DOCOL
+					"jump r2",        // jump to the forth word, past the DOCOL
 				},
 				NonStandardNext: true,
 			},

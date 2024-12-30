@@ -110,13 +110,14 @@ func (u *Ulp) BuildAssembly(vm *VirtualMachine, word string) (string, error) {
 	u.data = make(map[string]string)
 
 	vm.State.Set(uint16(StateInterpret))
-	err := vm.Execute([]byte(" : VM.INIT VM.STACK.INIT " + word + " BEGIN HALT AGAIN ; "))
+	err := vm.Execute([]byte(": VM.INIT VM.STACK.INIT " + word + " BEGIN HALT AGAIN ; 0 HEADER-SIZE !"))
 	if err != nil {
 		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)
 	}
 	vmInitEntry := vm.Dictionary.Entries[len(vm.Dictionary.Entries)-1]
 	_, err = u.findUsedEntry(vmInitEntry)
 	str := u.build()
+	err = vm.Execute([]byte("1 HEADER-SIZE !")) // put back the header size
 	return str, err
 }
 
@@ -136,23 +137,66 @@ func (u *Ulp) BuildAssemblySrt(vm *VirtualMachine, word string) (string, error) 
 	if err != nil {
 		return "", err
 	}
+	forth, err := u.buildForthWords()
+	if err != nil {
+		return "", err
+	}
+	data, err := u.buildDataWords()
+	if err != nil {
+		return "", err
+	}
 	i := []string{
 		interpreter,
+		"__assembly_words:",
 		asm,
+		"__forth_words:",
+		forth,
+		"__data_words:",
+		data,
 	}
-	return strings.Join(i, "\r\n"), fmt.Errorf("subroutine threading not implemented")
+	return strings.Join(i, "\r\n"), nil
 }
 
 // Convert list of used subroutine-threaded assembly
 // words into a string.
 func (u *Ulp) buildAssemblyWords() (string, error) {
-	asmList := make([]string, 2*len(u.assemblyWords))
-	for i, asm := range u.assemblyWords {
-		j := i * 2
-		asmList[j] = asm.Entry.ulpName + ":"
-		asmList[j+1] = asm.SubroutineOutput()
+	asmList := make([]string, len(u.assemblyWords))
+	for i, word := range u.assemblyWords {
+		asm, err := word.BuildAssembly(u)
+		if err != nil {
+			return "", err
+		}
+		asmList[i] = asm
 	}
-	return strings.Join(asmList, "\r\n"), nil
+	return strings.Join(asmList, "\r\n\r\n"), nil
+}
+
+// Convert list of subroutine-threaded forth
+// words into a string.
+func (u *Ulp) buildForthWords() (string, error) {
+	output := make([]string, len(u.forthWords))
+	for i, word := range u.forthWords {
+		asm, err := word.BuildAssembly(u)
+		if err != nil {
+			return "", err
+		}
+		output[i] = asm
+	}
+	return strings.Join(output, "\r\n\r\n"), nil
+}
+
+// Convert list of data
+// words into a string.
+func (u *Ulp) buildDataWords() (string, error) {
+	output := make([]string, len(u.dataWords))
+	for i, word := range u.dataWords {
+		asm, err := word.BuildAssembly(u)
+		if err != nil {
+			return "", err
+		}
+		output[i] = asm
+	}
+	return strings.Join(output, "\r\n"), nil
 }
 
 // recursively find all dictionary entries that the entry uses
@@ -422,8 +466,29 @@ func (u *Ulp) buildInterpreterSrt() string {
 
 		// TODO start executing code in some better way.
 		// the +1 is to jump over the DOCOL
-		"jump __forth_VM.INIT + 1",
+		"move r2, __forth_VM.INIT + 1",
+		"jump r2",
 		".text",
+
+		// subroutine to add the value on r0 to the stack
+		"__add_to_stack:",
+		"sub r3, r3, 1", // increment the stack
+		"st r0, r3, 0",  // store the value
+		"add r2, r2, 2", // increase the instruction pointer by 2
+		"jump r2",       // and continue executing!
+
+		// subroutine to conditional jump
+		"__branch_if:",
+		"ld r0, r3, 0",  // load the top of stack
+		"add r3, r3, 1", // decrement stack
+		"jumpr __branch_if.0, 1, lt",
+		// don't jump
+		"add r2, r2, 2",
+		"jump r2",
+		// jump
+		"__branch_if.0:",
+		"move r2, r1", // copy the new address
+		"jump r2",     // and jump to it!
 	}
 	return strings.Join(i, "\r\n") + "\r\n"
 }
