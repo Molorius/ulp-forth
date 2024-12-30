@@ -131,8 +131,28 @@ func (u *Ulp) BuildAssemblySrt(vm *VirtualMachine, word string) (string, error) 
 	if err != nil {
 		return "", err
 	}
+	interpreter := u.buildInterpreterSrt()
+	asm, err := u.buildAssemblyWords()
+	if err != nil {
+		return "", err
+	}
+	i := []string{
+		interpreter,
+		asm,
+	}
+	return strings.Join(i, "\r\n"), fmt.Errorf("subroutine threading not implemented")
+}
 
-	return "", fmt.Errorf("subroutine threading not implemented")
+// Convert list of used subroutine-threaded assembly
+// words into a string.
+func (u *Ulp) buildAssemblyWords() (string, error) {
+	asmList := make([]string, 2*len(u.assemblyWords))
+	for i, asm := range u.assemblyWords {
+		j := i * 2
+		asmList[j] = asm.Entry.ulpName + ":"
+		asmList[j+1] = asm.SubroutineOutput()
+	}
+	return strings.Join(asmList, "\r\n"), nil
 }
 
 // recursively find all dictionary entries that the entry uses

@@ -10,6 +10,7 @@ package forth
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // An executable Forth Word.
@@ -78,6 +79,15 @@ func (w *WordForth) AddToList(u *Ulp) error {
 	if w.Entry.Flag.addedToList {
 		return nil
 	}
+	// create the compiled name
+	if w.Entry.Flag.Data { // if this is a data entry
+		if w.Entry.Name == "" { // if it doesn't have a name assigned
+			w.Entry.Name = u.name("data", "unnamed", true) // create one
+		}
+		w.Entry.ulpName = w.Entry.Name
+	} else { // if this is a word entry
+		w.Entry.ulpName = u.name("forth", w.Entry.Name, true)
+	}
 	// add this word to the list
 	w.Entry.Flag.addedToList = true
 	if w.Entry.Flag.Data {
@@ -124,7 +134,19 @@ func (w *WordPrimitive) AddToList(u *Ulp) error {
 	if w.Entry.Flag.addedToList {
 		return nil
 	}
+	// create the compiled name
+	w.Entry.ulpName = u.name("asm", w.Entry.Name, true)
+	// add it to the list
 	u.assemblyWords = append(u.assemblyWords, w)
 	w.Entry.Flag.addedToList = true
 	return nil
+}
+
+func (w *WordPrimitive) SubroutineOutput() string {
+	standardNext := "\r\nadd r2, r2, 1\r\njump r2"
+	i := strings.Join(w.UlpSrt.Asm, "\r\n")
+	if !w.UlpSrt.NonStandardNext {
+		i += standardNext
+	}
+	return i
 }
