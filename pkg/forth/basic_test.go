@@ -10,6 +10,7 @@ package forth
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/Molorius/ulp-c/pkg/asm"
@@ -193,6 +194,32 @@ func runOutputTest(code string, expected string, t *testing.T, r *asm.Runner) {
 	})
 	// run the cross compiled test on emulator and hardware
 	r.RunTest(t, assembly, expected)
+
+	t.Run("subroutine", func(t *testing.T) {
+		// check if we should do the subroutine tests
+		if os.Getenv("SRT") == "" {
+			t.Skip("Skipping subroutine threading test")
+		}
+		// we should! set up the code
+		vm = VirtualMachine{Out: &buff}
+		err = vm.Setup()
+		if err != nil {
+			t.Fatalf("failed to set up vm: %s", err)
+		}
+		// run the code through the interpreter
+		err = vm.Execute([]byte(code))
+		if err != nil {
+			t.Fatalf("failed to execute test code: %s", err)
+		}
+		ulp = Ulp{}
+		// cross compile "main"
+		assembly, err = ulp.BuildAssemblySrt(&vm, "main")
+		if err != nil {
+			t.Fatalf("failed to generate assembly: %s", err)
+		}
+		// run the cross compiled test on emulator and hardware
+		r.RunTest(t, assembly, expected)
+	})
 }
 
 func wrapMain(code string) string {

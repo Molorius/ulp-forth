@@ -20,6 +20,7 @@ const CmdOutput = "output"
 const CmdReserved = "reserved"
 const CmdAssembly = "assembly"
 const CmdCustomAssembly = "custom_assembly"
+const CmdSubroutineThreading = "subroutine"
 
 // buildCmd represents the build command
 var buildCmd = &cobra.Command{
@@ -56,7 +57,13 @@ ulp-forth build --assembly --reserved 1024 file1.f file2.f`,
 			f.Close()
 		}
 		ulp := forth.Ulp{}
-		assembly, err := ulp.BuildAssembly(&vm, "MAIN")
+		var assembly string
+		subroutine, _ := cmd.Flags().GetBool(CmdSubroutineThreading)
+		if subroutine {
+			assembly, err = ulp.BuildAssemblySrt(&vm, "MAIN")
+		} else {
+			assembly, err = ulp.BuildAssembly(&vm, "MAIN")
+		}
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -115,4 +122,6 @@ func init() {
 	buildCmd.Flags().Bool(CmdAssembly, false, "Output assembly that can be compiled by the main assemblers, set the --reserved flag before using")
 	buildCmd.Flags().Bool(CmdCustomAssembly, false, "Output assembly only for use by ulp-asm")
 	buildCmd.MarkFlagsMutuallyExclusive(CmdCustomAssembly, CmdAssembly)
+
+	buildCmd.Flags().Bool(CmdSubroutineThreading, false, "(Experimental) Use subroutine threading model")
 }

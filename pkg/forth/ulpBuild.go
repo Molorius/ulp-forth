@@ -115,13 +115,24 @@ func (u *Ulp) BuildAssembly(vm *VirtualMachine, word string) (string, error) {
 		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)
 	}
 	vmInitEntry := vm.Dictionary.Entries[len(vm.Dictionary.Entries)-1]
+	_, err = u.findUsedEntry(vmInitEntry)
+	str := u.build()
+	return str, err
+}
+
+func (u *Ulp) BuildAssemblySrt(vm *VirtualMachine, word string) (string, error) {
+	vm.State.Set(uint16(StateInterpret))
+	err := vm.Execute([]byte(" : VM.INIT VM.STACK.INIT " + word + " BEGIN HALT AGAIN ; "))
+	if err != nil {
+		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)
+	}
+	vmInitEntry := vm.Dictionary.Entries[len(vm.Dictionary.Entries)-1]
 	err = u.buildLists(vmInitEntry)
 	if err != nil {
 		return "", err
 	}
-	_, err = u.findUsedEntry(vmInitEntry)
-	str := u.build()
-	return str, err
+
+	return "", fmt.Errorf("subroutine threading not implemented")
 }
 
 // recursively find all dictionary entries that the entry uses
@@ -363,6 +374,36 @@ func (u *Ulp) buildInterpreter() string {
 		// it's a definite branch
 		"and r1, r0, 0x3FFF",    // get the lowest 14 bits
 		"jump __next_skip_load", // then continue vm at this newer address
+	}
+	return strings.Join(i, "\r\n") + "\r\n"
+}
+
+func (u *Ulp) buildInterpreterSrt() string {
+	i := []string{
+		// required data, will be placed at the start of .data
+		".boot.data",
+		".global MUTEX_FLAG0",
+		".global MUTEX_FLAG1",
+		".global MUTEX_TURN",
+		".global HOST_FUNC",
+		".global HOST_PARAM0",
+		"MUTEX_FLAG0: .int 0", // DO NOT reorder these, the same address relative to .data
+		"MUTEX_FLAG1: .int 0", // is used to easily find for the esp32 and the emulator.
+		"MUTEX_TURN:  .int 0",
+		"HOST_FUNC:   .int 0",
+		"HOST_PARAM0: .int 0",
+		".data",
+		"__rsp: .int __stack_start", // return stack pointer starts at the beginning of the stack section
+
+		// boot labels
+		".boot",
+		".global entry",
+		"entry:",
+
+		// TODO start executing code in some better way.
+		// the +1 is to jump over the DOCOL
+		"jump __forth_VM.INIT + 1",
+		".text",
 	}
 	return strings.Join(i, "\r\n") + "\r\n"
 }

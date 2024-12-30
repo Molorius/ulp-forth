@@ -232,6 +232,18 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		{
 			name:   "DOCOL",
 			goFunc: nop,
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"move r0, 0",
+					"ld r1, r0, __rsp", // load the return stack pointer
+					"add r1, r1, 1",    // increase rsp
+					"st r2, r1, 0",     // store the current address on return stack
+					"st r1, r0, __rsp", // store rsp
+					"ld r2, r2, 0",     // load the lower half of the "jump" instruction
+					"rsh r2, r2, 2",    // isolate the jump address
+					// we will then add past this DOCOL jump, then continue execution
+				},
+			},
 		},
 		{
 			name: "BYE",
