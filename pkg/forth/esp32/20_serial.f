@@ -12,7 +12,7 @@
 \ may change later with optimization passes, assembly
 \ is consistent. It's also difficult to tune high baud
 \ rates in forth without taking a lot of space.
-: SERIAL.WRITE_CREATE ( pin wait-time "<spaces>name" -- )
+: SERIAL.WRITE_CREATE.BUILDER ( pin wait-time -- )
     2>R \ put arguments on return stack while building
     C" ld r0, r3, 0\n" \ load the character
     C" add r3, r3, 1\n" \ decrement the return stack
@@ -42,13 +42,25 @@
         \ loop 8 times
         C" stage_inc 1\n" \ 4 cycles
         C" jumps __serial_write_0_" 1 RPICK C" _" 0 RPICK C" , 10, lt\n" \ 4 cycles
-    C" jump __next_skip_r2"
     \ time from reg_wr to reg_wr (only 1 reg_wr):
     \ 12+4 + 6+n+4+4+4 + 4+4
     \ = 42+n cycles
-    47 C> C> + + \ get the total number of inputs
-    ASSEMBLY \ create the assembly
+    46 C> C> + + \ get the total number of inputs
     2R> 2DROP \ clean up the return stack
+;
+
+: SERIAL.WRITE_CREATE ( pin wait-time "<spaces>name" -- )
+    2DUP >R >R \ dup the input
+    \ token threaded
+    SERIAL.WRITE_CREATE.BUILDER
+    C" jump __next_skip_r2"
+    SWAP 1 +
+    \ subroutine threaded
+    R> R>
+    SERIAL.WRITE_CREATE.BUILDER
+    C" add r2, r2, 1\njump r2"
+    SWAP 1 +
+    ASSEMBLY-BOTH
 ;
 
 \ these were found at 21 C with a logic analyzer

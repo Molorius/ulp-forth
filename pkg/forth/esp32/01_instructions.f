@@ -49,7 +49,7 @@
 ;
 
 : READ_RTC_REG ( addr low width )
-    2 PICK 2 PICK 2 PICK 2 PICK \ duplicate the inputs
+    2 PICK 2 PICK 2 PICK \ duplicate the inputs
     >R >R >R
     \ create the token threaded assembly
     READ_RTC_REG.BUILDER
