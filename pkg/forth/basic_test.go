@@ -10,7 +10,6 @@ package forth
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/Molorius/ulp-c/pkg/asm"
@@ -181,27 +180,21 @@ func TestPrimitives(t *testing.T) {
 }
 
 func runOutputTest(code string, expected string, t *testing.T, r *asm.Runner) {
-	var buff bytes.Buffer
-	// set up the virtual machine
-	vm := VirtualMachine{Out: &buff}
-	err := vm.Setup()
-	if err != nil {
-		t.Fatalf("failed to set up vm: %s", err)
-	}
-	// run the code through the interpreter
-	err = vm.Execute([]byte(code))
-	if err != nil {
-		t.Fatalf("failed to execute test code: %s", err)
-	}
-	ulp := Ulp{}
-	// cross compile "main"
-	assembly, err := ulp.BuildAssembly(&vm, "main")
-	if err != nil {
-		t.Fatalf("failed to generate assembly: %s", err)
-	}
-
 	// run the test directly on host
 	t.Run("host", func(t *testing.T) {
+		// set up the virtual machine
+		var buff bytes.Buffer
+		vm := VirtualMachine{Out: &buff}
+		err := vm.Setup()
+		if err != nil {
+			t.Fatalf("failed to set up vm: %s", err)
+		}
+		// run the code through the interpreter
+		err = vm.Execute([]byte(code))
+		if err != nil {
+			t.Fatalf("failed to execute test code: %s", err)
+		}
+		// run the test on host
 		err = vm.Execute([]byte(" MAIN "))
 		if err != nil {
 			t.Errorf("error while running: %s", err)
@@ -212,17 +205,13 @@ func runOutputTest(code string, expected string, t *testing.T, r *asm.Runner) {
 			}
 		}
 	})
-	// run the cross compiled test on emulator and hardware
-	r.RunTest(t, assembly, expected)
 
-	t.Run("subroutine", func(t *testing.T) {
-		// check if we should do the subroutine tests
-		if os.Getenv("SRT") == "" {
-			t.Skip("Skipping subroutine threading test")
-		}
-		// we should! set up the code
-		vm = VirtualMachine{Out: &buff}
-		err = vm.Setup()
+	// run the test on ulp with token threaded implementation
+	t.Run("token threaded", func(t *testing.T) {
+		// set up the virtual machine
+		var buff bytes.Buffer
+		vm := VirtualMachine{Out: &buff}
+		err := vm.Setup()
 		if err != nil {
 			t.Fatalf("failed to set up vm: %s", err)
 		}
@@ -231,9 +220,33 @@ func runOutputTest(code string, expected string, t *testing.T, r *asm.Runner) {
 		if err != nil {
 			t.Fatalf("failed to execute test code: %s", err)
 		}
-		ulp = Ulp{}
+		ulp := Ulp{}
 		// cross compile "main"
-		assembly, err = ulp.BuildAssemblySrt(&vm, "main")
+		assembly, err := ulp.BuildAssembly(&vm, "main")
+		if err != nil {
+			t.Fatalf("failed to generate assembly: %s", err)
+		}
+		// run the cross compiled test on emulator and hardware
+		r.RunTest(t, assembly, expected)
+	})
+
+	// run the test on ulp with subroutine threaded implementation
+	t.Run("subroutine threaded", func(t *testing.T) {
+		// set up the virtual machine
+		var buff bytes.Buffer
+		vm := VirtualMachine{Out: &buff}
+		err := vm.Setup()
+		if err != nil {
+			t.Fatalf("failed to set up vm: %s", err)
+		}
+		// run the code through the interpreter
+		err = vm.Execute([]byte(code))
+		if err != nil {
+			t.Fatalf("failed to execute test code: %s", err)
+		}
+		ulp := Ulp{}
+		// cross compile "main"
+		assembly, err := ulp.BuildAssemblySrt(&vm, "main")
 		if err != nil {
 			t.Fatalf("failed to generate assembly: %s", err)
 		}

@@ -152,46 +152,75 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		{
 			name: "--CREATE-ASSEMBLY", // ( asm_n ... asm0 count name -- )
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
-				cellStr, err := vm.Stack.Pop()
-				if err != nil {
-					return JoinEntryError(err, entry, "could not pop name")
-				}
-				cellAddr, ok := cellStr.(CellAddress)
-				if !ok {
-					return EntryError(entry, "name argument needs to be an address to a string")
-				}
-				name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+				name, err := parseWord(vm, entry)
 				if err != nil {
 					return JoinEntryError(err, entry, "could not parse name")
 				}
-				count, err := vm.Stack.PopNumber()
+				asm, err := parseAssembly(vm, entry)
 				if err != nil {
-					return JoinEntryError(err, entry, "count argument requires a number")
+					return JoinEntryError(err, entry, "could not parse assembly")
 				}
-				asm := make([]string, 0)
-				for i := uint16(0); i < count; i++ {
-					cell, err := vm.Stack.Pop()
-					if err != nil {
-						return JoinEntryError(err, entry, "could not pop object")
-					}
-					switch c := cell.(type) {
-					case CellAddress:
-						substr, err := cellsToString(c.Entry.Word.(*WordForth).Cells)
-						if err != nil {
-							return JoinEntryError(err, entry, "could not convert input to string")
-						}
-						asm = append(asm, substr)
-					case CellNumber:
-						asm = append(asm, strconv.Itoa(int(c.Number)))
-					default:
-						return EntryError(entry, "unknown argument type %T argument %s", c, c)
-					}
+				var newEntry DictionaryEntry
+				newEntry = DictionaryEntry{
+					Name: name,
+					Word: &WordPrimitive{
+						Go:    notImplemented,
+						Ulp:   asm,
+						Entry: &newEntry,
+					},
 				}
-				slices.Reverse(asm)
-				asmStr := strings.Join(asm, "")
-				asmStr = strings.ReplaceAll(asmStr, "\\r", "\r")
-				asmStr = strings.ReplaceAll(asmStr, "\\n", "\n")
-				asm = strings.Split(asmStr, "\n")
+				err = vm.Dictionary.AddEntry(&newEntry)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not add entry to dictionary")
+				}
+				return nil
+			},
+		},
+		{
+			name: "--CREATE-ASSEMBLY-SRT",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				name, err := parseWord(vm, entry)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not parse name")
+				}
+				asm, err := parseAssembly(vm, entry)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not parse assembly")
+				}
+				var newEntry DictionaryEntry
+				newEntry = DictionaryEntry{
+					Name: name,
+					Word: &WordPrimitive{
+						Go: notImplemented,
+						UlpSrt: PrimitiveUlpSrt{
+							Asm:             asm,
+							NonStandardNext: true,
+						},
+						Entry: &newEntry,
+					},
+				}
+				err = vm.Dictionary.AddEntry(&newEntry)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not add entry to dictionary")
+				}
+				return nil
+			},
+		},
+		{
+			name: "--CREATE-ASSEMBLY-BOTH",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				name, err := parseWord(vm, entry)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not parse name")
+				}
+				asmSrt, err := parseAssembly(vm, entry)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not parse assembly")
+				}
+				asm, err := parseAssembly(vm, entry)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not parse subroutine threaded assembly")
+				}
 				var newEntry DictionaryEntry
 				newEntry = DictionaryEntry{
 					Name: name,
@@ -199,7 +228,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 						Go:  notImplemented,
 						Ulp: asm,
 						UlpSrt: PrimitiveUlpSrt{
-							Asm:             asm,
+							Asm:             asmSrt,
 							NonStandardNext: true,
 						},
 						Entry: &newEntry,
@@ -1906,6 +1935,19 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name:   "HALT",
+			goFunc: notImplemented,
+			ulpAsm: PrimitiveUlp{
+				"halt",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"halt",
+				},
+				NonStandardNext: true,
+			},
+		},
+		{
 			name: "ESP.FUNC.UNSAFE", // use one of the custom esp32/host functions
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				funcType, err := vm.Stack.PopNumber()
@@ -2108,4 +2150,52 @@ func notImplemented(vm *VirtualMachine, entry *DictionaryEntry) error {
 
 func nop(vm *VirtualMachine, entry *DictionaryEntry) error {
 	return nil
+}
+
+func parseWord(vm *VirtualMachine, entry *DictionaryEntry) (string, error) {
+	cellStr, err := vm.Stack.Pop()
+	if err != nil {
+		return "", JoinEntryError(err, entry, "could not pop name")
+	}
+	cellAddr, ok := cellStr.(CellAddress)
+	if !ok {
+		return "", EntryError(entry, "name argument needs to be an address to a string")
+	}
+	name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+	if err != nil {
+		return "", JoinEntryError(err, entry, "could not parse name")
+	}
+	return name, nil
+}
+
+func parseAssembly(vm *VirtualMachine, entry *DictionaryEntry) ([]string, error) {
+	count, err := vm.Stack.PopNumber()
+	if err != nil {
+		return nil, JoinEntryError(err, entry, "count argument requires a number")
+	}
+	asm := make([]string, 0)
+	for i := uint16(0); i < count; i++ {
+		cell, err := vm.Stack.Pop()
+		if err != nil {
+			return nil, JoinEntryError(err, entry, "could not pop object")
+		}
+		switch c := cell.(type) {
+		case CellAddress:
+			substr, err := cellsToString(c.Entry.Word.(*WordForth).Cells)
+			if err != nil {
+				return nil, JoinEntryError(err, entry, "could not convert input to string")
+			}
+			asm = append(asm, substr)
+		case CellNumber:
+			asm = append(asm, strconv.Itoa(int(c.Number)))
+		default:
+			return nil, EntryError(entry, "unknown argument type %T argument %s", c, c)
+		}
+	}
+	slices.Reverse(asm)
+	asmStr := strings.Join(asm, "")
+	asmStr = strings.ReplaceAll(asmStr, "\\r", "\r")
+	asmStr = strings.ReplaceAll(asmStr, "\\n", "\n")
+	asm = strings.Split(asmStr, "\n")
+	return asm, nil
 }

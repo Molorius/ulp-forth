@@ -174,7 +174,7 @@ func (w *WordPrimitive) BuildAssembly(*Ulp) (string, error) {
 	out := w.Entry.ulpName + ":" + "\r\n"
 	asm := w.UlpSrt.Asm
 	if asm == nil {
-		return "", EntryError(w.Entry, "No assembly created")
+		return "", EntryError(w.Entry, "No subroutine threaded assembly created")
 	}
 	out += strings.Join(w.UlpSrt.Asm, "\r\n")
 	if !w.UlpSrt.NonStandardNext {

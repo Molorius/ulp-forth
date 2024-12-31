@@ -49,10 +49,19 @@
 ;
 
 : READ_RTC_REG ( addr low width )
+    2 PICK 2 PICK 2 PICK 2 PICK \ duplicate the inputs
+    >R >R >R
+    \ create the token threaded assembly
     READ_RTC_REG.BUILDER
     C" sub r3, r3, 1\nst r0, r3, 0\njump __next_skip_load" \ increase stack, store result, next
     SWAP 1 + \ number of inputs
-    ASSEMBLY
+    \ get the inputs
+    R> R> R>
+    \ create the subroutine threaded assembly
+    READ_RTC_REG.BUILDER
+    C" sub r3, r3, 1\nst r0, r3, 0\nadd r2, r2, 1\njump r2" \ increase stack, store result, next
+    SWAP 1 + \ number of inputs
+    ASSEMBLY-BOTH
 ;
 
 : REG_WR.BUILDER ( addr high low data -- strn..str0 n )
@@ -103,19 +112,41 @@
 
 \ create an assembly word that writes to an RTC register
 : WRITE_RTC_REG ( addr low width data "<spaces>name" -- -- )
+    3 PICK 3 PICK 3 PICK 3 PICK \ duplicate the inputs
+    >R >R >R >R
+    \ create the token threaded assembly
     WRITE_RTC_REG.BUILDER
     C" jump __next_skip_load"
     SWAP 1 +
-    ASSEMBLY
+    \ get the inputs
+    R> R> R> R>
+    \ create the subroutine threaded assembly
+    WRITE_RTC_REG.BUILDER
+    C" add r2, r2, 1\njump r2"
+    SWAP 1 +
+    ASSEMBLY-BOTH
 ;
 
 \ create an assembly word that writes to two RTC registers
 : 2WRITE_RTC_REG ( addr0 high0 low0 data0 addr1 high1 low1 data1 "<spaces>name" -- )
+    \ dup the inputs
+    7 PICK 7 PICK 7 PICK 7 PICK 7 PICK 7 PICK 7 PICK 7 PICK
+    >R >R >R >R >R >R >R >R
+    \ create the token threaded assembly
     >R >R >R >R
     WRITE_RTC_REG.BUILDER >C
     R> R> R> R>
     WRITE_RTC_REG.BUILDER C> +
     C" jump __next_skip_load"
     SWAP 1 +
-    ASSEMBLY
+    \ get the inputs
+    R> R> R> R> R> R> R> R>
+    \ create the subroutine threaded assembly
+    >R >R >R >R
+    WRITE_RTC_REG.BUILDER >C
+    R> R> R> R>
+    WRITE_RTC_REG.BUILDER C> +
+    C" add r2, r2, 1\njump r2"
+    SWAP 1 +
+    ASSEMBLY-BOTH
 ;

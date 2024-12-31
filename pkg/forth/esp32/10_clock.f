@@ -39,15 +39,26 @@ ASSEMBLY RTC_CLOCK \ create RTC_CLOCK
     2DROP 2DROP \ clean up stack
 ;
 
-STRING" ld r0, r3, 0\n"
-STRING" jumpr __busy_delay.1, 1, lt\n" \ don't enter loop if input is 0
-STRING" __busy_delay.0:\n"
-    STRING" sub r0, r0, 1\n" \ 6 cycles
-    STRING" jumpr __busy_delay.0, 0, gt\n" \ 4 cycles, loop if greater than 0
-STRING" __busy_delay.1:\n"
-STRING" add r3, r3, 1\n" \ decrement stack
-STRING" jump __next_skip_load" \ exit
-8 ASSEMBLY BUSY_DELAY \ create BUSY_DELAY
+: BUSY_DELAY.BUILDER
+    C" ld r0, r3, 0\n"
+    C" jumpr __busy_delay.1, 1, lt\n" \ don't enter loop if input is 0
+    C" __busy_delay.0:\n"
+        C" sub r0, r0, 1\n" \ 6 cycles
+        C" jumpr __busy_delay.0, 0, gt\n" \ 4 cycles, loop if greater than 0
+    C" __busy_delay.1:\n"
+    C" add r3, r3, 1\n" \ decrement stack
+    7 \ 7 strings
+;
+
+\ create the token threaded
+BUSY_DELAY.BUILDER
+STRING" jump __next_skip_load"
+SWAP 1 +
+\ create the subroutine threaded
+BUSY_DELAY.BUILDER
+STRING" add r2, r2, 1\njump r2"
+SWAP 1 +
+ASSEMBLY-BOTH BUSY_DELAY
 
 : DELAY_MS ( n -- )
     BEGIN

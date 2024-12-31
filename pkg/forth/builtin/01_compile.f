@@ -73,3 +73,13 @@ EXIT [ IMMEDIATE
 \ The values can either be string references or numbers.
 : ASSEMBLY ( objn ... obj0 n "\<spaces\>name" -- )
     BL WORD --CREATE-ASSEMBLY ;
+
+: ASSEMBLY-SRT
+    BL WORD --CREATE-ASSEMBLY-SRT
+;
+
+\ Parse the next word, then the assembly,
+\ then the subroutine threaded assembly.
+: ASSEMBLY-BOTH
+    BL WORD --CREATE-ASSEMBLY-BOTH
+;
