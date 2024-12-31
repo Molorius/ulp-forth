@@ -22,18 +22,16 @@
 
 : VARIABLE 1 BUFFER: ;
 
-\ the header size is 0 when token threading, so
-\ we need to set this as a variable
-VARIABLE HEADER-SIZE
-1 HEADER-SIZE !
-
-: >BODY ( xt -- a-addr ) HEADER-SIZE @ + ; \ skip past the header
-
-: DEFER ( "<spaces>name" -- )
-    CREATE \ create a new dictionary entry
-    POSTPONE EXIT \ compile an EXIT here for now. can be changed by DEFER!.
-    POSTPONE EXIT \ compile the actual EXIT.
+: DEFER
+    1 ALLOCATE DROP \ allocate 1 word
+    DUP ['] EXIT SWAP !  \ store EXIT by default
+    : \ parse the next input, create a word with that name
+    POSTPONE LITERAL \ compile a literal of the allocation address
+    POSTPONE @ \ compile @
+    POSTPONE EXECUTE \ compile EXECUTE
+    POSTPONE ; \ end the definition
 ;
+
 : DEFER@ ( xt1 -- xt2 ) >BODY @ ;
 : DEFER! ( xt2 xt1 -- ) >BODY ! ;
 

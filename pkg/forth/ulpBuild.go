@@ -110,15 +110,14 @@ func (u *Ulp) BuildAssembly(vm *VirtualMachine, word string) (string, error) {
 	u.data = make(map[string]string)
 
 	vm.State.Set(uint16(StateInterpret))
-	err := vm.Execute([]byte(": VM.INIT VM.STACK.INIT " + word + " BEGIN HALT AGAIN ; 0 HEADER-SIZE !"))
+	err := vm.Execute([]byte(": VM.INIT VM.STACK.INIT " + word + " BEGIN HALT AGAIN ;"))
 	if err != nil {
 		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)
 	}
 	vmInitEntry := vm.Dictionary.Entries[len(vm.Dictionary.Entries)-1]
 	_, err = u.findUsedEntry(vmInitEntry)
 	str := u.build()
-	err = vm.Execute([]byte("1 HEADER-SIZE !")) // put back the header size
-	return str, err
+	return str, nil
 }
 
 func (u *Ulp) BuildAssemblySrt(vm *VirtualMachine, word string) (string, error) {

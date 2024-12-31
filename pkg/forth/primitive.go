@@ -680,6 +680,54 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name: ">BODY",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				cell, err := vm.Stack.Pop()
+				if err != nil {
+					return PopError(err, entry)
+				}
+				c, ok := cell.(CellAddress)
+				if !ok {
+					return EntryError(entry, "can only find body of an address")
+				}
+				w, ok := c.Entry.Word.(*WordForth)
+				if !ok {
+					return EntryError(entry, "requires a forth word")
+				}
+				if len(w.Cells) < 1 {
+					return EntryError(entry, "reading a word without enough memory")
+				}
+				litCell, ok := w.Cells[1].(CellLiteral)
+				if !ok {
+					return EntryError(entry, "did not find a cell literal, was the address defined by DEFER ?")
+				}
+				addrCell, ok := litCell.cell.(CellAddress)
+				if !ok {
+					return EntryError(entry, "did not find an address, was this address defined by DEFER ?")
+				}
+				err = vm.Stack.Push(addrCell)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 0", // get the address from stack
+				"ld r0, r0, 0", // the body address token is in the front, load it
+				"ld r0, r0, 0", // get the address from the token
+				"st r0, r3, 0", // store the body address on stack
+				"jump __next_skip_load",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 0",  // get the address from stack
+					"ld r0, r0, 1",  // get the body address in the move instruction
+					"rsh r0, r0, 4", // shift it into the correct space
+					"st r0, r3, 0",  // store the body address on stack
+				},
+			},
+		},
+		{
 			name: "C@",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()
