@@ -860,7 +860,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					"and r1, r1, 0x00FF", // mask off the value
 					"__c_exclamation.1:",
 					"or r2, r2, r1", // merge the value and old value
-					"st r2, r3, 0",  // store into the address
+					"st r2, r0, 0",  // store into the address
 					"ld r2, r3, -1", // restore r2
 					"add r3, r3, 2", // decrement stack
 				},
@@ -1638,7 +1638,8 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 			ulpAsmSrt: PrimitiveUlpSrt{
 				Asm: []string{
-					"ld r0, r2, __rsp",
+					"move r1, 0",
+					"ld r0, r1, __rsp",
 					"ld r1, r3, 0",
 					"sub r0, r0, r1",
 					"ld r0, r0, 0",

@@ -160,6 +160,11 @@ func TestPrimitives(t *testing.T) {
 			asm:    wrapMain("BASE @ U."),
 			expect: "10 ",
 		},
+		{
+			name:   "DO",
+			asm:    wrapMain("4 0 DO I . LOOP"),
+			expect: "0 1 2 3 ",
+		},
 	}
 	r := asm.Runner{}
 	r.SetDefaults()
