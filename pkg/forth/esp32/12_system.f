@@ -3,20 +3,30 @@
 \ License, v. 2.0. If a copy of the MPL was not distributed with this
 \ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-STRING" __WAKE.0:\n"
-    \ check if esp32 is ready for wakeup
-    RTC_CNTL_LOW_POWER_ST_REG RTC_CNTL_RTC_RDY_FOR_WAKEUP_S 1
-    READ_RTC_REG.BUILDER >C
-    \ exit if ready
-    STRING" jumpr __WAKE.1, 1, lt\n"
-    \ check if esp32 is in a sleep mode
-    RTC_CNTL_LOW_POWER_ST_REG RTC_CNTL_MAIN_STATE_IN_IDLE_S 1
-    READ_RTC_REG.BUILDER >C
-    \ loop if not
-    STRING" jumpr __WAKE.0, 0, gt\n"
-STRING" __WAKE.1:\n"
-\ wake!
-STRING" wake\n"
+: WAKE.BUILDER
+    C" __WAKE.0:\n"
+        \ check if esp32 is ready for wakeup
+        RTC_CNTL_LOW_POWER_ST_REG RTC_CNTL_RTC_RDY_FOR_WAKEUP_S 1
+        READ_RTC_REG.BUILDER >C
+        \ exit if ready
+        C" jumpr __WAKE.1, 1, lt\n"
+        \ check if esp32 is in a sleep mode
+        RTC_CNTL_LOW_POWER_ST_REG RTC_CNTL_MAIN_STATE_IN_IDLE_S 1
+        READ_RTC_REG.BUILDER >C
+        \ loop if not
+        C" jumpr __WAKE.0, 0, gt\n"
+    C" __WAKE.1:\n"
+    \ wake!
+    C" wake\n"
+    5 C> C> + + \ add up the strings and the built instructions
+;
+
+\ token threaded assembly
+WAKE.BUILDER
 STRING" jump __next_skip_load"
-6 C> C> + + \ add up the strings and the built instructions
-ASSEMBLY WAKE \ create WAKE
+SWAP 1 +
+\ subroutine threaded assembly
+WAKE.BUILDER
+STRING" add r2, r2, 1\njump r2"
+SWAP 1 +
+ASSEMBLY-BOTH WAKE
