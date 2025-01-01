@@ -182,6 +182,7 @@ func TestPrimitives(t *testing.T) {
 func runOutputTest(code string, expected string, t *testing.T, r *asm.Runner) {
 	// run the test directly on host
 	t.Run("host", func(t *testing.T) {
+		parallel(r, t)
 		// set up the virtual machine
 		var buff bytes.Buffer
 		vm := VirtualMachine{Out: &buff}
@@ -208,6 +209,7 @@ func runOutputTest(code string, expected string, t *testing.T, r *asm.Runner) {
 
 	// run the test on ulp with token threaded implementation
 	t.Run("token threaded", func(t *testing.T) {
+		parallel(r, t)
 		// set up the virtual machine
 		var buff bytes.Buffer
 		vm := VirtualMachine{Out: &buff}
@@ -232,6 +234,7 @@ func runOutputTest(code string, expected string, t *testing.T, r *asm.Runner) {
 
 	// run the test on ulp with subroutine threaded implementation
 	t.Run("subroutine threaded", func(t *testing.T) {
+		parallel(r, t)
 		// set up the virtual machine
 		var buff bytes.Buffer
 		vm := VirtualMachine{Out: &buff}
@@ -253,6 +256,22 @@ func runOutputTest(code string, expected string, t *testing.T, r *asm.Runner) {
 		// run the cross compiled test on emulator and hardware
 		r.RunTest(t, assembly, expected)
 	})
+}
+
+// Run the tests in parallel.
+//
+// We cannot run the tests with hardware in
+// parallel because each test needs complete access
+// to the hardware.
+//
+// This should be called before any code setup
+// so that if parallelism is allowed, we can
+// parallelize the entire forth interpret
+// and cross compile process.
+func parallel(r *asm.Runner, t *testing.T) {
+	if !r.PortSet() { // if the hardware port is not set,
+		t.Parallel() // then we can safely execute every test in parallel!
+	}
 }
 
 func wrapMain(code string) string {
