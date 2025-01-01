@@ -28,13 +28,6 @@
     7 \ number of inputs
 ;
 
-: REG_RD ( addr high low "<spaces>name" -- )
-    REG_RD.BUILDER
-    C" sub r3, r3, 1\nst r0, r3, 0\njump __next_skip_load" \ increase stack, store result, next
-    SWAP 1 + \ number of inputs
-    ASSEMBLY
-;
-
 : READ_RTC_ADDR_CHANGE ( addr low width -- addr high low )
     >R >R
     RTC_ADDR_FIX
@@ -76,25 +69,6 @@
     R>
     C" \n"
     9 \ number of inputs
-;
-
-\ create an assembly word that writes to an RTC register
-: REG_WR ( addr high low data )
-    REG_WR.BUILDER
-    C" jump __next_skip_load"
-    SWAP 1 +
-    ASSEMBLY
-;
-
-\ create an assembly word that writes to two RTC registers
-: 2REG_WR ( addr0 high0 low0 data0 addr1 high1 low1 data1 -- )
-    >R >R >R >R
-    REG_WR.BUILDER >C \ put on control flow stack for now
-    R> R> R> R>
-    REG_WR.BUILDER C> +
-    C" jump __next_skip_load"
-    SWAP 1 +
-    ASSEMBLY
 ;
 
 : WRITE_RTC_ADDR_CHANGE
