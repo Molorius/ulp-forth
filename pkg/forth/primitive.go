@@ -1942,7 +1942,8 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 			ulpAsmSrt: PrimitiveUlpSrt{
 				Asm: []string{
-					"halt",
+					"add r2, r2, 1", // go to next instruction
+					"halt",          // halt!
 				},
 				NonStandardNext: true,
 			},

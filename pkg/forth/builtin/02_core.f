@@ -315,6 +315,9 @@ DEFER /MOD
 : / /MOD NIP ;
 : MOD /MOD DROP ;
 
+: U/ U/MOD NIP ;
+: UMOD U/MOD DROP ;
+
 : /_MOD F/MOD ;
 : /_ /_MOD NIP ;
 : _MOD /_MOD DROP ;

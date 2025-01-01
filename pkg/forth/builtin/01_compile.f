@@ -20,11 +20,11 @@
 
 \ ' (tick) parses the next name and places the execution token of that name
 \ onto the stack.
-32 WORD ' --CREATE-FORTH ] DOCOL BL WORD FIND-WORD EXIT [
+BL WORD ' --CREATE-FORTH ] DOCOL BL WORD FIND-WORD EXIT [
 
 \ POSTPONE parses the next name and compiles the compilation semantics of that word
 \ onto the latest word. Immediate.
-32 WORD POSTPONE --CREATE-FORTH ] DOCOL ' --POSTPONE EXIT [ IMMEDIATE
+BL WORD POSTPONE --CREATE-FORTH ] DOCOL ' --POSTPONE EXIT [ IMMEDIATE
 
 \ CREATE parses the next name and creates a Forth definition
 \ for that name with just the DOCOL word.
@@ -75,11 +75,9 @@ EXIT [ IMMEDIATE
     BL WORD --CREATE-ASSEMBLY ;
 
 : ASSEMBLY-SRT
-    BL WORD --CREATE-ASSEMBLY-SRT
-;
+    BL WORD --CREATE-ASSEMBLY-SRT ;
 
 \ Parse the next word, then the assembly,
 \ then the subroutine threaded assembly.
 : ASSEMBLY-BOTH
-    BL WORD --CREATE-ASSEMBLY-BOTH
-;
+    BL WORD --CREATE-ASSEMBLY-BOTH ;

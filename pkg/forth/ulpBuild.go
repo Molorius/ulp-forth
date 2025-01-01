@@ -104,13 +104,13 @@ func (u *Ulp) build() string {
 // Note that the virtual machine will be unusable after this.
 func (u *Ulp) BuildAssembly(vm *VirtualMachine, word string) (string, error) {
 	// put back into interpret state and compile the main ulp program
-	// u.Entries = make([]*DictionaryEntry, 0)
 	u.assembly = make([]ulpAsm, 0)
 	u.forth = make([]ulpForth, 0)
 	u.data = make(map[string]string)
 
 	vm.State.Set(uint16(StateInterpret))
-	err := vm.Execute([]byte(": VM.INIT VM.STACK.INIT " + word + " BEGIN HALT AGAIN ;"))
+	// create the VM.INIT word without an EXIT
+	err := vm.Execute([]byte(" BL WORD VM.INIT --CREATE-FORTH ] DOCOL VM.STACK.INIT " + word + " BEGIN HALT AGAIN [ LAST HIDE "))
 	if err != nil {
 		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)
 	}
@@ -122,7 +122,8 @@ func (u *Ulp) BuildAssembly(vm *VirtualMachine, word string) (string, error) {
 
 func (u *Ulp) BuildAssemblySrt(vm *VirtualMachine, word string) (string, error) {
 	vm.State.Set(uint16(StateInterpret))
-	err := vm.Execute([]byte(" : VM.INIT VM.STACK.INIT " + word + " BEGIN HALT AGAIN ; "))
+	// create the VM.INIT word without a DOCOL or an EXIT
+	err := vm.Execute([]byte(" BL WORD VM.INIT --CREATE-FORTH ] " + word + " BEGIN HALT AGAIN [ LAST HIDE "))
 	if err != nil {
 		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)
 	}
@@ -147,10 +148,13 @@ func (u *Ulp) BuildAssemblySrt(vm *VirtualMachine, word string) (string, error) 
 	i := []string{
 		interpreter,
 		"__assembly_words:",
+		".text",
 		asm,
 		"__forth_words:",
+		".text",
 		forth,
 		"__data_words:",
+		".data",
 		data,
 	}
 	return strings.Join(i, "\r\n"), nil
@@ -463,12 +467,17 @@ func (u *Ulp) buildInterpreterSrt() string {
 		".global entry",
 		"entry:",
 
-		// TODO start executing code in some better way.
-		// the +1 is to jump over the DOCOL
-		"move r2, __forth_VM.INIT + 1",
-		"jump r2",
-		".text",
+		// registers are set to 0 when the esp32
+		// initializes the ulp program,
+		// so we can see if r2 has been set or not
+		"add r0, r2, 0xFFFF", // will overflow unless r2 is 0
+		"jump r2, ov",        // jump to next instruction if overflowed
+		// setup the pointers
+		"move r2, __forth_VM.INIT", // instruction pointer goes to init word
+		"move r3, __stack_end",     // set up stack pointer
+		"jump r2",                  // begin execution
 
+		".text",
 		// subroutine to add the value on r0 to the stack
 		"__add_to_stack:",
 		"sub r3, r3, 1", // increment the stack

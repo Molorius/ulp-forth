@@ -95,7 +95,7 @@ func (c CellAddress) BuildExecution(u *Ulp) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%sjump %s", safeCall(), name), nil
+	return fmt.Sprintf("jump %s", name), nil
 }
 
 func (c CellAddress) OutputReference(u *Ulp) (string, error) {

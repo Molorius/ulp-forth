@@ -21,10 +21,14 @@
     pin_init
 
     ." Starting, this will only print once" cr
+    0
     begin
-        ." Halting" cr
-        halt
-        \ execution continues here after the ulp starts again
+        ." Halting "
+        dup u. 1+ \ print out the number and increment it
+        cr \ print a carriage return
+        halt \ halt execution
+        \ execution continues here after the ulp starts again,
+        \ so it will immediately loop after starting up
     again
 ;
 
