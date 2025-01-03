@@ -18,6 +18,7 @@ type Word interface {
 	Execute(*VirtualMachine) error // Execute the word.
 	AddToList(*Ulp) error
 	BuildAssembly(*Ulp) (string, error)
+	IsRecursive(*WordForth) bool
 }
 
 // A Word built using other Forth words/numbers.
@@ -134,6 +135,22 @@ func (w *WordForth) BuildAssembly(u *Ulp) (string, error) {
 	return strings.Join(output, "\r\n"), nil
 }
 
+func (w *WordForth) IsRecursive(check *WordForth) bool {
+	if w == check {
+		return true
+	}
+	if w.Entry.Flag.visited {
+		return false
+	}
+	w.Entry.Flag.visited = true
+	for _, c := range w.Cells {
+		if c.IsRecursive(check) {
+			return true
+		}
+	}
+	return false
+}
+
 // The Go code for a primitive Word.
 type PrimitiveGo func(*VirtualMachine, *DictionaryEntry) error
 
@@ -182,4 +199,8 @@ func (w *WordPrimitive) BuildAssembly(*Ulp) (string, error) {
 		out += standardNext
 	}
 	return out, nil
+}
+
+func (w *WordPrimitive) IsRecursive(check *WordForth) bool {
+	return false
 }

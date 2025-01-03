@@ -32,6 +32,10 @@ func (d *DictionaryEntry) AddToList(u *Ulp) error {
 	return d.Word.AddToList(u)
 }
 
+func (d *DictionaryEntry) ClearVisited() {
+	d.Flag.visited = false
+}
+
 // The Forth Dictionary. This architecture uses individual entries
 // representing words rather than a flat cell structure.
 type Dictionary struct {

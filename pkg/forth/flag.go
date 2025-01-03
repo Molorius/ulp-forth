@@ -14,4 +14,6 @@ type Flag struct {
 	Data      bool // This Forth word is data and should not be optimized.
 
 	addedToList bool // This word is already added to the output list.
+	recursive   bool // This Forth word is recursive.
+	visited     bool // This Forth word has already been visited in this optimization pass.
 }

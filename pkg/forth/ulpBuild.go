@@ -145,6 +145,10 @@ func (u *Ulp) BuildAssemblySrt(vm *VirtualMachine, word string) (string, error) 
 	if err != nil {
 		return "", err
 	}
+	err = u.optimize()
+	if err != nil {
+		return "", err
+	}
 	i := []string{
 		interpreter,
 		"__assembly_words:",
@@ -158,6 +162,39 @@ func (u *Ulp) BuildAssemblySrt(vm *VirtualMachine, word string) (string, error) 
 		data,
 	}
 	return strings.Join(i, "\r\n"), nil
+}
+
+func (u *Ulp) optimize() error {
+	// mark all recursive words for later passes
+	err := u.tagRecursion()
+	if err != nil {
+		return errors.Join(fmt.Errorf("could not tag recursion during optimization"), err)
+	}
+	return nil
+}
+
+// Mark the flag of every word that has recursion.
+func (u *Ulp) tagRecursion() error {
+	// unmark all of the words
+	for _, w := range u.forthWords {
+		w.Entry.Flag.recursive = false
+	}
+	for _, w := range u.forthWords {
+		u.clearVisited()            // clear every word every time
+		for _, c := range w.Cells { // check every cell in that word
+			if c.IsRecursive(w) {
+				w.Entry.Flag.recursive = true
+				break
+			}
+		}
+	}
+	return nil
+}
+
+func (u *Ulp) clearVisited() {
+	for _, w := range u.forthWords {
+		w.Entry.ClearVisited()
+	}
 }
 
 // Convert list of used subroutine-threaded assembly

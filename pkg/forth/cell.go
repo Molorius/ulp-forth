@@ -26,6 +26,8 @@ type Cell interface {
 	// The string reference for this cell, used for literals
 	// and when the cell is stored as data.
 	OutputReference(*Ulp) (string, error)
+	// If this cell in some way refers to the input word, return true.
+	IsRecursive(*WordForth) bool
 }
 
 // A Cell representing a number.
@@ -56,6 +58,10 @@ func (c CellNumber) BuildExecution(u *Ulp) (string, error) {
 
 func (c CellNumber) OutputReference(u *Ulp) (string, error) {
 	return fmt.Sprintf("%d", c.Number), nil
+}
+
+func (c CellNumber) IsRecursive(check *WordForth) bool {
+	return false
 }
 
 // A Cell representing an address in the dictionary. Used for pointers such
@@ -109,6 +115,10 @@ func (c CellAddress) OutputReference(u *Ulp) (string, error) {
 	return name, nil
 }
 
+func (c CellAddress) IsRecursive(check *WordForth) bool {
+	return c.Entry.Word.IsRecursive(check)
+}
+
 func (c CellAddress) String() string {
 	s := ""
 	if c.Entry.Name == "" {
@@ -160,6 +170,10 @@ func (c CellLiteral) OutputReference(u *Ulp) (string, error) {
 	return "", fmt.Errorf("Cannot refer to a CellLiteral, please file a bug report")
 }
 
+func (c CellLiteral) IsRecursive(check *WordForth) bool {
+	return c.cell.IsRecursive(check)
+}
+
 // A destination to branch to. Only used during compilation.
 type CellDestination struct {
 	ulpName string      // the name we're going to compile this into
@@ -181,6 +195,10 @@ func (c *CellDestination) BuildExecution(u *Ulp) (string, error) {
 
 func (c *CellDestination) OutputReference(u *Ulp) (string, error) {
 	return "", fmt.Errorf("Cannot refer to a destination, please file a bug report")
+}
+
+func (c *CellDestination) IsRecursive(check *WordForth) bool {
+	return false
 }
 
 func (c *CellDestination) copyAddress() CellAddress {
@@ -227,6 +245,10 @@ func (c *CellBranch) OutputReference(u *Ulp) (string, error) {
 	return "", fmt.Errorf("Cannot refer to a branch, please file a bug report")
 }
 
+func (c *CellBranch) IsRecursive(check *WordForth) bool {
+	return false
+}
+
 func (c *CellBranch) String() string {
 	return fmt.Sprintf("Branch{%p}", c.dest)
 }
@@ -264,6 +286,10 @@ func (c *CellBranch0) BuildExecution(u *Ulp) (string, error) {
 
 func (c *CellBranch0) OutputReference(u *Ulp) (string, error) {
 	return "", fmt.Errorf("Cannot refer to a conditional branch, please file a bug report")
+}
+
+func (c *CellBranch0) IsRecursive(check *WordForth) bool {
+	return false
 }
 
 func (c *CellBranch0) String() string {
