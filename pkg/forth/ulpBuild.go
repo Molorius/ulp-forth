@@ -14,6 +14,22 @@ import (
 	"strings"
 )
 
+// The type of information that we are currently cross-compiling.
+type UlpCompileType int
+
+const (
+	UlpCompileProgram UlpCompileType = iota
+	UlpCompileData
+)
+
+// The target that we are cross-compiling.
+type UlpCompileTarget int
+
+const (
+	UlpCompileTargetToken = iota
+	UlpCompileTargetSubroutine
+)
+
 type ulpAsm struct {
 	name string
 	asm  []string
@@ -70,6 +86,11 @@ type Ulp struct {
 	forthWords    []*WordForth
 	assemblyWords []*WordPrimitive
 	dataWords     []*WordForth
+	literals      map[string]string
+
+	// current state of compilation
+	compileType   UlpCompileType
+	compileTarget UlpCompileTarget
 }
 
 func (u *Ulp) build() string {
@@ -329,6 +350,7 @@ func (u *Ulp) buildLists(entry *DictionaryEntry) error {
 	u.forthWords = make([]*WordForth, 0)
 	u.assemblyWords = make([]*WordPrimitive, 0)
 	u.dataWords = make([]*WordForth, 0)
+	u.literals = make(map[string]string)
 
 	return entry.AddToList(u)
 }

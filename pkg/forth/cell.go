@@ -151,9 +151,17 @@ func (c CellLiteral) String() string {
 }
 
 func (c CellLiteral) AddToList(u *Ulp) error {
-	// Don't create the literal yet, just start with
-	// adding the pointed value to a list.
-	return c.cell.AddToList(u)
+	err := c.cell.AddToList(u)
+	if err != nil {
+		return err
+	}
+	ref, err := c.cell.OutputReference(u)
+	if err != nil {
+		return err
+	}
+	litref := ref + "_literal"
+	u.literals[litref] = ref
+	return nil
 }
 
 func (c CellLiteral) BuildExecution(u *Ulp) (string, error) {
