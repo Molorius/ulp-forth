@@ -123,5 +123,5 @@ func init() {
 	buildCmd.Flags().Bool(CmdCustomAssembly, false, "Output assembly only for use by ulp-asm")
 	buildCmd.MarkFlagsMutuallyExclusive(CmdCustomAssembly, CmdAssembly)
 
-	buildCmd.Flags().Bool(CmdSubroutineThreading, false, "(Experimental) Use subroutine threading model")
+	buildCmd.Flags().Bool(CmdSubroutineThreading, false, "Use subroutine threading model")
 }
