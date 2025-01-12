@@ -124,6 +124,11 @@ func (w *WordForth) BuildAssembly(u *Ulp) (string, error) {
 			output = append(output, val)
 		}
 	} else { // executable forth word
+		if u.compileTarget == UlpCompileTargetSubroutine {
+			if w.Entry.Name != "VM.INIT" { // the init word shouldn't docol
+				output = append(output, "jump __docol")
+			}
+		}
 		for _, cell := range w.Cells {
 			asm, err := cell.BuildExecution(u)
 			if err != nil {

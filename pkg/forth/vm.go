@@ -338,22 +338,17 @@ func (n *VMNumber) Setup(vm *VirtualMachine, name string, shared bool) error {
 		Flag:      Flag{Data: true},
 	}
 	// then create the actual dictionary entry
-	docol, err := vm.Dictionary.FindName("DOCOL")
-	if err != nil {
-		return err
-	}
 	exit, err := vm.Dictionary.FindName("EXIT")
 	if err != nil {
 		return err
 	}
 	var dEntry DictionaryEntry
 	dWord := WordForth{
-		Cells: make([]Cell, 3),
+		Cells: make([]Cell, 2),
 		Entry: &dEntry,
 	}
-	dWord.Cells[0] = CellAddress{docol, 0, false}                    // run the DOCOL
-	dWord.Cells[1] = CellLiteral{CellAddress{&allocEntry, 0, false}} // put address on stack
-	dWord.Cells[2] = CellAddress{exit, 0, false}                     // then exit
+	dWord.Cells[0] = CellLiteral{CellAddress{&allocEntry, 0, false}} // put address on stack
+	dWord.Cells[1] = CellAddress{exit, 0, false}                     // then exit
 	dEntry = DictionaryEntry{
 		Name:      name,
 		NameLower: nameLower,

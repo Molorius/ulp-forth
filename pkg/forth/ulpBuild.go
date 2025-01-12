@@ -130,7 +130,7 @@ func (u *Ulp) BuildAssembly(vm *VirtualMachine, word string) (string, error) {
 
 	vm.State.Set(uint16(StateInterpret))
 	// create the VM.INIT word without an EXIT
-	err := vm.Execute([]byte(" BL WORD VM.INIT --CREATE-FORTH ] DOCOL VM.STACK.INIT " + word + " BEGIN HALT AGAIN [ LAST HIDE "))
+	err := vm.Execute([]byte(" BL WORD VM.INIT --CREATE-FORTH ] VM.STACK.INIT " + word + " BEGIN HALT AGAIN [ LAST HIDE "))
 	if err != nil {
 		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)
 	}
@@ -140,7 +140,7 @@ func (u *Ulp) BuildAssembly(vm *VirtualMachine, word string) (string, error) {
 
 func (u *Ulp) BuildAssemblySrt(vm *VirtualMachine, word string) (string, error) {
 	vm.State.Set(uint16(StateInterpret))
-	// create the VM.INIT word without a DOCOL or an EXIT
+	// create the VM.INIT word without an EXIT
 	err := vm.Execute([]byte(" BL WORD VM.INIT --CREATE-FORTH ] " + word + " BEGIN HALT AGAIN [ LAST HIDE "))
 	if err != nil {
 		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)
@@ -443,6 +443,18 @@ func (u *Ulp) buildInterpreterSrt() string {
 		"jump r2",                  // begin execution
 
 		".text",
+		// subroutine to set up the forth word return
+		"__docol:",
+		"move r0, 0",
+		"ld r1, r0, __rsp", // load the return stack pointer
+		"add r1, r1, 1",    // increase rsp
+		"st r2, r1, 0",     // store the current address on return stack
+		"st r1, r0, __rsp", // store rsp
+		"ld r2, r2, 0",     // load the lower half of the "jump" instruction
+		"rsh r2, r2, 2",    // isolate the jump address
+		"add r2, r2, 1",    // increment the instruction pointer past the "jump __docol"
+		"jump r2",          // jump to first instruction!
+
 		// subroutine to add the value on r0 to the stack
 		"__add_to_stack:",
 		"sub r3, r3, 1", // increment the stack

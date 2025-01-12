@@ -103,9 +103,6 @@ func (c CellAddress) BuildExecution(u *Ulp) (string, error) {
 
 	switch u.compileTarget {
 	case UlpCompileTargetToken:
-		if c.Entry.Name == "DOCOL" {
-			return "", nil
-		}
 		return fmt.Sprintf(".int %s", name), nil
 	case UlpCompileTargetSubroutine:
 		return fmt.Sprintf("jump %s", name), nil

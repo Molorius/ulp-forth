@@ -263,23 +263,6 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
-			name:   "DOCOL",
-			goFunc: nop,
-			ulpAsm: PrimitiveUlp{},
-			ulpAsmSrt: PrimitiveUlpSrt{
-				Asm: []string{
-					"move r0, 0",
-					"ld r1, r0, __rsp", // load the return stack pointer
-					"add r1, r1, 1",    // increase rsp
-					"st r2, r1, 0",     // store the current address on return stack
-					"st r1, r0, __rsp", // store rsp
-					"ld r2, r2, 0",     // load the lower half of the "jump" instruction
-					"rsh r2, r2, 2",    // isolate the jump address
-					// we will then add past this DOCOL jump, then continue execution
-				},
-			},
-		},
-		{
 			name: "BYE",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				err := vm.State.Set(uint16(StateExit))
@@ -588,8 +571,8 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					"st r2, r1, 0",   // store return address
 					"move r2, __rsp", // put pointer on rsp
 					"st r1, r2, 0",   // store rsp
-					"add r2, r0, 1",  // go past the DOCOL
-					"jump r2",        // jump to the forth word, past the DOCOL
+					"add r2, r0, 1",  // go past the docol
+					"jump r2",        // jump to the forth word, past the docol
 				},
 				NonStandardNext: true,
 			},
@@ -727,7 +710,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if len(w.Cells) < 1 {
 					return EntryError(entry, "reading a word without enough memory")
 				}
-				litCell, ok := w.Cells[1].(CellLiteral)
+				litCell, ok := w.Cells[0].(CellLiteral)
 				if !ok {
 					return EntryError(entry, "did not find a cell literal, was the address defined by DEFER ?")
 				}
