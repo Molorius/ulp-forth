@@ -2119,6 +2119,77 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				},
 			},
 		},
+		{
+			name: "D+", // ( xlow xhigh ylow yhigh -- zlow zhigh )
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				yHigh, err := vm.Stack.PopNumber()
+				if err != nil {
+					return PopError(err, entry)
+				}
+				yLow, err := vm.Stack.PopNumber()
+				if err != nil {
+					return PopError(err, entry)
+				}
+				xHigh, err := vm.Stack.PopNumber()
+				if err != nil {
+					return PopError(err, entry)
+				}
+				xLow, err := vm.Stack.PopNumber()
+				if err != nil {
+					return PopError(err, entry)
+				}
+
+				y := (uint32(yHigh) << 16) | uint32(yLow)
+				x := (uint32(xHigh) << 16) | uint32(xLow)
+				z := x + y
+				zLow := uint16(z)
+				zHigh := uint16(z >> 16)
+				err = vm.Stack.Push(CellNumber{zLow})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				err = vm.Stack.Push(CellNumber{zHigh})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
+			},
+			ulpAsm: PrimitiveUlp{
+				"ld r0, r3, 3",   // xlow
+				"ld r1, r3, 1",   // ylow
+				"add r0, r0, r1", // add low
+				"st r0, r3, 3",   // store zlow
+				"ld r0, r3, 2",   // load xhigh
+				"ld r1, r3, 0",   // load yhigh
+				"jump __d_minus.0, ov",
+				"jump __d_minus.1",
+				"__d_minus.0:",
+				"add r0, r0, 1", // overload, add the carry bit
+				"__d_minus.1:",
+				"add r0, r0, r1", // add high
+				"add r3, r3, 2",  // decrement stack
+				"st r0, r3, 0",   // store zhigh
+				"jump __next_skip_r2",
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"ld r0, r3, 3",   // xlow
+					"ld r1, r3, 1",   // ylow
+					"add r0, r0, r1", // add low
+					"st r0, r3, 3",   // store zlow
+					"ld r0, r3, 2",   // load xhigh
+					"ld r1, r3, 0",   // load yhigh
+					"jump __d_minus.0, ov",
+					"jump __d_minus.1",
+					"__d_minus.0:",
+					"add r0, r0, 1", // overload, add the carry bit
+					"__d_minus.1:",
+					"add r0, r0, r1", // subtract high
+					"add r3, r3, 2",  // decrement stack
+					"st r0, r3, 0",   // store zhigh
+				},
+			},
+		},
 	}
 	for _, p := range prims {
 		err := primitiveAdd(vm, p.name, p.goFunc, p.ulpAsm, p.ulpAsmSrt, p.flag)
