@@ -14,10 +14,11 @@ import (
 
 // A Dictionary entry. Contains the name, the word itself, and the flags.
 type DictionaryEntry struct {
-	Name    string
-	ulpName string // the name we're going to compile this to
-	Word    Word
-	Flag    Flag
+	Name      string
+	NameLower string
+	ulpName   string // the name we're going to compile this to
+	Word      Word
+	Flag      Flag
 }
 
 func (d DictionaryEntry) String() string {
@@ -61,6 +62,7 @@ func (d *Dictionary) AddEntry(entry *DictionaryEntry) error {
 			fmt.Fprintf(d.vm.Out, "Redefining %s ", name)
 		}
 	}
+	entry.NameLower = strings.ToLower(name)
 	d.Entries = append(d.Entries, entry)
 	return nil
 }
@@ -72,7 +74,7 @@ func (d *Dictionary) FindName(name string) (*DictionaryEntry, error) {
 	nameLower := strings.ToLower(name) // case insensitive finding
 	for i := len(d.Entries) - 1; i >= 0; i-- {
 		entry := d.Entries[i]
-		if !entry.Flag.Hidden && strings.ToLower(entry.Name) == nameLower {
+		if !entry.Flag.Hidden && entry.NameLower == nameLower {
 			return entry, nil
 		}
 	}
