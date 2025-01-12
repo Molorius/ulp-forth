@@ -178,6 +178,10 @@ func (u *Ulp) buildAssemblyHelper(vm *VirtualMachine, header string) (string, er
 	if err != nil {
 		return "", err
 	}
+	forthSection := ".data"
+	if u.compileTarget == UlpCompileTargetSubroutine {
+		forthSection = ".text"
+	}
 
 	// put assemblies together
 	i := []string{
@@ -185,13 +189,13 @@ func (u *Ulp) buildAssemblyHelper(vm *VirtualMachine, header string) (string, er
 		"__assembly_words:",
 		".text",
 		asm,
+		forthSection,
 		"__forth_words:",
-		".text",
 		forth,
 		"__data_words:",
 		".data",
-		data,
 		literals,
+		data,
 		"__data_end:",
 	}
 	return strings.Join(i, "\r\n"), nil
