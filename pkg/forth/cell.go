@@ -9,6 +9,7 @@ package forth
 
 import (
 	"fmt"
+	"strings"
 )
 
 func safeCall() string {
@@ -51,9 +52,7 @@ func (c CellNumber) AddToList(u *Ulp) error {
 }
 
 func (c CellNumber) BuildExecution(u *Ulp) (string, error) {
-	return fmt.Sprintf(
-		"move r0, %d\r\n%sjump __add_to_stack", c.Number, safeCall(),
-	), nil
+	return "", fmt.Errorf("Cannot directly execute number")
 }
 
 func (c CellNumber) OutputReference(u *Ulp) (string, error) {
@@ -101,7 +100,18 @@ func (c CellAddress) BuildExecution(u *Ulp) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("jump %s", name), nil
+
+	switch u.compileTarget {
+	case UlpCompileTargetToken:
+		if c.Entry.Name == "DOCOL" {
+			return "", nil
+		}
+		return fmt.Sprintf(".int %s", name), nil
+	case UlpCompileTargetSubroutine:
+		return fmt.Sprintf("jump %s", name), nil
+	default:
+		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
+	}
 }
 
 func (c CellAddress) OutputReference(u *Ulp) (string, error) {
@@ -159,9 +169,13 @@ func (c CellLiteral) AddToList(u *Ulp) error {
 	if err != nil {
 		return err
 	}
-	litref := ref + "_literal"
+	litref := c.reference(ref)
 	u.literals[litref] = ref
 	return nil
+}
+
+func (c CellLiteral) reference(s string) string {
+	return "__literal_" + strings.ReplaceAll(s, "+", "_plus_")
 }
 
 func (c CellLiteral) BuildExecution(u *Ulp) (string, error) {
@@ -169,9 +183,15 @@ func (c CellLiteral) BuildExecution(u *Ulp) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf(
-		"move r0, %s\r\n%sjump __add_to_stack", name, safeCall(),
-	), nil
+	switch u.compileTarget {
+	case UlpCompileTargetToken:
+		ref := c.reference(name)
+		return fmt.Sprintf(".int %s", ref), nil
+	case UlpCompileTargetSubroutine:
+		return fmt.Sprintf("move r0, %s\r\n%sjump __add_to_stack", name, safeCall()), nil
+	default:
+		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
+	}
 }
 
 func (c CellLiteral) OutputReference(u *Ulp) (string, error) {
@@ -245,8 +265,14 @@ func (c *CellBranch) AddToList(u *Ulp) error {
 }
 
 func (c *CellBranch) BuildExecution(u *Ulp) (string, error) {
-	asm := fmt.Sprintf("move r2, %s\r\njump r2", c.dest.name(u))
-	return asm, nil
+	switch u.compileTarget {
+	case UlpCompileTargetToken:
+		return fmt.Sprintf(".int %s + 0x8000", c.dest.name(u)), nil
+	case UlpCompileTargetSubroutine:
+		return fmt.Sprintf("move r2, %s\r\njump r2", c.dest.name(u)), nil
+	default:
+		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
+	}
 }
 
 func (c *CellBranch) OutputReference(u *Ulp) (string, error) {
@@ -288,8 +314,14 @@ func (c *CellBranch0) AddToList(u *Ulp) error {
 }
 
 func (c *CellBranch0) BuildExecution(u *Ulp) (string, error) {
-	asm := fmt.Sprintf("move r1, %s\r\n%sjump __branch_if", c.dest.name(u), safeCall())
-	return asm, nil
+	switch u.compileTarget {
+	case UlpCompileTargetToken:
+		return fmt.Sprintf(".int %s + 0x4000", c.dest.name(u)), nil
+	case UlpCompileTargetSubroutine:
+		return fmt.Sprintf("move r1, %s\r\n%sjump __branch_if", c.dest.name(u), safeCall()), nil
+	default:
+		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
+	}
 }
 
 func (c *CellBranch0) OutputReference(u *Ulp) (string, error) {

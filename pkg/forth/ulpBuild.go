@@ -10,7 +10,6 @@ package forth
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -135,10 +134,8 @@ func (u *Ulp) BuildAssembly(vm *VirtualMachine, word string) (string, error) {
 	if err != nil {
 		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)
 	}
-	vmInitEntry := vm.Dictionary.Entries[len(vm.Dictionary.Entries)-1]
-	_, err = u.findUsedEntry(vmInitEntry)
-	str := u.build()
-	return str, nil
+	u.compileTarget = UlpCompileTargetToken
+	return u.buildAssemblyHelper(vm, u.buildInterpreter())
 }
 
 func (u *Ulp) BuildAssemblySrt(vm *VirtualMachine, word string) (string, error) {
@@ -148,12 +145,23 @@ func (u *Ulp) BuildAssemblySrt(vm *VirtualMachine, word string) (string, error) 
 	if err != nil {
 		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)
 	}
+	u.compileTarget = UlpCompileTargetSubroutine
+	return u.buildAssemblyHelper(vm, u.buildInterpreterSrt())
+}
+
+func (u *Ulp) buildAssemblyHelper(vm *VirtualMachine, header string) (string, error) {
 	vmInitEntry := vm.Dictionary.Entries[len(vm.Dictionary.Entries)-1]
-	err = u.buildLists(vmInitEntry)
+	// generate the various lists
+	err := u.buildLists(vmInitEntry)
 	if err != nil {
 		return "", err
 	}
-	interpreter := u.buildInterpreterSrt()
+	// optimize!
+	err = u.optimize()
+	if err != nil {
+		return "", err
+	}
+	// create the different assemblies
 	asm, err := u.buildAssemblyWords()
 	if err != nil {
 		return "", err
@@ -166,12 +174,14 @@ func (u *Ulp) BuildAssemblySrt(vm *VirtualMachine, word string) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	err = u.optimize()
+	literals, err := u.buildLiterals()
 	if err != nil {
 		return "", err
 	}
+
+	// put assemblies together
 	i := []string{
-		interpreter,
+		header,
 		"__assembly_words:",
 		".text",
 		asm,
@@ -181,6 +191,8 @@ func (u *Ulp) BuildAssemblySrt(vm *VirtualMachine, word string) (string, error) 
 		"__data_words:",
 		".data",
 		data,
+		literals,
+		"__data_end:",
 	}
 	return strings.Join(i, "\r\n"), nil
 }
@@ -260,89 +272,20 @@ func (u *Ulp) buildDataWords() (string, error) {
 	return strings.Join(output, "\r\n"), nil
 }
 
-// recursively find all dictionary entries that the entry uses
-func (u *Ulp) findUsedEntry(entry *DictionaryEntry) (string, error) {
-	if entry.ulpName != "" { // name is already set, we've already found this
-		return entry.ulpName, nil
-	}
-	if entry.Flag.Data { // if this is a data entry
-		if entry.Name == "" {
-			entry.Name = u.name("data", "unnamed", true)
+func (u *Ulp) buildLiterals() (string, error) {
+	switch u.compileTarget {
+	case UlpCompileTargetToken:
+		output := make([]string, len(u.literals))
+		i := 0
+		for name, val := range u.literals {
+			output[i] = fmt.Sprintf("%s: .int %s", name, val)
+			i += 1
 		}
-		entry.ulpName = entry.Name
-		_, ok := u.data[entry.ulpName]
-		if !ok {
-			// build the definition
-			var sb strings.Builder
-			sb.WriteString(".global ")
-			sb.WriteString(entry.Name)
-			sb.WriteString("\r\n")
-			sb.WriteString(entry.Name)
-			sb.WriteString(":")
-			w, ok := entry.Word.(*WordForth)
-			if !ok {
-				return "", fmt.Errorf("%s cannot build a data entry that doesn't use a forth word", entry.Name)
-			}
-			vals := make([]string, 0)
-			for _, c := range w.Cells {
-				str, err := u.findUsedCell(c)
-				if err != nil {
-					return "", errors.Join(fmt.Errorf("%s error while compiling", entry.Name), err)
-				}
-				if strings.Contains(str, ":") {
-					return "", fmt.Errorf("%s cannot compile an address inside data", entry.Name)
-				}
-				vals = append(vals, str)
-			}
-			sb.WriteString("  .int ")
-			sb.WriteString(strings.Join(vals, ", "))
-			u.data[entry.Name] = sb.String()
-		}
-		return entry.ulpName, nil
-	}
-	switch w := entry.Word.(type) {
-	case *WordForth:
-		name := u.name("forth", entry.Name, true)
-		entry.ulpName = name
-		forth := ulpForth{
-			name:  name,
-			cells: make([]ulpForthCell, 0),
-		}
-
-		for _, c := range w.Cells {
-			str, err := u.findUsedCell(c)
-			if err != nil {
-				return "", errors.Join(fmt.Errorf("%s error while compiling", entry.Name), err)
-			}
-			if str == "DOCOL" {
-				continue
-			}
-
-			cell := ulpForthCell{
-				cell: c,
-				name: str,
-			}
-			forth.cells = append(forth.cells, cell)
-		}
-		u.forth = append(u.forth, forth)
-		return name, nil
-	case *WordPrimitive:
-		if entry.Name == "DOCOL" {
-			return "DOCOL", nil
-		}
-		name := u.name("asm", entry.Name, true)
-		entry.ulpName = name
-		if w.Ulp == nil {
-			return "", fmt.Errorf("Cannot compile primitive without ulp assembly: %v", w)
-		}
-		asm := ulpAsm{
-			name: name,
-			asm:  w.Ulp,
-		}
-		u.assembly = append(u.assembly, asm)
-		return name, nil
+		return strings.Join(output, "\r\n"), nil
+	case UlpCompileTargetSubroutine:
+		return "", nil // literals are compiled along the way, not as a final list
 	default:
-		return "", fmt.Errorf("Type %T not supported for cross compile, word: %s", w, w)
+		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
 	}
 }
 
@@ -353,47 +296,6 @@ func (u *Ulp) buildLists(entry *DictionaryEntry) error {
 	u.literals = make(map[string]string)
 
 	return entry.AddToList(u)
-}
-
-func (u *Ulp) findUsedCell(cell Cell) (string, error) {
-	switch c := cell.(type) {
-	case CellNumber:
-		return strconv.Itoa(int(c.Number)), nil
-	case CellLiteral:
-		pointedName, err := u.findUsedCell(c.cell)
-		if err != nil {
-			return "", err
-		}
-		var name string
-		_, isNum := c.cell.(CellNumber)
-		if isNum {
-			name = u.name("number", pointedName, false)
-		} else {
-			name = u.name("literal", pointedName, false)
-		}
-		_, ok := u.data[name]
-		if !ok {
-			u.data[name] = fmt.Sprintf("%s: .int %s", name, pointedName)
-		}
-		return name, nil
-	case CellAddress:
-		name, err := u.findUsedEntry(c.Entry)
-		if c.Offset != 0 {
-			name = fmt.Sprintf("%s+%d", name, c.Offset)
-		}
-		if c.UpperByte {
-			name = name + "+0x8000" // set the highest bit
-		}
-		return name, err
-	case *CellBranch0:
-		return fmt.Sprintf("%s + 0x4000", c.dest.name(u)), nil
-	case *CellBranch:
-		return fmt.Sprintf("%s + 0x8000", c.dest.name(u)), nil
-	case *CellDestination:
-		return fmt.Sprintf("%s:", c.name(u)), nil
-	default:
-		return "", fmt.Errorf("Type %T not supported for cross compile, cell: %s", c, c)
-	}
 }
 
 func (u *Ulp) name(middle string, word string, addSuffix bool) string {
@@ -465,13 +367,13 @@ func (u *Ulp) buildInterpreter() string {
 
 		// determine instruction type
 		"__ins_asm:",
-		"jumpr __ins_forth, __forthwords_start, ge",
+		"jumpr __ins_forth, __forth_words, ge",
 		// it's assembly
 		"st r1, r2, __ip", // store the instruction pointer so asm can use r1
 		"jump r0",         // jump to the assembly
 
 		"__ins_forth:",
-		"jumpr __ins_num, __forthdata_start, ge",
+		"jumpr __ins_num, __data_words, ge",
 		// it's forth
 		"st r0, r2, __ip",     // put the address into the instruction pointer
 		"ld r0, r2, __rsp",    // load the return stack pointer
@@ -481,7 +383,7 @@ func (u *Ulp) buildInterpreter() string {
 		"jump __next_skip_r2", // then start the vm again at the defined instruction
 
 		"__ins_num:",
-		"jumpr __ins_branch0, __forthdata_end, gt",
+		"jumpr __ins_branch0, __data_end, gt",
 		// it's a number or variable
 		"ld r0, r0, 0",          // load the number
 		"sub r3, r3, 1",         // increase the stack by 1

@@ -265,6 +265,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		{
 			name:   "DOCOL",
 			goFunc: nop,
+			ulpAsm: PrimitiveUlp{},
 			ulpAsmSrt: PrimitiveUlpSrt{
 				Asm: []string{
 					"move r0, 0",

@@ -187,13 +187,21 @@ func (w *WordPrimitive) AddToList(u *Ulp) error {
 	return nil
 }
 
-func (w *WordPrimitive) BuildAssembly(*Ulp) (string, error) {
+func (w *WordPrimitive) BuildAssembly(u *Ulp) (string, error) {
 	out := w.Entry.ulpName + ":" + "\r\n"
-	asm := w.UlpSrt.Asm
-	if asm == nil {
-		return "", EntryError(w.Entry, "No subroutine threaded assembly created")
+	var asm []string
+	switch u.compileTarget {
+	case UlpCompileTargetToken:
+		asm = w.Ulp
+	case UlpCompileTargetSubroutine:
+		asm = w.UlpSrt.Asm
+	default:
+		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
 	}
-	out += strings.Join(w.UlpSrt.Asm, "\r\n")
+	if asm == nil {
+		return "", EntryError(w.Entry, "No assembly created")
+	}
+	out += strings.Join(asm, "\r\n")
 	if !w.UlpSrt.NonStandardNext {
 		standardNext := "\r\nadd r2, r2, 1\r\njump r2"
 		out += standardNext
