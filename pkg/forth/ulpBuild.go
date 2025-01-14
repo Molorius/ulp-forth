@@ -157,7 +157,8 @@ func (u *Ulp) buildAssemblyHelper(vm *VirtualMachine, header string) (string, er
 		return "", err
 	}
 	// optimize!
-	err = u.optimize()
+	optimizer := Optimizer{u}
+	err = optimizer.Optimize()
 	if err != nil {
 		return "", err
 	}
@@ -199,77 +200,6 @@ func (u *Ulp) buildAssemblyHelper(vm *VirtualMachine, header string) (string, er
 		"__data_end:",
 	}
 	return strings.Join(i, "\r\n"), nil
-}
-
-func (u *Ulp) optimize() error {
-	// mark all recursive words for later passes
-	err := u.tagRecursion()
-	if err != nil {
-		return errors.Join(fmt.Errorf("could not tag recursion during optimization"), err)
-	}
-	err = u.putTailCalls()
-	if err != nil {
-		return errors.Join(fmt.Errorf("could not create tail calls, please file a bug report"), err)
-	}
-	return nil
-}
-
-// Mark the flag of every word that has recursion.
-func (u *Ulp) tagRecursion() error {
-	// unmark all of the words
-	for _, w := range u.forthWords {
-		w.Entry.Flag.recursive = false
-	}
-	for _, w := range u.forthWords {
-		u.clearVisited()            // clear every word every time
-		for _, c := range w.Cells { // check every cell in that word
-			if c.IsRecursive(w) {
-				w.Entry.Flag.recursive = true
-				break
-			}
-		}
-	}
-	return nil
-}
-
-// Put tail calls as an optimization.
-func (u *Ulp) putTailCalls() error {
-	for _, w := range u.forthWords {
-		length := len(w.Cells) - 1
-		for i := 0; i < length; i++ {
-			// check if the first cell is a forth word
-			firstAddress, ok := w.Cells[i].(CellAddress)
-			if !ok {
-				continue
-			}
-			word, ok := firstAddress.Entry.Word.(*WordForth)
-			if !ok {
-				continue
-			}
-			// check if the second cell is an EXIT
-			secondAddress, ok := w.Cells[i+1].(CellAddress)
-			if !ok {
-				continue
-			}
-			if !secondAddress.Entry.Flag.isExit {
-				continue
-			}
-			// replace both cells with the tail call!
-			tailCall := CellTailCall{word}     // create the tail call
-			w.Cells[i] = &tailCall             // replace the word
-			before := w.Cells[:i+1]            // get the cells before, including the tail call
-			after := w.Cells[i+2:]             // get the cells after, excluding the exit
-			w.Cells = append(before, after...) // recreate the list
-			length -= 1                        // shift the length
-		}
-	}
-	return nil
-}
-
-func (u *Ulp) clearVisited() {
-	for _, w := range u.forthWords {
-		w.Entry.ClearVisited()
-	}
 }
 
 // Convert list of used subroutine-threaded assembly
