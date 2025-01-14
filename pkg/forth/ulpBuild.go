@@ -207,6 +207,10 @@ func (u *Ulp) optimize() error {
 	if err != nil {
 		return errors.Join(fmt.Errorf("could not tag recursion during optimization"), err)
 	}
+	err = u.putTailCalls()
+	if err != nil {
+		return errors.Join(fmt.Errorf("could not create tail calls, please file a bug report"), err)
+	}
 	return nil
 }
 
@@ -223,6 +227,40 @@ func (u *Ulp) tagRecursion() error {
 				w.Entry.Flag.recursive = true
 				break
 			}
+		}
+	}
+	return nil
+}
+
+// Put tail calls as an optimization.
+func (u *Ulp) putTailCalls() error {
+	for _, w := range u.forthWords {
+		length := len(w.Cells) - 1
+		for i := 0; i < length; i++ {
+			// check if the first cell is a forth word
+			firstAddress, ok := w.Cells[i].(CellAddress)
+			if !ok {
+				continue
+			}
+			word, ok := firstAddress.Entry.Word.(*WordForth)
+			if !ok {
+				continue
+			}
+			// check if the second cell is an EXIT
+			secondAddress, ok := w.Cells[i+1].(CellAddress)
+			if !ok {
+				continue
+			}
+			if !secondAddress.Entry.Flag.isExit {
+				continue
+			}
+			// replace both cells with the tail call!
+			tailCall := CellTailCall{word}     // create the tail call
+			w.Cells[i] = &tailCall             // replace the word
+			before := w.Cells[:i+1]            // get the cells before, including the tail call
+			after := w.Cells[i+2:]             // get the cells after, excluding the exit
+			w.Cells = append(before, after...) // recreate the list
+			length -= 1                        // shift the length
 		}
 	}
 	return nil

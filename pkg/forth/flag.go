@@ -16,4 +16,5 @@ type Flag struct {
 	addedToList bool // This word is already added to the output list.
 	recursive   bool // This Forth word is recursive.
 	visited     bool // This Forth word has already been visited in this optimization pass.
+	isExit      bool // This assembly word is the EXIT word.
 }

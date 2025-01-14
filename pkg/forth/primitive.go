@@ -1058,6 +1058,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "EXIT",
+			flag: Flag{
+				isExit: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				ret, err := vm.ReturnStack.Pop()
 				if err != nil {

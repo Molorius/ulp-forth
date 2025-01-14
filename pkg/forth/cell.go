@@ -332,3 +332,42 @@ func (c *CellBranch0) IsRecursive(check *WordForth) bool {
 func (c *CellBranch0) String() string {
 	return fmt.Sprintf("Branch0{%p}", c.dest)
 }
+
+// Used during an optimization pass to add
+// tail calls.
+type CellTailCall struct {
+	dest *WordForth
+}
+
+func (c *CellTailCall) Execute(vm *VirtualMachine) error {
+	return fmt.Errorf("Cannot directly execute a tail call, please file a bug repot")
+}
+
+func (c *CellTailCall) AddToList(u *Ulp) error {
+	// Add the destination to the list.
+	return c.dest.AddToList(u)
+}
+
+func (c *CellTailCall) BuildExecution(u *Ulp) (string, error) {
+	switch u.compileTarget {
+	case UlpCompileTargetToken:
+		return fmt.Sprintf(".int %s + 0x8000", c.dest.Entry.ulpName), nil
+	case UlpCompileTargetSubroutine:
+		// put the address after the docol
+		return fmt.Sprintf("move r2, %s + 1\r\njump r2", c.dest.Entry.ulpName), nil
+	default:
+		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
+	}
+}
+
+func (c *CellTailCall) OutputReference(u *Ulp) (string, error) {
+	return "", fmt.Errorf("Cannot refer to a tail call, please file a bug report")
+}
+
+func (c *CellTailCall) IsRecursive(check *WordForth) bool {
+	return c.dest.IsRecursive(check)
+}
+
+func (c *CellTailCall) String() string {
+	return fmt.Sprintf("TailCall{%s}", c.dest.Entry.Name)
+}

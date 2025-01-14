@@ -164,6 +164,36 @@ func TestPrimitives(t *testing.T) {
 			asm:    wrapMain("4 0 DO I . LOOP"),
 			expect: "0 1 2 3 ",
 		},
+		{
+			name: "tail call",
+			asm: `
+				\ The point of this isn't to test
+				\ a forth algorithm, it's to test that the
+				\ compiler is succesfully able to generate
+				\ a tail call.
+				\ If it doesn't, the return stack pointer
+				\ will overflow on the ulp.
+
+				\ countdown from n to 0
+				: countdown ( n -- )
+					DUP 0= IF
+						DROP \ we don't care about the result
+					ELSE
+						1-
+						RECURSE \ tail call recursively!
+						EXIT \ TODO get this to work without the EXIT
+					THEN
+				;
+
+				: MAIN
+					DEPTH u. \ print the depth
+					5 countdown DEPTH u. \ try after a few recursive calls
+					2000 countdown DEPTH u. \ crank it up to 11
+					ESP.DONE
+				;
+			`,
+			expect: "0 0 0 ",
+		},
 	}
 	r := asm.Runner{}
 	r.SetDefaults()
