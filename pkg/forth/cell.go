@@ -96,6 +96,7 @@ func (c CellAddress) AddToList(u *Ulp) error {
 }
 
 func (c CellAddress) BuildExecution(u *Ulp) (string, error) {
+	c.Entry.Flag.inToken = true
 	name, err := c.OutputReference(u)
 	if err != nil {
 		return "", err
@@ -168,6 +169,10 @@ func (c CellLiteral) AddToList(u *Ulp) error {
 	}
 	litref := c.reference(ref)
 	u.literals[litref] = ref
+	cellAddress, ok := c.cell.(CellAddress)
+	if ok {
+		cellAddress.Entry.Flag.inToken = true
+	}
 	return nil
 }
 

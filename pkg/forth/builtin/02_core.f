@@ -30,6 +30,7 @@
     POSTPONE @ \ compile @
     POSTPONE EXECUTE \ compile EXECUTE
     POSTPONE ; \ end the definition
+    LAST SET-DEFERRED \ mark the new word as deferred
 ;
 
 : DEFER@ ( xt1 -- xt2 ) >BODY @ ;

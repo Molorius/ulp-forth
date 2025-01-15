@@ -162,6 +162,15 @@ func (u *Ulp) buildAssemblyHelper(vm *VirtualMachine, header string) (string, er
 	if err != nil {
 		return "", err
 	}
+	// rebuild the various lists because optimizations may have changed things
+	err = u.clearLists()
+	if err != nil {
+		return "", err
+	}
+	err = u.buildLists(vmInitEntry)
+	if err != nil {
+		return "", err
+	}
 	// create the different assemblies
 	asm, err := u.buildAssemblyWords()
 	if err != nil {
@@ -268,6 +277,19 @@ func (u *Ulp) buildLists(entry *DictionaryEntry) error {
 	u.literals = make(map[string]string)
 
 	return entry.AddToList(u)
+}
+
+func (u *Ulp) clearLists() error {
+	for _, w := range u.forthWords {
+		w.Entry.Flag.addedToList = false
+	}
+	for _, w := range u.assemblyWords {
+		w.Entry.Flag.addedToList = false
+	}
+	for _, w := range u.dataWords {
+		w.Entry.Flag.addedToList = false
+	}
+	return nil
 }
 
 func (u *Ulp) name(middle string, word string, addSuffix bool) string {

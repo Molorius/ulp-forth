@@ -1057,6 +1057,22 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name: "SET-DEFERRED",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				cell0, err := vm.Stack.Pop()
+				if err != nil {
+					return PopError(err, entry)
+				}
+				cellAddr, ok := cell0.(CellAddress)
+				if !ok {
+					return EntryError(entry, "requires an address cell, found %s type %T", cell0, cell0)
+				}
+				flag := true
+				cellAddr.Entry.Flag.isDeferred = flag
+				return nil
+			},
+		},
+		{
 			name: "EXIT",
 			flag: Flag{
 				isExit: true,

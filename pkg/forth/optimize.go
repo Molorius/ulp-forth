@@ -15,6 +15,10 @@ func (o *Optimizer) Optimize() error {
 	if err != nil {
 		return errors.Join(fmt.Errorf("could not tag recursion during optimization"), err)
 	}
+	err = o.removeDeferred()
+	if err != nil {
+		return errors.Join(fmt.Errorf("could not remove deferred word"), err)
+	}
 	// change calls at end of words to tail calls
 	err = o.putTailCalls()
 	if err != nil {
@@ -70,6 +74,36 @@ func (o *Optimizer) putTailCalls() error {
 			after := w.Cells[i+2:]             // get the cells after, excluding the exit
 			w.Cells = append(before, after...) // recreate the list
 			length -= 1                        // shift the length
+		}
+	}
+	return nil
+}
+
+func (o *Optimizer) removeDeferred() error {
+	for _, w := range o.u.forthWords {
+		f := w.Entry.Flag
+		// if this word was made with DEFER and it cannot be altered
+		if f.isDeferred && !f.inToken {
+			literal, ok := w.Cells[0].(CellLiteral)
+			if !ok {
+				return fmt.Errorf("could not read literal %s in %s", w.Cells[0], w)
+			}
+			address, ok := literal.cell.(CellAddress)
+			if !ok {
+				return fmt.Errorf("could not read address in %s", w)
+			}
+			data, ok := address.Entry.Word.(*WordForth)
+			if !ok {
+				return fmt.Errorf("error reading a deferred word, please file a bug report.")
+			}
+			if len(data.Cells) < 1 {
+				return fmt.Errorf("deferred word not allocated, please file a bug report.")
+			}
+			embedded := data.Cells[0]
+			exit := w.Cells[len(w.Cells)-1]
+			w.Cells = w.Cells[0:2]
+			w.Cells[0] = embedded
+			w.Cells[1] = exit
 		}
 	}
 	return nil
