@@ -342,6 +342,10 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: ">R",
+			flag: Flag{
+				isPure:          true,
+				usesReturnStack: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.Stack.Pop()
 				if err != nil {
@@ -376,6 +380,10 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "R>",
+			flag: Flag{
+				isPure:          true,
+				usesReturnStack: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.ReturnStack.Pop()
 				if err != nil {
@@ -881,6 +889,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "CHAR+",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()
 				if err != nil {
@@ -942,6 +953,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "ALIGNED",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()
 				if err != nil {
@@ -1109,6 +1123,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "+",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.Pop()
 				if err != nil {
@@ -1171,6 +1188,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "-",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.Pop()
 				if err != nil {
@@ -1236,6 +1256,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "AND",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.PopNumber()
 				if err != nil {
@@ -1271,6 +1294,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "OR",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.PopNumber()
 				if err != nil {
@@ -1306,6 +1332,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "*",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.PopNumber()
 				if err != nil {
@@ -1374,6 +1403,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "U/MOD",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.PopNumber()
 				if err != nil {
@@ -1472,6 +1504,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "LSHIFT",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				amount, err := vm.Stack.PopNumber()
 				if err != nil {
@@ -1507,6 +1542,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "RSHIFT",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				amount, err := vm.Stack.PopNumber()
 				if err != nil {
@@ -1542,6 +1580,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "SWAP",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.Pop()
 				if err != nil {
@@ -1579,6 +1620,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "DUP",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.Stack.Pop()
 				if err != nil {
@@ -1610,6 +1654,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "PICK",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				n, err := vm.Stack.PopNumber()
 				if err != nil {
@@ -1644,6 +1691,10 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "RPICK",
+			flag: Flag{
+				isPure:          true,
+				usesReturnStack: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				n, err := vm.Stack.PopNumber()
 				if err != nil {
@@ -1681,6 +1732,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "ROT",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				c, err := vm.Stack.Pop()
 				if err != nil {
@@ -1730,6 +1784,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "DROP",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				_, err := vm.Stack.Pop()
 				if err != nil {
@@ -1749,6 +1806,10 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "LOOPCHECK",
+			flag: Flag{
+				isPure:          true,
+				usesReturnStack: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				index, err := vm.ReturnStack.PopNumber()
 				if err != nil {
@@ -1849,6 +1910,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "U<",
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				right, err := vm.Stack.PopNumber()
 				if err != nil {
@@ -2069,6 +2133,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 
 		{
 			name: "D-", // ( xlow xhigh ylow yhigh -- zlow zhigh )
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				yHigh, err := vm.Stack.PopNumber()
 				if err != nil {
@@ -2140,6 +2207,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 		},
 		{
 			name: "D+", // ( xlow xhigh ylow yhigh -- zlow zhigh )
+			flag: Flag{
+				isPure: true,
+			},
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				yHigh, err := vm.Stack.PopNumber()
 				if err != nil {

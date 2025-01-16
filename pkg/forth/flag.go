@@ -19,4 +19,9 @@ type Flag struct {
 	isExit      bool // This assembly word is the EXIT word.
 	isDeferred  bool // This forth word is deferred.
 	inToken     bool // This word is compiled into a token somewhere (literal or data).
+	// This primitive word is pure. It does not depend on anything except the
+	// tops of the stack and the return stack - no memory access, no RTC access,
+	// not dependent on current state.
+	isPure          bool
+	usesReturnStack bool // This primitive word uses the return stack.
 }
