@@ -116,12 +116,12 @@ ulp-forth build --assembly --reserved 1024 file1.f file2.f`,
 func init() {
 	rootCmd.AddCommand(buildCmd)
 
-	buildCmd.Flags().String(CmdOutput, "", "Name of output file")
-	buildCmd.Flags().IntP(CmdReserved, "r", 8176, "Number of reserved bytes for the ULP, for use with --assembly flag")
+	buildCmd.Flags().String(CmdOutput, "", "Name of the output file.")
+	buildCmd.Flags().IntP(CmdReserved, "r", 8176, "Number of reserved bytes for the ULP, for use with --assembly flag. Note that the espressif linker reserves an extra 12 bytes.")
 
-	buildCmd.Flags().Bool(CmdAssembly, false, "Output assembly that can be compiled by the main assemblers, set the --reserved flag before using")
-	buildCmd.Flags().Bool(CmdCustomAssembly, false, "Output assembly only for use by ulp-asm")
+	buildCmd.Flags().Bool(CmdAssembly, false, "Output assembly that can be compiled by the main assemblers, set the --reserved flag before using.")
+	buildCmd.Flags().Bool(CmdCustomAssembly, false, "Output assembly only for use by ulp-asm, another project by this author.")
 	buildCmd.MarkFlagsMutuallyExclusive(CmdCustomAssembly, CmdAssembly)
 
-	buildCmd.Flags().Bool(CmdSubroutineThreading, false, "Use subroutine threading model")
+	buildCmd.Flags().Bool(CmdSubroutineThreading, false, "Use the subroutine threading model. Faster but larger.")
 }

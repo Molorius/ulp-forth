@@ -2,7 +2,7 @@
 
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
-ulp-forth is a Forth interpreter and cross compiler for the 
+ulp-forth is a Forth interpreter and optimizing cross compiler for the 
 ESP32 ULP coprocessor. It has most of the Forth 2020 standard 
 implemented. Code is interpreted on the host machine, when
 that is finished it compiles the `main` word for execution by the
@@ -30,7 +30,9 @@ Copyright 2024 Blake Felt blake.w.felt@gmail.com
 
 # Contents
 * [Building ulp-forth](#building-ulp-forth)
+* [Using ulp-forth](#using-ulp-forth)
 * [Assembly words](#assembly-words)
+* [System words](#system-words)
 * [Clock words](#clock-words)
 * [GPIO words](#gpio-words)
 * [Serial words](#serial-words)
@@ -38,11 +40,51 @@ Copyright 2024 Blake Felt blake.w.felt@gmail.com
 * [Standard Core words](#standard-core-words)
 * [Standard Core Extension words](#standard-core-extension-words)
 * [Standard Double words](#standard-double-words)
+# [Optimizations](#optimizations)
 
 # Building ulp-forth
 
 The compiler can be built with `go build`. Unit tests are run on the 
 host and on a ulp emulator, they can be run with `go test ./...`.
+
+# Using ulp-forth
+
+Help running the program can be found with `ulp-forth --help`.
+
+## Running the interpreter
+
+The interpreter can be run with `ulp-forth run`. This can be used for testing logic, but only runs on the host so cannot be used for testing hardware. Type `bye` to exit.
+
+## Running the compiler
+
+The cross compiler can be run with `ulp-forth build`. The user should pass in the list of files to be built, which will be interpreted in order before cross compiling the `MAIN` word. So `ulp-forth build first.f second.f` will first interpret first.f, then second.f, then cross compile the `MAIN` word.
+
+## Compiler flags
+
+* `--assembly` Output assembly that can be compiled by the main assemblers, set the --reserved flag before using.
+* `--custom_assembly` Output assembly only for use by ulp-asm, another project by this author.
+
+* `--output` Name of the output file.
+* `--reserved` Number of reserved bytes for the ULP, for use with --assembly flag (default 8176). Note that the Espressif linker has a bug so has 12 less total bytes. Any space not used by code or data is used for the stacks.
+* `--subroutine` Use the subroutine threading model, see the [threading models](#threading-models) section.
+
+# Threading models
+
+There are two threading models for the output ULP code. This is forth definition of "threading" and is not the same as multithreading in other languages. It can be thought of as the execution environment.
+
+Token threading is usually smaller and subroutine threading is usually bigger, but this can vary based on the program and optimizations.
+
+## Token threading (default)
+
+This is the default threading model. This uses a lightweight virtual machine to execute all forth words. This allows for some very compact code, but there is a speed penalty for the virtual machine.
+
+Code using this is roughly 20% smaller than subroutine threaded code.
+
+## Subroutine threading
+
+This can be enabled with the `--subroutine` flag. It copmiles all forth words into assembly subroutines. This is very fast while executing, but there is a size penalty.
+
+Code using this is roughly 20% faster than token threaded code.
 
 # Assembly words
 
@@ -104,6 +146,12 @@ low bit `low`, width `width`.
 Skip leading spaces. Parse `name` delimited by a space. Create an
 assembly definition for `name` that writes to RTC address `addr0`
 followed by address `addr1`.
+
+## System words
+
+`HALT` halts execution of the ULP. Execution will resume at the instruction immediately following the HALT on both token and subroutine threaded models.
+
+`MUTEX.TAKE` and `MUTEX.GIVE` takes and gives the software mutex respectively. The example project includes esp32 code to use this but a better way to use it needs to be written.
 
 # Clock words
 
@@ -388,8 +436,6 @@ error if it cannot be cannot be cross compiled.
   * Can only run on host.
 * `COUNT`
 * `CR`
-* `CREATE`
-  * Can only run on host.
 * `DECIMAL`
 * `DEPTH`
 * `DO`
@@ -491,6 +537,7 @@ all can be in the future.
 * `2LITERAL`
 * `2VARIABLE`
 * `D-`
+* `D+`
 * `D0<`
 * `D0=`
 * `D>S`
@@ -499,3 +546,18 @@ all can be in the future.
 * `DMIN`
 * `DNEGATE`
 * `DU<`
+
+# Optimizations
+
+The cross compiler includes some optimizations. More may be added later.
+
+* Inline deferred words. If a word is defined by `DEFER` but the deferred word cannot be changed by the cross compiled output, this will inline the word. Normally a deferred word will look like: `address-containing-word @ EXECUTE EXIT`, this optimizes that to: `word EXIT`.
+* Tail calls. Words may be defined in assembly or forth. If the final word before an `EXIT` (or end of definition) is a forth word, this will instead jump to it. For example, a word that is compiled as `+ forth-word EXIT` will be optimized to `+ jump(forth-word)`. Smaller in token threaded model, faster, saves a stack slot.
+
+To be added later:
+* Assembly inlining (subroutine threaded only)
+* Forth inlining
+* Forth common sequence compression
+* Flow control analysis
+* Constant folding
+* Peephole optimization
