@@ -132,7 +132,7 @@ func (w *WordForth) BuildAssembly(u *Ulp) (string, error) {
 		}
 	} else { // executable forth word
 		if u.compileTarget == UlpCompileTargetSubroutine {
-			if w.Entry.Name != "VM.INIT" { // the init word shouldn't docol
+			if w.Entry.Flag.calls != 0 { // if this word is directly called
 				output = append(output, "jump __docol")
 			}
 		}

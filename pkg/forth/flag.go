@@ -24,4 +24,6 @@ type Flag struct {
 	// not dependent on current state.
 	isPure          bool
 	usesReturnStack bool // This primitive word uses the return stack.
+
+	calls int // The number of times that this is called, not including tail calls.
 }

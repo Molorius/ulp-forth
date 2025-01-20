@@ -171,6 +171,8 @@ func (u *Ulp) buildAssemblyHelper(vm *VirtualMachine, header string) (string, er
 	if err != nil {
 		return "", err
 	}
+	// count the number of calls
+	u.countCalls()
 	// create the different assemblies
 	asm, err := u.buildAssemblyWords()
 	if err != nil {
@@ -327,6 +329,32 @@ func (u *Ulp) replaceOtherChars(str string) string {
 	return sb.String()
 }
 
+// Count the number of times that each word is called,
+// not including tail calls.
+func (u *Ulp) countCalls() {
+	u.resetCalls()
+	for _, w := range u.forthWords {
+		for _, c := range w.Cells {
+			switch cell := c.(type) {
+			case CellAddress:
+				cell.Entry.Flag.calls += 1
+			}
+		}
+	}
+}
+
+// Reset the number of times that each word is called.
+func (u *Ulp) resetCalls() {
+	for _, w := range u.forthWords {
+		for _, c := range w.Cells {
+			switch cell := c.(type) {
+			case CellAddress:
+				cell.Entry.Flag.calls = 0
+			}
+		}
+	}
+}
+
 func (u *Ulp) buildInterpreter() string {
 	i := []string{
 		// required data, will be placed at the start of .data
@@ -342,8 +370,8 @@ func (u *Ulp) buildInterpreter() string {
 		"HOST_FUNC:   .int 0",
 		"HOST_PARAM0: .int 0",
 		".data",
-		"__ip:  .int __forth_VM.INIT", // instruction pointer starts at word VM.INIT
-		"__rsp: .int __stack_start",   // return stack pointer starts at the beginning of the stack section
+		"__ip:  .int __body__forth_VM.INIT", // instruction pointer starts at word VM.INIT
+		"__rsp: .int __stack_start",         // return stack pointer starts at the beginning of the stack section
 
 		// boot labels
 		".boot",
