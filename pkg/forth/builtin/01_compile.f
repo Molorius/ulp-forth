@@ -2,7 +2,7 @@
 32 WORD IMMEDIATE --CREATE-FORTH ] -1 LAST SET-IMMEDIATE EXIT [
 32 WORD \ --CREATE-FORTH ] 10 WORD DROP EXIT [ IMMEDIATE \ End of line comments work now.
 
-\ Copyright 2024 Blake Felt blake.w.felt@gmail.com
+\ Copyright 2024-2025 Blake Felt blake.w.felt@gmail.com
 \ This Source Code Form is subject to the terms of the Mozilla Public
 \ License, v. 2.0. If a copy of the MPL was not distributed with this
 \ file, You can obtain one at https://mozilla.org/MPL/2.0/.

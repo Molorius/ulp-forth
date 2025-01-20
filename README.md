@@ -26,7 +26,7 @@ algorithms are different on a forth stack vs assembly registers, and
 ulp-forth calling convention, which would be difficult to implement in
 assembly. Toggling a pin is 4 times slower.
 
-Copyright 2024 Blake Felt blake.w.felt@gmail.com
+Copyright 2024-2025 Blake Felt blake.w.felt@gmail.com
 
 # Contents
 * [Building ulp-forth](#building-ulp-forth)
