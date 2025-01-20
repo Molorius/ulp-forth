@@ -159,8 +159,19 @@ func (w *WordForth) IsRecursive(check *WordForth) bool {
 // The Go code for a primitive Word.
 type PrimitiveGo func(*VirtualMachine, *DictionaryEntry) error
 
+type TokenNextType int
+
+const (
+	TokenNextNormal TokenNextType = iota
+	TokenNextNonstandard
+)
+
 // The ULP assembly for a primitive Word that uses token threading.
-type PrimitiveUlp []string
+// type PrimitiveUlp []string
+type PrimitiveUlp struct {
+	Asm  []string
+	Next TokenNextType
+}
 
 // The ULP assembly for a primitive Word that uses subroutine threading
 type PrimitiveUlpSrt struct {
@@ -194,23 +205,23 @@ func (w *WordPrimitive) AddToList(u *Ulp) error {
 
 func (w *WordPrimitive) BuildAssembly(u *Ulp) (string, error) {
 	out := w.Entry.ulpName + ":" + "\r\n"
-	var asm []string
+	asm := make([]string, 0)
 	switch u.compileTarget {
 	case UlpCompileTargetToken:
-		asm = w.Ulp
+		asm = append(asm, w.Ulp.Asm...)
 	case UlpCompileTargetSubroutine:
-		asm = w.UlpSrt.Asm
+		asm = append(asm, w.UlpSrt.Asm...)
+		if !w.UlpSrt.NonStandardNext {
+			standardNext := []string{
+				"add r2, r2, 1",
+				"jump r2",
+			}
+			asm = append(asm, standardNext...)
+		}
 	default:
 		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
 	}
-	if asm == nil {
-		return "", EntryError(w.Entry, "No assembly created")
-	}
 	out += strings.Join(asm, "\r\n")
-	if !w.UlpSrt.NonStandardNext {
-		standardNext := "\r\nadd r2, r2, 1\r\njump r2"
-		out += standardNext
-	}
 	return out, nil
 }
 
