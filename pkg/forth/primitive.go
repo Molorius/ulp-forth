@@ -599,9 +599,29 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
-			name: "ALLOCATE",
+			name: "--ALLOCATE", // ( size global name -- address success )
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
-				n, err := vm.Stack.PopNumber()
+				// get name
+				cell, err := vm.Stack.Pop()
+				if err != nil {
+					return JoinEntryError(err, entry, "could not pop name")
+				}
+				cellAddr, ok := cell.(CellAddress)
+				if !ok {
+					return EntryError(entry, "requires a name")
+				}
+				name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not parse name")
+				}
+				// get global
+				nGlobal, err := vm.Stack.PopNumber()
+				if err != nil {
+					return PopError(err, entry)
+				}
+				global := nGlobal != 0
+				// get size
+				n, err := vm.Stack.PopNumber() // the number of inputs
 				if err != nil {
 					return PopError(err, entry)
 				}
@@ -614,14 +634,18 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					w.Cells[i] = CellNumber{0}
 				}
 				de = DictionaryEntry{
+					Name: string(name),
 					Word: &w,
-					Flag: Flag{Data: true},
+					Flag: Flag{
+						Data:       true,
+						GlobalData: global,
+					},
 				}
-				cell := CellAddress{
+				newCell := CellAddress{
 					Offset: 0,
 					Entry:  &de,
 				}
-				err = vm.Stack.Push(cell)
+				err = vm.Stack.Push(newCell)
 				if err != nil {
 					return PushError(err, entry)
 				}

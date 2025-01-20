@@ -250,6 +250,11 @@ func (u *Ulp) buildDataWords() (string, error) {
 		if err != nil {
 			return "", err
 		}
+		if word.Entry.Flag.GlobalData {
+			label := word.Entry.ulpName
+			global := ".global " + label + "\r\n"
+			asm = global + asm
+		}
 		output[i] = asm
 	}
 	return strings.Join(output, "\r\n"), nil

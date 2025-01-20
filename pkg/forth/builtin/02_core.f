@@ -10,17 +10,51 @@
 \ Immediate.
 : RECURSE ( -- ) LAST COMPILE, ; IMMEDIATE
 
+: ALLOCATE ( n -- address ok )
+    FALSE \ mark as not global
+    [ 'A' WORD A ] LITERAL \ put an empty string as the name
+    --ALLOCATE
+;
+
+: GLOBAL-ALLOCATE ( n "\<spaces\>name" -- address ok )
+    TRUE \ mark as global
+    BL WORD \ parse the name
+    --ALLOCATE
+;
+
 \ Parse the next word delimited by a space. Allocate n cells. Create
 \ a definition for the word that places the address of the allocated
 \ memory onto the stack.
-: BUFFER: ( n -- )
+: BUFFER: ( n "\<spaces\>name" -- )
     ALLOCATE DROP \ allocate n words, drop the superfluous "ok" indicator but keep address
     : \ parse the next input, create a word with that name
     POSTPONE LITERAL \ compile the allocated address literal
     POSTPONE ; \ end the definition
 ;
 
-: VARIABLE 1 BUFFER: ;
+\ Parse the next word delimited by a space. Allocate n cells. Create
+\ a definition for the word that places the address of the allocated
+\ memory onto the stack. The allocated memory will be output to assembly
+\ with the same name and with the .global assembly tag.
+: GLOBAL-BUFFER: ( n "\<spaces\>name" -- )
+    BL WORD \ ( n name ) get the name we want to create
+    SWAP 1 PICK \ ( name n name ) copy the name
+    TRUE SWAP \ ( name n true name ) prepare for allocation
+    --ALLOCATE DROP SWAP \ ( address name ) allocate the memory, drop the "ok"
+    --CREATE-FORTH \ ( address ) create the new forth word
+    POSTPONE LITERAL \ ( ) compile the address
+    POSTPONE EXIT \ compile an exit
+;
+
+\ create a variable only visible to the ulp
+: VARIABLE ( "\<spaces\>name" -- )
+    1 BUFFER:
+;
+
+\ create a variable that can be shared with the esp32
+: GLOBAL-VARIABLE ( "\<spaces\>name" -- )
+    1 GLOBAL-BUFFER:
+;
 
 : DEFER
     1 ALLOCATE DROP \ allocate 1 word

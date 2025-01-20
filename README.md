@@ -31,6 +31,8 @@ Copyright 2024 Blake Felt blake.w.felt@gmail.com
 # Contents
 * [Building ulp-forth](#building-ulp-forth)
 * [Using ulp-forth](#using-ulp-forth)
+* [Sharing memory](#sharing-memory)
+* [Threading models](#threading-models)
 * [Assembly words](#assembly-words)
 * [System words](#system-words)
 * [Clock words](#clock-words)
@@ -40,7 +42,7 @@ Copyright 2024 Blake Felt blake.w.felt@gmail.com
 * [Standard Core words](#standard-core-words)
 * [Standard Core Extension words](#standard-core-extension-words)
 * [Standard Double words](#standard-double-words)
-# [Optimizations](#optimizations)
+* [Optimizations](#optimizations)
 
 # Building ulp-forth
 
@@ -68,21 +70,65 @@ The cross compiler can be run with `ulp-forth build`. The user should pass in th
 * `--reserved` Number of reserved bytes for the ULP, for use with --assembly flag (default 8176). Note that the Espressif linker has a bug so has 12 less total bytes. Any space not used by code or data is used for the stacks.
 * `--subroutine` Use the subroutine threading model, see the [threading models](#threading-models) section.
 
+
+# Sharing memory
+
+There are words that can be used to share memory with the esp32. When compiled with the `--custom_assembly` or `--assembly` flags, the output assembly will include the `.global` directive for the associated memory. This memory will not be optimized away.
+
+| Shared word        | Equivalent word |
+| ------------------ | --------------- |
+| `GLOBAL-VARIABLE`  | `VARIABLE`      |
+| `GLOBAL-2VARIABLE` | `2VARIABLE`     |
+| `GLOBAL-ALLOCATE`  | `ALLOCATE`      |
+
+Access should be done while holding the mutex, see the [System words](#system-words) section.
+
+Example:
+
+```forth
+global-variable example \ create a global variable named "example"
+
+\ read an address while holding the mutex
+: global-@ ( address -- n )
+    mutex.take \ take ownership of the mutex
+    @ \ read the value at the address
+    mutex.give \ release the mutex
+;
+
+\ write to an address while holding the mutex
+: global-! ( n address -- )
+    mutex.take \ take ownership of the mutex
+    ! \ write the value to the address
+    mutex.give \ release the mutex
+;
+
+\ get the value at "example"
+: get-example ( -- )
+    example \ put the address of the memory onto the stack
+    global-@ \ read it
+;
+
+\ set the value at "example"
+: set-example ( n -- )
+    example \ put the address of the memory onto the stack
+    global-! \ write to it
+;
+```
+
 # Threading models
 
-There are two threading models for the output ULP code. This is forth definition of "threading" and is not the same as multithreading in other languages. It can be thought of as the execution environment.
+There are two threading models for the output ULP code. This is the forth definition of "threading" and is not the same as multithreading in other languages. It can be thought of as the execution environment.
 
-Token threading is usually smaller and subroutine threading is usually bigger, but this can vary based on the program and optimizations.
+Token threading is usually smaller and subroutine threading is usually faster, but this can vary based on the program and optimizations.
 
 ## Token threading (default)
-
-This is the default threading model. This uses a lightweight virtual machine to execute all forth words. This allows for some very compact code, but there is a speed penalty for the virtual machine.
+This uses a lightweight virtual machine to execute all forth words. This allows for some very compact code, but there is a speed penalty for the virtual machine.
 
 Code using this is roughly 20% smaller than subroutine threaded code.
 
 ## Subroutine threading
 
-This can be enabled with the `--subroutine` flag. It copmiles all forth words into assembly subroutines. This is very fast while executing, but there is a size penalty.
+This can be enabled with the `--subroutine` flag. It compiles all forth words into assembly subroutines. This is very fast while executing, but there is a size penalty.
 
 Code using this is roughly 20% faster than token threaded code.
 
