@@ -162,8 +162,10 @@ type PrimitiveGo func(*VirtualMachine, *DictionaryEntry) error
 type TokenNextType int
 
 const (
-	TokenNextNormal TokenNextType = iota
-	TokenNextNonstandard
+	TokenNextNonstandard TokenNextType = iota
+	TokenNextNormal
+	TokenNextSkipR2
+	TokenNextSkipLoad
 )
 
 // The ULP assembly for a primitive Word that uses token threading.
@@ -209,6 +211,17 @@ func (w *WordPrimitive) BuildAssembly(u *Ulp) (string, error) {
 	switch u.compileTarget {
 	case UlpCompileTargetToken:
 		asm = append(asm, w.Ulp.Asm...)
+		switch w.Ulp.Next {
+		case TokenNextNonstandard:
+		case TokenNextNormal:
+			asm = append(asm, "jump next")
+		case TokenNextSkipR2:
+			asm = append(asm, "jump __next_skip_r2")
+		case TokenNextSkipLoad:
+			asm = append(asm, "jump __next_skip_load")
+		default:
+			return "", fmt.Errorf("Unknown compile target %d, please file a bug report", w.Ulp.Next)
+		}
 	case UlpCompileTargetSubroutine:
 		asm = append(asm, w.UlpSrt.Asm...)
 		if !w.UlpSrt.NonStandardNext {
