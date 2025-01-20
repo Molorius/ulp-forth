@@ -113,12 +113,19 @@ func (w *WordForth) AddToList(u *Ulp) error {
 
 func (w *WordForth) BuildAssembly(u *Ulp) (string, error) {
 	output := make([]string, 1)
-	output[0] = w.Entry.ulpName + ":"
+	label := w.Entry.ulpName + ":"
+	bodyLabel := w.Entry.BodyLabel() + ":"
+	output[0] = label
 	if w.Entry.Flag.Data { // data word
+		output = append(output, bodyLabel)
 		for _, cell := range w.Cells {
 			ref, err := cell.OutputReference(u)
 			if err != nil {
 				return "", err
+			}
+			_, ok := cell.(CellAddress)
+			if ok {
+				ref = "__body" + ref
 			}
 			val := ".int " + ref
 			output = append(output, val)
@@ -129,6 +136,7 @@ func (w *WordForth) BuildAssembly(u *Ulp) (string, error) {
 				output = append(output, "jump __docol")
 			}
 		}
+		output = append(output, bodyLabel)
 		for _, cell := range w.Cells {
 			asm, err := cell.BuildExecution(u)
 			if err != nil {
@@ -207,7 +215,8 @@ func (w *WordPrimitive) AddToList(u *Ulp) error {
 }
 
 func (w *WordPrimitive) BuildAssembly(u *Ulp) (string, error) {
-	out := w.Entry.ulpName + ":" + "\r\n"
+	label := w.Entry.ulpName + ":\r\n"
+	bodyLabel := w.Entry.BodyLabel() + ":\r\n"
 	asm := make([]string, 0)
 	switch u.compileTarget {
 	case UlpCompileTargetToken:
@@ -235,7 +244,8 @@ func (w *WordPrimitive) BuildAssembly(u *Ulp) (string, error) {
 	default:
 		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
 	}
-	out += strings.Join(asm, "\r\n")
+	asmStr := strings.Join(asm, "\r\n")
+	out := label + bodyLabel + asmStr
 	return out, nil
 }
 

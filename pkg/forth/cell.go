@@ -167,6 +167,10 @@ func (c CellLiteral) AddToList(u *Ulp) error {
 	if err != nil {
 		return err
 	}
+	_, ok := c.cell.(CellAddress)
+	if ok {
+		ref = "__body" + ref
+	}
 	litref := c.reference(ref)
 	u.literals[litref] = ref
 	cellAddress, ok := c.cell.(CellAddress)
@@ -184,6 +188,10 @@ func (c CellLiteral) BuildExecution(u *Ulp) (string, error) {
 	name, err := c.cell.OutputReference(u)
 	if err != nil {
 		return "", err
+	}
+	_, ok := c.cell.(CellAddress)
+	if ok {
+		name = "__body" + name
 	}
 	switch u.compileTarget {
 	case UlpCompileTargetToken:
@@ -356,10 +364,10 @@ func (c *CellTailCall) AddToList(u *Ulp) error {
 func (c *CellTailCall) BuildExecution(u *Ulp) (string, error) {
 	switch u.compileTarget {
 	case UlpCompileTargetToken:
-		return fmt.Sprintf(".int %s + 0x8000", c.dest.Entry.ulpName), nil
+		return fmt.Sprintf(".int %s + 0x8000", c.dest.Entry.BodyLabel()), nil
 	case UlpCompileTargetSubroutine:
 		// put the address after the docol
-		return fmt.Sprintf("move r2, %s + 1\r\njump r2", c.dest.Entry.ulpName), nil
+		return fmt.Sprintf("move r2, %s\r\njump r2", c.dest.Entry.BodyLabel()), nil
 	default:
 		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
 	}

@@ -37,6 +37,10 @@ func (d *DictionaryEntry) ClearVisited() {
 	d.Flag.visited = false
 }
 
+func (d *DictionaryEntry) BodyLabel() string {
+	return "__body" + d.ulpName
+}
+
 // The Forth Dictionary. This architecture uses individual entries
 // representing words rather than a flat cell structure.
 type Dictionary struct {

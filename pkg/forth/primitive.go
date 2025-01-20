@@ -592,7 +592,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					"st r2, r1, 0",   // store return address
 					"move r2, __rsp", // put pointer on rsp
 					"st r1, r2, 0",   // store rsp
-					"add r2, r0, 1",  // go past the docol
+					"move r2, r0",    // put address into instruction pointer
 					"jump r2",        // jump to the forth word, past the docol
 				},
 				NonStandardNext: true,
@@ -761,9 +761,9 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			ulpAsmSrt: PrimitiveUlpSrt{
 				Asm: []string{
 					"ld r0, r3, 0",  // get the address from stack
-					"ld r0, r0, 1",  // get the body address in the move instruction
-					"rsh r0, r0, 4", // shift it into the correct space
-					"st r0, r3, 0",  // store the body address on stack
+					"ld r0, r0, 0",  // get the move instruction
+					"rsh r0, r0, 4", // shift the address into the correct space
+					"st r0, r3, 0",  // store the address on stack
 				},
 			},
 		},
