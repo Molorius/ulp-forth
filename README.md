@@ -1,5 +1,6 @@
 # ulp-forth
 
+[![Test Status](https://github.com/Molorius/ulp-forth/actions/workflows/tests.yml/badge.svg)](https://github.com/Molorius/ulp-forth/actions?query=workflow%3Atests)
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
 ulp-forth is a Forth interpreter and optimizing cross compiler for the 

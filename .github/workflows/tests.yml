@@ -1,4 +1,4 @@
-name: Test
+name: tests
 
 # run `go test ./...` on every push and every pull request
 
