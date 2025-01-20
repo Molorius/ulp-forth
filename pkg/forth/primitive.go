@@ -1146,8 +1146,12 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					"ld r2, r1, 0",   // load the return address
 					"sub r1, r1, 1",  // decrement rsp
 					"st r1, r0, 0",   // store the rsp
-					// we will continue executing at the return address
+					// go to next instruction, but label it as
+					// nonstandard so this isn't optimized away
+					"add r2, r2, 1",
+					"jump r2",
 				},
+				NonStandardNext: true,
 			},
 		},
 		{
