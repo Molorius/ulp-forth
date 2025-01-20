@@ -1,5 +1,6 @@
 ulp-forth
 .vscode/
+dist/
 out.bin
 out.nonportable.S
 out.S
