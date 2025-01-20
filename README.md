@@ -1,5 +1,6 @@
 # ulp-forth
 
+[![Latest Release](https://img.shields.io/github/v/release/Molorius/ulp-forth?sort=semver)](https://github.com/Molorius/ulp-forth/releases)
 [![Test Status](https://github.com/Molorius/ulp-forth/actions/workflows/tests.yml/badge.svg)](https://github.com/Molorius/ulp-forth/actions?query=workflow%3Atests)
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
@@ -30,6 +31,7 @@ assembly. Toggling a pin is 4 times slower.
 Copyright 2024-2025 Blake Felt blake.w.felt@gmail.com
 
 # Contents
+* [Installation](#installation)
 * [Building ulp-forth](#building-ulp-forth)
 * [Using ulp-forth](#using-ulp-forth)
 * [Sharing memory](#sharing-memory)
@@ -44,6 +46,15 @@ Copyright 2024-2025 Blake Felt blake.w.felt@gmail.com
 * [Standard Core Extension words](#standard-core-extension-words)
 * [Standard Double words](#standard-double-words)
 * [Optimizations](#optimizations)
+
+# Installation
+
+Releases can be found on the [release page](https://github.com/Molorius/ulp-forth/releases).
+
+You can also build the latest tagged version from source with:
+```bash
+go install github.com/Molorius/ulp-forth@latest
+```
 
 # Building ulp-forth
 
