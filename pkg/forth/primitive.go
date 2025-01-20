@@ -235,7 +235,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 						Ulp: ulpAsm,
 						UlpSrt: PrimitiveUlpSrt{
 							Asm:             asmSrt,
-							NonStandardNext: true,
+							NonStandardNext: false,
 						},
 						Entry: &newEntry,
 					},
@@ -1110,6 +1110,29 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				}
 				flag := true
 				cellAddr.Entry.Flag.isDeferred = flag
+				return nil
+			},
+		},
+		{
+			name: "SET-ULP-ASM-NEXT",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				cell0, err := vm.Stack.Pop()
+				if err != nil {
+					return PopError(err, entry)
+				}
+				cellAddr, ok := cell0.(CellAddress)
+				if !ok {
+					return EntryError(entry, "requires an address cell, found %s type %T", cell0, cell0)
+				}
+				value, err := vm.Stack.PopNumber()
+				if err != nil {
+					return JoinEntryError(err, entry, "could not get boolean")
+				}
+				word, ok := cellAddr.Entry.Word.(*WordPrimitive)
+				if !ok {
+					return EntryError(entry, "requires a primitive word")
+				}
+				word.Ulp.Next = TokenNextType(value)
 				return nil
 			},
 		},
@@ -2425,6 +2448,11 @@ func parseAssembly(vm *VirtualMachine, entry *DictionaryEntry) ([]string, error)
 	asmStr := strings.Join(asm, "")
 	asmStr = strings.ReplaceAll(asmStr, "\\r", "\r")
 	asmStr = strings.ReplaceAll(asmStr, "\\n", "\n")
+	asmStr = strings.ReplaceAll(asmStr, "\\n\\n", "\n")
+	last := len(asmStr) - 1
+	if asmStr[last] == '\n' { // remove a final newline
+		asmStr = asmStr[:last]
+	}
 	asm = strings.Split(asmStr, "\n")
 	return asm, nil
 }

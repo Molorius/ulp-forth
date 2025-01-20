@@ -23,9 +23,10 @@ STRING" st r0, r3, 1\n"
 RTC_CNTL_TIME0_REG 16 16
 READ_RTC_REG.BUILDER >C
 \ store result and exit
-STRING" st r0, r3, 0\njump __next_skip_load"
+STRING" st r0, r3, 0"
 5 C> C> C> C> + + + + \ add up the strings and the built instructions
 ASSEMBLY RTC_CLOCK \ create RTC_CLOCK
+TOKEN_NEXT_SKIP_LOAD LAST SET-ULP-ASM-NEXT
 
 \ delay for d rtc_slow ticks
 : RTC_CLOCK_DELAY ( d -- )
@@ -52,13 +53,10 @@ ASSEMBLY RTC_CLOCK \ create RTC_CLOCK
 
 \ create the token threaded
 BUSY_DELAY.BUILDER
-STRING" jump __next_skip_load"
-SWAP 1 +
 \ create the subroutine threaded
 BUSY_DELAY.BUILDER
-STRING" add r2, r2, 1\njump r2"
-SWAP 1 +
 ASSEMBLY-BOTH BUSY_DELAY
+TOKEN_NEXT_SKIP_LOAD LAST SET-ULP-ASM-NEXT
 
 : DELAY_MS ( n -- )
     BEGIN

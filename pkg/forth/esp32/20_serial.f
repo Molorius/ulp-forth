@@ -53,14 +53,11 @@
     2DUP >R >R \ dup the input
     \ token threaded
     SERIAL.WRITE_CREATE.BUILDER
-    C" jump __next_skip_r2"
-    SWAP 1 +
     \ subroutine threaded
     R> R>
     SERIAL.WRITE_CREATE.BUILDER
-    C" add r2, r2, 1\njump r2"
-    SWAP 1 +
     ASSEMBLY-BOTH
+    TOKEN_NEXT_SKIP_R2 LAST SET-ULP-ASM-NEXT
 ;
 
 \ these were found at 21 C with a logic analyzer

@@ -23,10 +23,7 @@
 
 \ token threaded assembly
 WAKE.BUILDER
-STRING" jump __next_skip_load"
-SWAP 1 +
 \ subroutine threaded assembly
 WAKE.BUILDER
-STRING" add r2, r2, 1\njump r2"
-SWAP 1 +
 ASSEMBLY-BOTH WAKE
+TOKEN_NEXT_SKIP_LOAD LAST SET-ULP-ASM-NEXT

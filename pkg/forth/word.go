@@ -162,6 +162,7 @@ type PrimitiveGo func(*VirtualMachine, *DictionaryEntry) error
 type TokenNextType int
 
 const (
+	// update the constants in 11_misc.f if this list changes
 	TokenNextNonstandard TokenNextType = iota
 	TokenNextNormal
 	TokenNextSkipR2

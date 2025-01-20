@@ -11,7 +11,6 @@
 0x3ff48000 CONSTANT DR_REG_RTCCNTL_BASE
 
 : RTC_ADDR_FIX ( addr -- addr-fixed )
-    DR_REG_RTCCNTL_BASE - \ subtract off the offset
     2 RSHIFT \ divide by 4
     0x3FF AND \ remove extra bits
 ;
@@ -28,12 +27,13 @@
     7 \ number of inputs
 ;
 
-: READ_RTC_ADDR_CHANGE ( addr low width -- addr high low )
+: READ_RTC_ADDR_CHANGE ( addr low width -- addr-fixed high low )
     >R >R
     RTC_ADDR_FIX
-    R> R>
-    SWAP DUP >R
-    + 1- R>
+    R> R> ( addr-fixed low width )
+    SWAP DUP >R ( addr-fixed width low R: low )
+    + 1 - ( addr-fixed high R: low )
+    R> ( addr-fixed high low )
 ;
 
 : READ_RTC_REG.BUILDER ( addr low width "<spaces>name" -- )
@@ -46,15 +46,16 @@
     >R >R >R
     \ create the token threaded assembly
     READ_RTC_REG.BUILDER
-    C" sub r3, r3, 1\nst r0, r3, 0\njump __next_skip_load" \ increase stack, store result, next
+    C" sub r3, r3, 1\nst r0, r3, 0" \ increase stack, store result
     SWAP 1 + \ number of inputs
     \ get the inputs
     R> R> R>
     \ create the subroutine threaded assembly
     READ_RTC_REG.BUILDER
-    C" sub r3, r3, 1\nst r0, r3, 0\nadd r2, r2, 1\njump r2" \ increase stack, store result, next
+    C" sub r3, r3, 1\nst r0, r3, 0" \ increase stack, store result
     SWAP 1 + \ number of inputs
     ASSEMBLY-BOTH
+    TOKEN_NEXT_SKIP_LOAD LAST SET-ULP-ASM-NEXT
 ;
 
 : REG_WR.BUILDER ( addr high low data -- strn..str0 n )
@@ -71,12 +72,10 @@
     9 \ number of inputs
 ;
 
-: WRITE_RTC_ADDR_CHANGE
-    >R >R >R
-    RTC_ADDR_FIX
-    R> R> R>
-    >R SWAP DUP >R
-    + 1- R> R>
+: WRITE_RTC_ADDR_CHANGE ( addr low width data -- addr high low data )
+    >R \ push data onto return stack
+    READ_RTC_ADDR_CHANGE \ fix the rest
+    R> \ pop data
 ;
 
 : WRITE_RTC_REG.BUILDER
@@ -90,15 +89,12 @@
     >R >R >R >R
     \ create the token threaded assembly
     WRITE_RTC_REG.BUILDER
-    C" jump __next_skip_load"
-    SWAP 1 +
     \ get the inputs
     R> R> R> R>
     \ create the subroutine threaded assembly
     WRITE_RTC_REG.BUILDER
-    C" add r2, r2, 1\njump r2"
-    SWAP 1 +
-    ASSEMBLY-BOTH
+    ASSEMBLY-BOTH \ create the assembly
+    TOKEN_NEXT_SKIP_LOAD LAST SET-ULP-ASM-NEXT
 ;
 
 \ create an assembly word that writes to two RTC registers
@@ -111,8 +107,6 @@
     WRITE_RTC_REG.BUILDER >C
     R> R> R> R>
     WRITE_RTC_REG.BUILDER C> +
-    C" jump __next_skip_load"
-    SWAP 1 +
     \ get the inputs
     R> R> R> R> R> R> R> R>
     \ create the subroutine threaded assembly
@@ -120,7 +114,6 @@
     WRITE_RTC_REG.BUILDER >C
     R> R> R> R>
     WRITE_RTC_REG.BUILDER C> +
-    C" add r2, r2, 1\njump r2"
-    SWAP 1 +
     ASSEMBLY-BOTH
+    TOKEN_NEXT_SKIP_LOAD LAST SET-ULP-ASM-NEXT
 ;

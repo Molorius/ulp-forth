@@ -555,6 +555,7 @@ The cross compiler includes some optimizations. More may be added later.
 * Tail calls. Words may be defined in assembly or forth. If the final word before an `EXIT` (or end of definition) is a forth word, this will instead jump to it. For example, a word that is compiled as `+ forth-word EXIT` will be optimized to `+ jump(forth-word)`. Smaller in token threaded model, faster, saves a stack slot.
 
 To be added later:
+* Fallthrough forth words instead of tail call
 * Assembly inlining (subroutine threaded only)
 * Forth inlining
 * Forth common sequence compression
