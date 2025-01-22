@@ -197,7 +197,21 @@ func TestSuite(t *testing.T) {
 		},
 		// C,
 		// CELL+ doesn't have regular tests
-		// CELLS
+		{
+			name: "CELLS",
+			setup: `
+				: BITS ( X -- U )
+					0 SWAP BEGIN DUP WHILE
+					    DUP MSB AND IF >R 1+ R> THEN 2*
+					REPEAT DROP ;
+					( CELLS >= 1 AU, INTEGRAL MULTIPLE OF CHAR SIZE, >= 16 BITS )
+			`,
+			code: `
+				T{ 1 CELLS 1 <         -> <FALSE> }T
+				T{ 1 CELLS 1 CHARS MOD ->    0    }T
+				T{ 1S BITS 10 <        -> <FALSE> }T
+			`,
+		},
 		{
 			name:  "C@", // not in test suite
 			setup: "T{ VARIABLE c1 -> }T",
