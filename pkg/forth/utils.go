@@ -51,14 +51,29 @@ func cellsToBytes(cells []Cell) ([]byte, error) {
 	return out, nil
 }
 
-func cellsToString(cells []Cell) (string, error) {
+func countedCellsToString(cells []Cell) (string, error) {
 	bytes, err := cellsToBytes(cells)
 	if err != nil {
 		return "", err
 	}
 	length := bytes[0]
-	if length < 0 || int(length+1) > len(bytes) {
-		return "", fmt.Errorf("counted string length is invalid: %d", length)
+	return bytesToString(bytes[1:], int(length))
+}
+
+func cellsToString(cells []Cell, length int, upper bool) (string, error) {
+	bytes, err := cellsToBytes(cells)
+	if err != nil {
+		return "", err
 	}
-	return string(bytes[1 : length+1]), nil
+	if upper {
+		return bytesToString(bytes[1:], length)
+	}
+	return bytesToString(bytes, length)
+}
+
+func bytesToString(bytes []byte, length int) (string, error) {
+	if length < 0 || length > len(bytes) {
+		return "", fmt.Errorf("string length is invalid: %d", length)
+	}
+	return string(bytes[:length]), nil
 }

@@ -422,3 +422,25 @@ DATASPACE DATAPOINTER ! \ set the data space pointer
     ALLOT \ change the data space accordingly
 ;
 
+: ERASE ( addr u -- )
+    DUP 0> IF
+        0 DO
+            ( addr )
+            0 OVER ! \ store 0
+            1+ ( addr+1 )
+        LOOP
+        DROP
+    ELSE
+        2DROP
+    THEN
+;
+
+: MOVE ( addr1 addr2 u -- )
+    0 ?DO
+        ( addr1 addr2 )
+        OVER @ ( addr1 addr2 val1 )
+        OVER ! ( addr1 addr2 ) \ store val1
+        1+ SWAP 1+ SWAP ( addr1+1 addr2+1 )
+    LOOP
+    2DROP
+;

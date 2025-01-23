@@ -11,6 +11,9 @@ package forth
 type ParseArea struct {
 	area  []byte
 	index int
+
+	savedArea  []byte
+	savedIndex int
 }
 
 // Set up the parse area.
@@ -24,6 +27,24 @@ func (p *ParseArea) Fill(bytes []byte) error {
 	p.index = 0                       // reset the index
 	p.area = p.area[:0]               // remove everything in parse area
 	p.area = append(p.area, bytes...) // refill with the new bytes
+	return nil
+}
+
+func (p *ParseArea) Save() error {
+	p.savedArea = p.area
+	p.savedIndex = p.index
+	// reset the area
+	p.area = nil
+	p.index = 0
+	return nil
+}
+
+func (p *ParseArea) Restore() error {
+	p.area = p.savedArea
+	p.index = p.savedIndex
+	// reset the saved area
+	p.savedArea = nil
+	p.savedIndex = 0
 	return nil
 }
 

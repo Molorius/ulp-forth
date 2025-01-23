@@ -454,8 +454,25 @@ func TestSuite(t *testing.T) {
 		// ENDCASE does not have any tests
 		// ENDOF does not have any tests
 		// ENVIRONMENT?
-		// ERASE
-		// EVALUATE
+		// ERASE does not have any tests
+		{
+			name: "EVALUATE",
+			setup: `
+				: GE1 S" 123" ; IMMEDIATE
+				: GE2 S" 123 1+" ; IMMEDIATE
+				: GE3 S" : GE4 345 ;" ;
+				: GE5 EVALUATE ; IMMEDIATE
+				T{ GE1 EVALUATE -> 123 }T \ TEST EVALUATE IN INTERPRET STATE
+				T{ GE2 EVALUATE -> 124 }T
+				T{ GE3 EVALUATE ->     }T
+				T{ GE4          -> 345 }T
+
+				T{ : GE6 GE1 GE5 ; -> }T \ TEST EVALUATE IN COMPILE STATE
+				T{ GE6 -> 123 }T
+				T{ : GE7 GE2 GE5 ; -> }T
+				T{ GE7 -> 124 }T
+			`,
+		},
 		// EXECUTE does not have any tests
 		// EXIT does not have any tests
 		{
@@ -660,7 +677,38 @@ func TestSuite(t *testing.T) {
 			`,
 		},
 		// MOD
-		// MOVE
+		{
+			name: "MOVE",
+			setup: `
+				T{ 20 BUFFER: FBUF -> }T
+				T{ 20 FBUF ! 20 FBUF 1+ ! 20 FBUF 2 + ! -> }T
+				T{ : SEEBUF FBUF @ FBUF 1+ @ FBUF 2 + @ ; -> }T
+				T{ 20 BUFFER: SBUF -> }T
+				T{ 12 SBUF ! 34 SBUF 1+ ! 56 SBUF 2 + ! -> }T
+			`,
+			code: `
+				// The actual test suite is wrong for forths in which
+				// the address units are greater than the character size.
+				// This test is modified to work with that.
+				T{ FBUF FBUF 3 CHARS MOVE -> }T \ BIZARRE SPECIAL CASE
+				T{ SEEBUF -> 20 20 20 }T
+				T{ SBUF FBUF 0 CHARS MOVE -> }T
+				T{ SEEBUF -> 20 20 20 }T
+
+				T{ SBUF FBUF 1 CHARS MOVE -> }T
+				T{ SEEBUF -> 12 20 20 }T
+
+				T{ SBUF FBUF 3 MOVE -> }T
+				T{ SEEBUF -> 12 34 56 }T
+
+				// TODO fix the overlapping case
+				// T{ FBUF FBUF 1+ 2 MOVE -> }T
+				// T{ SEEBUF -> 12 12 34 }T
+
+				// T{ FBUF CHAR+ FBUF 2 CHARS MOVE -> }T
+				// T{ SEEBUF -> 12 34 34 }T
+			`,
+		},
 		// M*
 		{
 			name: "-",

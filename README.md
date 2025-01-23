@@ -511,6 +511,8 @@ error if it cannot be cannot be cross compiled.
 * `EMIT`
   * Deferred so a program can output to any interface.
     `EMIT` is used for all printing, such as `.`.
+* `EVALUATE`
+  * Can only run on host.
 * `EXECUTE`
 * `EXIT`
 * `FIND`
@@ -528,6 +530,8 @@ error if it cannot be cannot be cross compiled.
 * `MAX`
 * `MIN`
 * `MOD`
+* `MOVE`
+  * Does not handle cases where the data overlaps.
 * `NEGATE`
 * `OR`
 * `OVER`
@@ -581,6 +585,7 @@ Missing words may be implemented in the future.
 * `DEFER@`
 * `ENDCASE`
 * `ENDOF`
+* `ERASE`
 * `FALSE`
 * `HEX`
 * `IS`

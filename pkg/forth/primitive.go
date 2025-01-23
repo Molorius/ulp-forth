@@ -74,7 +74,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if !ok {
 					return EntryError(entry, "requires an address cell")
 				}
-				name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+				name, err := countedCellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
 				if err != nil {
 					return JoinEntryError(err, entry, "could not parse name")
 				}
@@ -130,7 +130,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if !ok {
 					return EntryError(entry, "requires an address cell")
 				}
-				name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+				name, err := countedCellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
 				if err != nil {
 					return JoinEntryError(err, entry, "could not parse name")
 				}
@@ -510,7 +510,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if !ok {
 					return EntryError(entry, "requires an address cell")
 				}
-				name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+				name, err := countedCellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
 				if err != nil {
 					return JoinEntryError(err, entry, "could not convert input to string")
 				}
@@ -544,6 +544,45 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 						Entry:  last.Entry,
 						Offset: len(last.Cells) - 1,
 					}
+				}
+				return nil
+			},
+		},
+		{
+			name: "EVALUATE",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				// get the size
+				size, err := vm.Stack.PopNumber()
+				if err != nil {
+					return PopError(err, entry)
+				}
+				// get the code
+				cell, err := vm.Stack.Pop()
+				if err != nil {
+					return JoinEntryError(err, entry, "could not pop code")
+				}
+				cellAddr, ok := cell.(CellAddress)
+				if !ok {
+					return EntryError(entry, "requires code")
+				}
+				code, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells, int(size), cellAddr.UpperByte)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not parse code")
+				}
+				// save the parse area
+				err = vm.ParseArea.Save()
+				if err != nil {
+					return JoinEntryError(err, entry, "could not save parse area")
+				}
+				// execute
+				err = vm.Execute([]byte(code))
+				if err != nil {
+					return JoinEntryError(err, entry, "error while executing: %s", code)
+				}
+				// restore parse area
+				err = vm.ParseArea.Restore()
+				if err != nil {
+					return JoinEntryError(err, entry, "could not restore parse area")
 				}
 				return nil
 			},
@@ -610,7 +649,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if !ok {
 					return EntryError(entry, "requires a name")
 				}
-				name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+				name, err := countedCellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
 				if err != nil {
 					return JoinEntryError(err, entry, "could not parse name")
 				}
@@ -1365,6 +1404,12 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 							return nil
 						}
 						return EntryError(entry, "could not subtract %s type %T from %s type %T due to types", right, right, left, left)
+					case CellNumber:
+						err = vm.Stack.Push(CellAddress{r.Entry, r.Offset - int(l.Number), false})
+						if err != nil {
+							return PushError(err, entry)
+						}
+						return nil
 					default:
 						return EntryError(entry, "could not subtract %s type %T from %s type %T due to types", right, right, left, left)
 					}
@@ -2491,7 +2536,7 @@ func parseWord(vm *VirtualMachine, entry *DictionaryEntry) (string, error) {
 	if !ok {
 		return "", EntryError(entry, "name argument needs to be an address to a string")
 	}
-	name, err := cellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+	name, err := countedCellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
 	if err != nil {
 		return "", JoinEntryError(err, entry, "could not parse name")
 	}
@@ -2511,7 +2556,7 @@ func parseAssembly(vm *VirtualMachine, entry *DictionaryEntry) ([]string, error)
 		}
 		switch c := cell.(type) {
 		case CellAddress:
-			substr, err := cellsToString(c.Entry.Word.(*WordForth).Cells)
+			substr, err := countedCellsToString(c.Entry.Word.(*WordForth).Cells)
 			if err != nil {
 				return nil, JoinEntryError(err, entry, "could not convert input to string")
 			}
