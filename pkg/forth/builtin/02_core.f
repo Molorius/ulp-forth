@@ -373,17 +373,23 @@ DEFER /MOD
     DROP 0 \ drop the result, return 0
 ;
 
-0 BUFFER: DATASPACE \ create a buffer starting at size 0 to hold the data space
+VARIABLE DATASPACE \ create a variable to hold the currently allocated data space
 VARIABLE DATAPOINTER \ create a variable to keep track of the data space pointer
-DATASPACE DATAPOINTER ! \ set the data space pointer
+
+: NEW-DATASPACE ( ) \ set up a new data space
+    0 ALLOCATE DROP DUP ( addr addr )
+    DATASPACE ! \ save this new address to the dataspace
+    DATAPOINTER ! \ also to the pointer
+;
+NEW-DATASPACE \ run it right away
 
 : HERE ( -- addr )
-    DATAPOINTER @ \ return the dataspace pointer plus the size
+    DATAPOINTER @ \ return the dataspace pointed address
 ;
 
 : DATASIZE
-    DATAPOINTER @ DATASPACE - \ find the size difference
-    0x7FFF AND
+    DATAPOINTER @ DATASPACE @ - \ find the size difference
+    0x7FFF AND \ remove any alignment bits
 ;
 
 : ALLOT ( n -- )
@@ -395,7 +401,7 @@ DATASPACE DATAPOINTER ! \ set the data space pointer
         EXIT
     THEN ( n newSize )
     SWAP DATAPOINTER +! ( newSize ) \ update the data space pointer
-    DATASPACE SWAP ( dataspace newSize )
+    DATASPACE @ SWAP ( dataspace newSize )
     RESIZE ( newaddress 0 ) \ resize the dataspace
     2DROP \ remove the extra values from the resize
 ;
@@ -407,7 +413,7 @@ DATASPACE DATAPOINTER ! \ set the data space pointer
 ;
 
 : C, ( char -- )
-    HERE DATASPACE - \ find the size difference
+    HERE DATASPACE @ - \ find the size difference
     0< IF \ if the upper bit is set then we don't need to allocate
 
     ELSE
@@ -450,7 +456,7 @@ DATASPACE DATAPOINTER ! \ set the data space pointer
 ;
 
 : CREATE
-    ALIGN \ align the data space pointer
+    NEW-DATASPACE \ create a fresh section of aligned data space
     HERE \ get the data space pointer
     : \ parse the next input, create a word with that name
     POSTPONE LITERAL \ create a literal of the previous data space pointer

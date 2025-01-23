@@ -297,7 +297,23 @@ func TestSuite(t *testing.T) {
 			`,
 		},
 		// CR does not have any tests
-		// CREATE does not have any tests
+		{
+			name: "CREATE",
+			setup: `
+				T{ CREATE CR1 -> }T
+				T{ : ADDR1 [ HERE ] LITERAL ; -> }T
+				T{ 1 , -> }T
+				T{ CREATE CR2 -> }T
+				T{ : ADDR2 [ HERE ] LITERAL ; -> }T
+				T{ FF , -> }T
+			`,
+			code: `
+				T{ CR1 -> ADDR1 }T
+				T{ CR2 -> ADDR2 }T
+				T{ CR1 @ -> 1  }T
+				T{ CR2 @ -> FF }T
+			`,
+		},
 		{
 			name:  "C!", // not in test suite
 			setup: "T{ VARIABLE c1 -> }T",
