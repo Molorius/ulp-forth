@@ -614,7 +614,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return JoinEntryError(err, entry, "could not parse name")
 				}
-				// get global
+				// get global flag
 				nGlobal, err := vm.Stack.PopNumber()
 				if err != nil {
 					return PopError(err, entry)
@@ -625,6 +625,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return PopError(err, entry)
 				}
+				// create the new data, defaulted to 0
 				var de DictionaryEntry // note that we don't put this entry into the dictionary
 				w := WordForth{
 					Cells: make([]Cell, n),
@@ -633,6 +634,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				for i := range w.Cells {
 					w.Cells[i] = CellNumber{0}
 				}
+				// create the entry for it
 				de = DictionaryEntry{
 					Name: string(name),
 					Word: &w,
@@ -641,14 +643,60 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 						GlobalData: global,
 					},
 				}
+				// create the cell for it
 				newCell := CellAddress{
 					Offset: 0,
 					Entry:  &de,
 				}
+				// push the cell onto the stack
 				err = vm.Stack.Push(newCell)
 				if err != nil {
 					return PushError(err, entry)
 				}
+				// push 0 onto the stack
+				err = vm.Stack.Push(CellNumber{0})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
+			},
+		},
+		{
+			name: "RESIZE",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				// get size
+				n, err := vm.Stack.PopNumber() // the number of inputs
+				if err != nil {
+					return PopError(err, entry)
+				}
+				// get address
+				cell, err := vm.Stack.Pop()
+				if err != nil {
+					return PopError(err, entry)
+				}
+				cellAddress, ok := cell.(CellAddress)
+				if !ok {
+					return EntryError(entry, "can only resize an address, got %s type %T", cellAddress, cellAddress)
+				}
+				w, ok := cellAddress.Entry.Word.(*WordForth)
+				if !ok {
+					return EntryError(entry, "can only resize forth data words found %s type %T", w, w)
+				}
+				// create the new data, defaulted to 0
+				newCells := make([]Cell, n)
+				for i := range newCells {
+					newCells[i] = CellNumber{0}
+				}
+				// copy the data over
+				copy(newCells, w.Cells)
+				// attach the new data to the word
+				w.Cells = newCells
+				// push the same cell onto the stack
+				err = vm.Stack.Push(cellAddress)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				// push 0 onto the stack
 				err = vm.Stack.Push(CellNumber{0})
 				if err != nil {
 					return PushError(err, entry)

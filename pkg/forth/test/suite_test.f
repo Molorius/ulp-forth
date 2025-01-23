@@ -122,4 +122,36 @@ T{ : GT2 ['] GT1 ; IMMEDIATE -> }T
 \ ' EXIT CONSTANT 1ST
 T{ VARIABLE 1ST -> }T \ not the same as the test suite
 
+VARIABLE addr
+VARIABLE datsp
+: write-char-mem ( address n -- )
+    \ from 0 to n
+    0 ?DO
+        I OVER ( address i address )
+        C! \ write i to address
+        CHAR+ ( address+1 ) \ increment address
+    LOOP
+    DROP ( )
+;
+
+: write-cell-mem ( address n -- )
+    2* write-char-mem
+;
+
+: check-char-mem ( address n -- )
+    \ from 0 to n
+    0 ?DO
+        DUP C@ ( address value )
+        I <> IF \ if the value isn't equal to loop count
+            UNLOOP ." char-char-mem failed " DROP EXIT
+        THEN
+        CHAR+ ( address+1 )
+    LOOP
+    DROP
+;
+
+: check-cell-mem
+    2* check-char-mem
+;
+
 RESET-TEST

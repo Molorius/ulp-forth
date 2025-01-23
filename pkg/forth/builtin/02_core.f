@@ -361,3 +361,11 @@ DEFER /MOD
 : /- /-REM NIP ;
 : -REM /-REM DROP ;
 
+\ memory allocation is automatic in go, so
+\ we don't need to manually free
+: FREE ( addr io )
+    @ \ try reading from this address, this will be caught by
+    \ the host if attempting to run on something not an address
+    DROP 0 \ drop the result, return 0
+;
+
