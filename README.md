@@ -477,6 +477,7 @@ error if it cannot be cannot be cross compiled.
 * `<`
 * `=`
 * `>`
+* `>BODY`
 * `>R`
 * `?DUP`
 * `@`
@@ -496,15 +497,20 @@ error if it cannot be cannot be cross compiled.
 * `C@`
 * `CELL+`
 * `CELLS`
+* `CHAR`
 * `CHAR+`
 * `CHARS`
 * `CONSTANT`
   * Can only run on host.
 * `COUNT`
 * `CR`
+* `CREATE`
+  * Can only run on host.
 * `DECIMAL`
 * `DEPTH`
 * `DO`
+* `DOES>`
+  * Can only run on host.
 * `DROP`
 * `DUP`
 * `ELSE`

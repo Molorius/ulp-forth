@@ -91,6 +91,10 @@
     SWAP 1 AND \ isolate the lowest bit
     + \ then put back the pit
 ;
+: CHAR
+    BL WORD
+    CHAR+ C@
+;
 
 : U> SWAP U< ; \ greaterthan is just lessthan with operands swapped
 : > 
@@ -444,3 +448,25 @@ DATASPACE DATAPOINTER ! \ set the data space pointer
     LOOP
     2DROP
 ;
+
+: CREATE
+    ALIGN \ align the data space pointer
+    HERE \ get the data space pointer
+    : \ parse the next input, create a word with that name
+    POSTPONE LITERAL \ create a literal of the previous data space pointer
+    POSTPONE EXIT \ put an extra exit, can be overwritten
+    POSTPONE ; \ end the definition
+;
+
+: DOES>
+    POSTPONE EXIT \ put a dummy value here for now
+    LAST \ get the definition that called DOES>
+    LAST-ADDRESS \ get the last address of that definition
+    POSTPONE LAST \ later get the most recent definition
+    POSTPONE 1+ \ later go 1 past the end
+    POSTPONE ! \ later store the value
+    POSTPONE ; \ end the definition that called DOES>
+    :NONAME \ start a new unnamed definition
+    LITERALIZE \ literalize the noname address
+    SWAP ! \ store the literal noname address inside the dummy value
+; IMMEDIATE

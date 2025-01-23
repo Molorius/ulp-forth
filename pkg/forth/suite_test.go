@@ -134,12 +134,12 @@ func TestSuite(t *testing.T) {
 				T{ 127 CHARS BUFFER: TBUF2 -> }T \ Buffer is aligned
 				T{ TBUF1 ALIGNED -> TBUF1 }T \ Buffers do not overlap
 				\ T{ TBUF2 TBUF1 - ABS 127 CHARS < -> <FALSE> }T \ Buffer can be written to
-				\ 1 CHARS CONSTANT /CHAR
-				\ : TFULL? ( c-addr n char -- flag )
-				\    TRUE 2SWAP CHARS OVER + SWAP ?DO
-				\      OVER I C@ = AND
-				\    /CHAR +LOOP NIP
-				\ ;
+				1 CHARS CONSTANT /CHAR
+				: TFULL? ( c-addr n char -- flag )
+				   TRUE 2SWAP CHARS OVER + SWAP ?DO
+				     OVER I C@ = AND
+				   /CHAR +LOOP NIP
+				;
 				\ T{ TBUF1 127 CHAR * FILL   ->        }T
 				\ T{ TBUF1 127 CHAR * TFULL? -> <TRUE> }T
 				\ T{ TBUF1 127 0 FILL   ->        }T
@@ -267,7 +267,13 @@ func TestSuite(t *testing.T) {
 				T{ c1 CHAR+ C@ -> 0x12 }T
 			`,
 		},
-		// CHAR
+		{
+			name: "CHAR",
+			setup: `
+				T{ CHAR X     -> 58 }T
+				T{ CHAR HELLO -> 48 }T
+			`,
+		},
 		// CHAR+
 		// CHARS
 		// COMPILE,
@@ -412,7 +418,26 @@ func TestSuite(t *testing.T) {
 			`,
 		},
 		// DO does not have any tests
-		// DOES>
+		{
+			name: "DOES>",
+			setup: `
+				T{ : DOES1 DOES> @ 1 + ; -> }T
+				T{ : DOES2 DOES> @ 2 + ; -> }T
+				T{ CREATE CR1 -> }T
+				T{ CR1   -> HERE }T
+				T{ 1 ,   ->   }T
+				T{ CR1 @ -> 1 }T
+				T{ DOES1 ->   }T
+				T{ CR1   -> 2 }T
+				T{ DOES2 ->   }T
+				T{ CR1   -> 3 }T
+				T{ : WEIRD: CREATE DOES> 1 + DOES> 2 + ; -> }T
+				T{ WEIRD: W1 -> }T
+				T{ ' W1 >BODY -> HERE }T
+				T{ W1 -> HERE 1 + }T
+				T{ W1 -> HERE 2 + }T
+			`,
+		},
 		{
 			name: "DROP",
 			code: `
@@ -531,14 +556,12 @@ func TestSuite(t *testing.T) {
 				T{ VARIABLE iw3 IMMEDIATE 234 iw3 ! iw3 @ -> 234 }T
 				T{ : iw4 iw3 [ @ ] LITERAL ; iw4 -> 234 }T
 				T{ :NONAME [ 345 ] iw3 [ ! ] ; DROP iw3 @ -> 345 }T
-				\ The rest of these tests fail because CREATE does not
-				\ put the newly created definition on the data space.
-				\ T{ CREATE iw5 456 , IMMEDIATE -> }T
-				\ T{ :NONAME iw5 [ @ iw3 ! ] ; DROP iw3 @ -> 456 }T
-				\ T{ : iw6 CREATE , IMMEDIATE DOES> @ 1+ ; -> }T
-				\ T{ 111 iw6 iw7 iw7 -> 112 }T
-				\ T{ : iw8 iw7 LITERAL 1+ ; iw8 -> 113 }T
-				\ T{ : iw9 CREATE , DOES> @ 2 + IMMEDIATE ; -> }T
+				T{ CREATE iw5 456 , IMMEDIATE -> }T
+				T{ :NONAME iw5 [ @ iw3 ! ] ; DROP iw3 @ -> 456 }T
+				T{ : iw6 CREATE , IMMEDIATE DOES> @ 1+ ; -> }T
+				T{ 111 iw6 iw7 iw7 -> 112 }T
+				T{ : iw8 iw7 LITERAL 1+ ; iw8 -> 113 }T
+				T{ : iw9 CREATE , DOES> @ 2 + IMMEDIATE ; -> }T
 				\ : find-iw BL WORD FIND NIP ;
 				\ T{ 222 iw9 iw10 find-iw iw10 -> -1 }T    \ iw10 is not immediate
 				\ T{ iw10 find-iw iw10 -> 224 1 }T          \ iw10 becomes immediate
@@ -1360,7 +1383,13 @@ func TestSuite(t *testing.T) {
 				T{  1 ?DUP ->  1  1 }T
 			`,
 		},
-		// >BODY does not have a test case we can replicate
+		{
+			name: ">BODY",
+			setup: `
+				T{  CREATE CR0 ->      }T
+				T{ ' CR0 >BODY -> HERE }T
+			`,
+		},
 		// >IN
 		// >NUMBER
 		{

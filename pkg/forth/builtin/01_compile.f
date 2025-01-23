@@ -28,30 +28,30 @@ BL WORD POSTPONE --CREATE-FORTH ] ' --POSTPONE EXIT [ IMMEDIATE
 
 \ CREATE parses the next name and creates a Forth definition
 \ for that name.
-BL WORD CREATE ( -- ) --CREATE-FORTH ] BL WORD --CREATE-FORTH EXIT [
+BL WORD CREATEWORD ( -- ) --CREATE-FORTH ] BL WORD --CREATE-FORTH EXIT [
 
 \ SEE parses the next name and prints the definition of that word.
 \ An error is thrown if there is not a word with that name in the dictionary.
-CREATE SEE ] BL WORD --SEE EXIT [ \ not core but really nice for debugging
+CREATEWORD SEE ] BL WORD --SEE EXIT [ \ not core but really nice for debugging
 
 \ TRUE places the 'true' value onto the stack.
-CREATE TRUE ( -- true ) ] -1 EXIT [
+CREATEWORD TRUE ( -- true ) ] -1 EXIT [
 
 \ FALSE places the 'false' value onto the stack.
-CREATE FALSE ( -- false ) ] 0 EXIT [
+CREATEWORD FALSE ( -- false ) ] 0 EXIT [
 
 \ : parses the next name, creates a dictionary entry for it, hides that word,
 \ and puts the VM into compile state. 
 \ Used to start compilation.
-CREATE : ( -- ) ]
-    CREATE \ create the new dictionary entry
+CREATEWORD : ( -- ) ]
+    CREATEWORD \ create the new dictionary entry
     TRUE LAST SET-HIDDEN \ hide it
     ] \ and put in compile mode
 EXIT [
 
 \ ; appends EXIT to the most recent definition, unhides it, and puts the VM into interpret state.
 \ Used to end compilation. Immediate.
-CREATE ; ( -- ) ]
+CREATEWORD ; ( -- ) ]
     POSTPONE EXIT \ compile EXIT into new word
     FALSE LAST SET-HIDDEN \ unhide the new word
     POSTPONE [ \ put back in interpret mode

@@ -744,6 +744,49 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name: "LAST-ADDRESS",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				// get address
+				cell, err := vm.Stack.Pop()
+				if err != nil {
+					return PopError(err, entry)
+				}
+				cellAddress, ok := cell.(CellAddress)
+				if !ok {
+					return EntryError(entry, "can only get length of an address, got %s type %T", cellAddress, cellAddress)
+				}
+				w, ok := cellAddress.Entry.Word.(*WordForth)
+				if !ok {
+					return EntryError(entry, "can only get length of forth data words found %s type %T", w, w)
+				}
+				// get length
+				length := len(w.Cells)
+				// update the address cell with the last value
+				cellAddress.Offset = length - 1
+				cellAddress.UpperByte = false
+				err = vm.Stack.Push(cellAddress)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
+			},
+		},
+		{
+			// convert a cell into a literal of that cell
+			name: "LITERALIZE",
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				cell, err := vm.Stack.Pop()
+				if err != nil {
+					return PopError(err, entry)
+				}
+				err = vm.Stack.Push(CellLiteral{cell})
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
+			},
+		},
+		{
 			name: "@",
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				cell, err := vm.Stack.Pop()
