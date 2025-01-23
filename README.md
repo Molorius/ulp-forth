@@ -449,6 +449,8 @@ error if it cannot be cannot be cross compiled.
 * `+`
 * `+!`
 * `+LOOP`
+* `,`
+  * Can only run on host.
 * `-`
 * `.`
 * `."`
@@ -479,12 +481,18 @@ error if it cannot be cannot be cross compiled.
 * `?DUP`
 * `@`
 * `ABS`
+* `ALIGN`
+  * Can only run on host.
 * `ALIGNED`
+* `ALLOT`
+  * Can only run on host.
 * `AND`
 * `BASE`
 * `BEGIN`
 * `BL`
 * `C!`
+* `C,`
+  * Can only run on host.
 * `C@`
 * `CELL+`
 * `CELLS`
@@ -507,6 +515,7 @@ error if it cannot be cannot be cross compiled.
 * `EXIT`
 * `FIND`
   * Can only run on host.
+* `HERE`
 * `I`
 * `IF`
 * `IMMEDIATE`

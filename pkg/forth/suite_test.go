@@ -66,9 +66,37 @@ func TestSuite(t *testing.T) {
 			`,
 		},
 		// AGAIN does not have test cases
-		// ALIGN
+		{
+			name: "ALIGN",
+			setup: `
+				ALIGN 1 ALLOT HERE ALIGN HERE 3 CELLS ALLOT
+				CONSTANT A-ADDR CONSTANT UA-ADDR
+				T{ UA-ADDR ALIGNED -> A-ADDR }T
+			`,
+			code: `
+				T{       1 A-ADDR C!         A-ADDR       C@ ->       1 }T
+				T{    1234 A-ADDR !          A-ADDR       @  ->    1234 }T
+				T{ 123 456 A-ADDR 2!         A-ADDR       2@ -> 123 456 }T
+				T{       2 A-ADDR CHAR+ C!   A-ADDR CHAR+ C@ ->       2 }T
+				T{       3 A-ADDR CELL+ C!   A-ADDR CELL+ C@ ->       3 }T
+				T{    1234 A-ADDR CELL+ !    A-ADDR CELL+ @  ->    1234 }T
+				T{ 123 456 A-ADDR CELL+ 2!   A-ADDR CELL+ 2@ -> 123 456 }T
+			`,
+		},
 		// ALIGNED does not have test cases
-		// ALLOT
+		{
+			name: "ALLOT",
+			setup: `
+				HERE 1 ALLOT
+				HERE
+				CONSTANT 2NDA
+				CONSTANT 1STA
+			`,
+			code: `
+				T{ 1STA 2NDA - 0< -> <TRUE> }T    \ HERE MUST GROW WITH ALLOT
+				T{      1STA 1+   ->   2NDA }T    \ ... BY ONE ADDRESS UNIT
+			`,
+		},
 		{
 			name: "AND",
 			code: `
@@ -195,7 +223,25 @@ func TestSuite(t *testing.T) {
 				T{  0 2 cs2 ->  299 }T
 			`,
 		},
-		// C,
+		{
+			name: "C,",
+			setup: `
+				HERE 1 C,
+				HERE 2 C,
+				CONSTANT 2NDC
+				CONSTANT 1STC
+			`,
+			code: `
+				T{    1STC 2NDC - 0< -> <TRUE> }T \ HERE MUST GROW WITH ALLOT
+				T{      1STC CHAR+ ->  2NDC  }T \ ... BY ONE CHAR
+				// T{  1STC 1 CHARS + ->  2NDC  }T \ this test is incorrect
+				T{ 1STC C@ 2NDC C@ ->   1 2  }T
+				T{       3 1STC C! ->        }T
+				T{ 1STC C@ 2NDC C@ ->   3 2  }T
+				T{       4 2NDC C! ->        }T
+				T{ 1STC C@ 2NDC C@ ->   3 4  }T
+			`,
+		},
 		// CELL+ doesn't have regular tests
 		{
 			name: "CELLS",
@@ -281,7 +327,23 @@ func TestSuite(t *testing.T) {
 				T{ nn2 @ EXECUTE -> 9876 }T
 			`,
 		},
-		// ,
+		{
+			name: ",",
+			code: `
+				T{       1ST 2ND - 0< -> <TRUE> }T \ HERE MUST GROW WITH ALLOT
+				T{       1ST CELL+    -> 2ND }T \ ... BY ONE CELL
+				T{   1ST 1 CELLS +    -> 2ND }T
+				T{     1ST @ 2ND @    -> 1 2 }T
+				T{         5 1ST !    ->     }T
+				T{     1ST @ 2ND @    -> 5 2 }T
+				T{         6 2ND !    ->     }T
+				T{     1ST @ 2ND @    -> 5 6 }T
+				T{           1ST 2@   -> 6 5 }T
+				T{       2 1 1ST 2!   ->     }T
+				T{           1ST 2@   -> 2 1 }T
+				T{ 1S 1ST !  1ST @    -> 1S  }T    \ CAN STORE CELL-WIDE VALUE
+			`,
+		},
 		// C"
 		// DECIMAL does not have any tests
 		{
@@ -419,7 +481,7 @@ func TestSuite(t *testing.T) {
 		// FIND
 		// FM/MOD
 		// @ does not have any tests
-		// HERE
+		// HERE does not have any tests
 		// HEX does not have any tests
 		// HOLD
 		// HOLDS
@@ -452,6 +514,8 @@ func TestSuite(t *testing.T) {
 				T{ VARIABLE iw3 IMMEDIATE 234 iw3 ! iw3 @ -> 234 }T
 				T{ : iw4 iw3 [ @ ] LITERAL ; iw4 -> 234 }T
 				T{ :NONAME [ 345 ] iw3 [ ! ] ; DROP iw3 @ -> 345 }T
+				\ The rest of these tests fail because CREATE does not
+				\ put the newly created definition on the data space.
 				\ T{ CREATE iw5 456 , IMMEDIATE -> }T
 				\ T{ :NONAME iw5 [ @ iw3 ! ] ; DROP iw3 @ -> 456 }T
 				\ T{ : iw6 CREATE , IMMEDIATE DOES> @ 1+ ; -> }T
@@ -1515,7 +1579,7 @@ func TestSuite(t *testing.T) {
 			setup: `
 				T{ 50 CELLS ALLOCATE SWAP addr ! -> 0 }T
 				T{ addr @ ALIGNED -> addr @ }T    \ Test address is aligned
-				// T{ HERE -> datsp @ }T              \ Check data space pointer is unaffected
+				T{ HERE -> datsp @ }T              \ Check data space pointer is unaffected
 				addr @ 50 write-cell-mem
 				addr @ 50 check-cell-mem         \ Check we can access the heap
 				T{ addr @ FREE -> 0 }T
@@ -1523,7 +1587,7 @@ func TestSuite(t *testing.T) {
 				T{ 99 ALLOCATE SWAP addr ! -> 0 }T
 				T{ addr @ ALIGNED -> addr @ }T    \ Test address is aligned
 				T{ addr @ FREE -> 0 }T
-				// T{ HERE -> datsp @ }T              \ Data space pointer unaffected by FREE
+				T{ HERE -> datsp @ }T              \ Data space pointer unaffected by FREE
 				T{ -1 ALLOCATE SWAP DROP 0= -> <TRUE> }T    \ Memory allocation works with max size
 			`,
 		},
@@ -1544,7 +1608,7 @@ func TestSuite(t *testing.T) {
 				T{ addr @ -1 RESIZE 0= -> addr @ <TRUE> }T
 
 				T{ addr @ FREE -> 0 }T
-				// T{ HERE -> datsp @ }T    \ Data space pointer is unaffected
+				T{ HERE -> datsp @ }T    \ Data space pointer is unaffected
 			`,
 			code: ``,
 		},

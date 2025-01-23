@@ -1273,7 +1273,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 						}
 						return nil
 					case CellAddress:
-						err = vm.Stack.Push(CellAddress{l.Entry, l.Offset + int(r.Number), false})
+						err = vm.Stack.Push(CellAddress{l.Entry, l.Offset + int(int16(r.Number)), false})
 						if err != nil {
 							return PushError(err, entry)
 						}
@@ -1284,7 +1284,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				case CellAddress:
 					switch l := left.(type) {
 					case CellNumber:
-						err = vm.Stack.Push(CellAddress{r.Entry, int(l.Number) + r.Offset, false})
+						err = vm.Stack.Push(CellAddress{r.Entry, int(int16(l.Number)) + r.Offset, false})
 						if err != nil {
 							return PushError(err, entry)
 						}
@@ -1352,7 +1352,13 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					switch l := left.(type) {
 					case CellAddress:
 						if l.Entry == r.Entry {
-							err = vm.Stack.Push(CellNumber{uint16(l.Offset) - uint16(r.Offset)})
+							val := int16(l.Offset) - int16(r.Offset)
+							if l.UpperByte && !r.UpperByte {
+								val += -0x8000
+							} else if !l.UpperByte && r.UpperByte {
+								val -= -0x8000
+							}
+							err = vm.Stack.Push(CellNumber{uint16(val)})
 							if err != nil {
 								return PushError(err, entry)
 							}

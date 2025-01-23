@@ -119,11 +119,14 @@ T{ : GT1 123 ;   ->     }T
 \ from the ['] test, used in many
 T{ : GT2 ['] GT1 ; IMMEDIATE -> }T
 
-\ ' EXIT CONSTANT 1ST
-T{ VARIABLE 1ST -> }T \ not the same as the test suite
+HERE 1 ,
+HERE 2 ,
+CONSTANT 2ND
+CONSTANT 1ST
 
 VARIABLE addr
 VARIABLE datsp
+HERE datsp !
 : write-char-mem ( address n -- )
     \ from 0 to n
     0 ?DO

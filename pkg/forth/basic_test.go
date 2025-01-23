@@ -55,6 +55,11 @@ func TestPrimitives(t *testing.T) {
 			expect: "2 ",
 		},
 		{
+			name:   "subtract address",
+			asm:    wrapMain("here 1+ char+ here - u. here here 1+ char+ - u. here 1+ here - u."),
+			expect: "32769 32767 1 ",
+		},
+		{
 			name:   "LSHIFT",
 			asm:    wrapMain("1 0 LSHIFT u. 1 1 LSHIFT u. 1 2 LSHIFT u."),
 			expect: "1 2 4 ",

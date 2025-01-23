@@ -369,3 +369,56 @@ DEFER /MOD
     DROP 0 \ drop the result, return 0
 ;
 
+0 BUFFER: DATASPACE \ create a buffer starting at size 0 to hold the data space
+VARIABLE DATAPOINTER \ create a variable to keep track of the data space pointer
+DATASPACE DATAPOINTER ! \ set the data space pointer
+
+: HERE ( -- addr )
+    DATAPOINTER @ \ return the dataspace pointer plus the size
+;
+
+: DATASIZE
+    DATAPOINTER @ DATASPACE - \ find the size difference
+    0x7FFF AND
+;
+
+: ALLOT ( n -- )
+    DUP DATASIZE + ( n newSize )
+    DUP 0> 0= IF ( n newSize )
+        \ an ambiguous condition exists if we attempt to create a negative data space size
+        \ or exit immediately if 0
+        2DROP
+        EXIT
+    THEN ( n newSize )
+    SWAP DATAPOINTER +! ( newSize ) \ update the data space pointer
+    DATASPACE SWAP ( dataspace newSize )
+    RESIZE ( newaddress 0 ) \ resize the dataspace
+    2DROP \ remove the extra values from the resize
+;
+
+: , ( n -- )
+    HERE ( n here ) \ get the current address pointer
+    1 ALLOT \ increment the dataspace by 1
+    ! \ store the value
+;
+
+: C, ( char -- )
+    HERE DATASPACE - \ find the size difference
+    0< IF \ if the upper bit is set then we don't need to allocate
+
+    ELSE
+        1 ALLOT \ allocate one more space
+        HERE 1- DATAPOINTER ! \ fix the data pointer
+    THEN
+    HERE C! \ store the data
+    HERE CHAR+ DATAPOINTER ! \ update the data pointer
+;
+
+: ALIGN ( )
+    HERE HERE \ get the current address pointer
+    ALIGNED ( here here+n ) \ align the address pointer
+    - ( diff ) \ get the difference between them
+    0x7FFF AND \ shave off the extra bit
+    ALLOT \ change the data space accordingly
+;
+
