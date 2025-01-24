@@ -461,9 +461,9 @@ func (u *Ulp) buildInterpreterSrt() string {
 		"add r0, r2, 0xFFFF", // will overflow unless r2 is 0
 		"jump r2, ov",        // jump to next instruction if overflowed
 		// setup the pointers
-		"move r2, __forth_VM.INIT", // instruction pointer goes to init word
-		"move r3, __stack_end",     // set up stack pointer
-		"jump r2",                  // begin execution
+		"move r2, __body__forth_VM.INIT", // instruction pointer goes to init word
+		"move r3, __stack_end",           // set up stack pointer
+		"jump r2",                        // begin execution
 
 		".text",
 		// subroutine to set up the forth word return
