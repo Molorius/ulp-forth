@@ -22,16 +22,17 @@ import (
 
 // The Forth virtual machine.
 type VirtualMachine struct {
-	Dictionary       Dictionary   // The Forth dictionary.
-	Stack            Stack        // The data stack.
-	ReturnStack      Stack        // The return stack.
-	ControlFlowStack Stack        // The control flow stack.
-	DoStack          Stack        // A stack for compiling DO loops.
-	ParseArea        ParseArea    // The input parse area.
-	State            VMNumber     // The execution state for the virtual machine. Convert to type State when using.
-	IP               *CellAddress // The interpreter pointer.
-	Base             VMNumber     // The number base.
-	Out              io.Writer
+	Dictionary       Dictionary         // The Forth dictionary.
+	Stack            Stack              // The data stack.
+	ReturnStack      Stack              // The return stack.
+	ControlFlowStack Stack              // The control flow stack.
+	DoStack          Stack              // A stack for compiling DO loops.
+	ParseArea        ParseArea          // The input parse area.
+	State            VMNumber           // The execution state for the virtual machine. Convert to type State when using.
+	IP               *CellAddress       // The interpreter pointer.
+	Base             VMNumber           // The number base.
+	Out              io.Writer          // The output for the vm.
+	repl             *readline.Instance // The repl instance
 }
 
 // Set up the virtual machine.
@@ -156,16 +157,26 @@ func (w writerNoNewline) Write(p []byte) (int, error) {
 	return n + newlines, err         // tell the higher function that we printed the newlines
 }
 
-// Start up a read-eval-print loop.
-func (vm *VirtualMachine) Repl() error {
+// Set up the Repl. Should be closed with ReplClose().
+func (vm *VirtualMachine) ReplSetup() error {
 	rl, err := readline.New("")
-	cfg := readline.Config{
-		Stdout: writerNoNewline{},
-	}
 	if err != nil {
 		return errors.Join(fmt.Errorf("Unable to start readline, please file a bug report."), err)
 	}
-	defer rl.Close()
+	vm.repl = rl
+	return nil
+}
+
+// Close the Repl.
+func (vm *VirtualMachine) ReplClose() error {
+	return vm.repl.Close()
+}
+
+// Run the read-eval-print loop.
+func (vm *VirtualMachine) ReplRun() error {
+	cfg := readline.Config{
+		Stdout: writerNoNewline{},
+	}
 
 	for {
 		stateUint, err := vm.State.Get()
@@ -176,7 +187,7 @@ func (vm *VirtualMachine) Repl() error {
 		if state == StateExit {
 			return nil
 		}
-		line, err := rl.ReadLineWithConfig(&cfg)
+		line, err := vm.repl.ReadLineWithConfig(&cfg)
 		if err != nil {
 			return err
 		}

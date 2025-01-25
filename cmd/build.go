@@ -49,12 +49,12 @@ ulp-forth build --assembly --reserved 1024 file1.f file2.f`,
 				fmt.Println(err)
 				os.Exit(1)
 			}
+			defer f.Close()
 			err = vm.ExecuteFile(f)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
-			f.Close()
 		}
 		ulp := forth.Ulp{}
 		var assembly string
@@ -109,6 +109,7 @@ ulp-forth build --assembly --reserved 1024 file1.f file2.f`,
 			fmt.Println(err)
 			os.Exit(1)
 		}
+		defer f.Close()
 		f.Write(out)
 	},
 }

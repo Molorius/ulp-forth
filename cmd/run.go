@@ -30,7 +30,7 @@ ulp-forth run file1.f`,
 		err := vm.Setup()
 		if err != nil {
 			fmt.Println(err)
-			return
+			os.Exit(1)
 		}
 		err = vm.BuiltinEsp32()
 		if err != nil {
@@ -41,14 +41,24 @@ ulp-forth run file1.f`,
 			f, err := os.Open(arg)
 			if err != nil {
 				fmt.Println(err)
-				return
+				os.Exit(1)
 			}
-			vm.ExecuteFile(f)
-			f.Close()
+			defer f.Close()
+			err = vm.ExecuteFile(f)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		}
 		fmt.Fprintln(vm.Out, "ulp-forth")
+		err = vm.ReplSetup()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		defer vm.ReplClose()
 		for {
-			err = vm.Repl()
+			err = vm.ReplRun()
 			if err != nil {
 				if err.Error() == "Interrupt" {
 					fmt.Println()
