@@ -489,3 +489,37 @@ NEW-DATASPACE \ run it right away
     LITERALIZE \ literalize the noname address
     SWAP ! \ store the literal noname address inside the dummy value
 ; IMMEDIATE
+
+: PARSECHARRAW
+    DUP '0' U< IF
+        DROP -1 EXIT
+    THEN
+    DUP ':' U< IF
+        '0' - EXIT
+    THEN
+    DUP 'A' U< IF
+        DROP -1 EXIT
+    THEN
+    DUP '[' U< IF
+        'A' 10 - - EXIT
+    THEN
+    DUP 'a' U< IF
+        DROP -1 EXIT
+    THEN
+    DUP '{' U< IF
+        'a' 10 - - EXIT
+    THEN
+    DROP -1
+;
+
+\ Attempt to parse the character.
+\ If it is outside of the BASE, returns -1.
+: PARSECHAR ( c -- n )
+    PARSECHARRAW
+    DUP BASE @ 1- > IF
+        DROP -1
+    THEN
+;
+
+\ : >NUMBER ( ud1 caddr1 u1 -- ud2 caddr2 u2 )
+\ ;
