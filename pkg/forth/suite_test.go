@@ -366,7 +366,17 @@ func TestSuite(t *testing.T) {
 				T{ 1S 1ST !  1ST @    -> 1S  }T    \ CAN STORE CELL-WIDE VALUE
 			`,
 		},
-		// C"
+		{
+			name: "C\"",
+			setup: `
+				T{ : cq1 C" 123" ; -> }T
+				T{ : cq2 C" " ;    -> }T
+				T{ cq1 COUNT EVALUATE -> 123 }T
+				T{ cq2 COUNT EVALUATE ->     }T
+				\ This test is nonstandard, C" can be interpreted
+				T{ C" A String"DROP -> }T    \ There is no space between the " and 2DROP
+			`,
+		},
 		// DECIMAL does not have any tests
 		{
 			name: "DEFER",
@@ -1000,6 +1010,8 @@ func TestSuite(t *testing.T) {
 			setup: `
 				T{ : GC4 S" XY" ; ->   }T
 				T{ : GC5 S" A String"2DROP ; -> }T \ There is no space between the " and 2DROP
+				\ This test is from an extended mechanic, S" can be interpreted
+				T{ S" A String"2DROP -> }T    \ There is no space between the " and 2DROP
 			`,
 			code: `
 				T{ GC4 SWAP DROP  -> 2 }T
@@ -1007,7 +1019,6 @@ func TestSuite(t *testing.T) {
 				T{ GC5 -> }T
 			`,
 		},
-		// S"
 		{
 			name: "S>D",
 			code: `

@@ -56,7 +56,15 @@ DEFER EMIT \ let us change EMIT
     DROP \ remove c-addr
 ;
 
-: ." POSTPONE S" POSTPONE TYPE ; IMMEDIATE
+\ Can be used to print a string while interpreting or compiling.
+: ."
+    POSTPONE S"
+    STATE @ IF
+        POSTPONE TYPE
+    ELSE
+        TYPE
+    THEN
+; IMMEDIATE
 
 \ set EMIT to the system printchar by default
 ' ESP.PRINTCHAR IS EMIT

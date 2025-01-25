@@ -87,7 +87,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
-			name: "WORD",
+			name: "WORD", // returns a counted string
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
 				n, err := vm.Stack.PopNumber()
 				if err != nil {
@@ -98,7 +98,8 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 					return JoinEntryError(err, entry, "could not parse string")
 				}
 				var de DictionaryEntry
-				cells, err := bytesToCells(str, true)
+				counted := true
+				cells, err := bytesToCells(str, counted)
 				if err != nil {
 					return JoinEntryError(err, entry, "could not convert bytes to cells")
 				}
@@ -115,6 +116,44 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				err = vm.Stack.Push(c)
 				if err != nil {
 					return JoinEntryError(err, entry, "could not push address")
+				}
+				return nil
+			},
+		},
+		{
+			name: "LWORD", // returns a string and length
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				n, err := vm.Stack.PopNumber()
+				if err != nil {
+					return JoinEntryError(err, entry, "could not pop delimiter")
+				}
+				str, err := vm.ParseArea.Word(byte(n))
+				if err != nil {
+					return JoinEntryError(err, entry, "could not parse string")
+				}
+				var de DictionaryEntry
+				counted := false
+				cells, err := bytesToCells(str, counted)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not convert bytes to cells")
+				}
+				w := WordForth{cells, &de}
+				de = DictionaryEntry{
+					Word: &w,
+					Flag: Flag{Data: true},
+				}
+				c := CellAddress{
+					Entry:     &de,
+					Offset:    0,
+					UpperByte: false,
+				}
+				err = vm.Stack.Push(c)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not push address")
+				}
+				err = vm.Stack.Push(CellNumber{uint16(len(str))})
+				if err != nil {
+					return JoinEntryError(err, entry, "could not push length")
 				}
 				return nil
 			},
