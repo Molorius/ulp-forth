@@ -18,14 +18,15 @@ import (
 //go:embed test/suite_test.f
 var suite string
 
-func TestSuite(t *testing.T) {
-	tests := []struct {
-		name  string // the name of the test
-		setup string // any code that we want to execute outside of the "main" word
-		code  string // any code we want to run in the "main" word
-		// tests that run in the global context should be added to suite_test.f
-	}{
-		// Core tests
+type suiteTest struct {
+	name  string // the name of the test
+	setup string // any code that we want to execute outside of the "main" word
+	code  string // any code we want to run in the "main" word
+	// tests that run in the global context should be added to suite_test.f
+}
+
+func TestCoreSuite(t *testing.T) {
+	tests := []suiteTest{
 		// ABORT
 		// ABORT"
 		{
@@ -1431,7 +1432,17 @@ func TestSuite(t *testing.T) {
 				T{  1S GR1 ->  1S }T      ( Return stack holds cells )
 			`,
 		},
+	}
+	runTests(t, tests)
+}
 
+func TestCoreExtensionSuite(t *testing.T) {
+	tests := []suiteTest{}
+	runTests(t, tests)
+}
+
+func TestDoubleSuite(t *testing.T) {
+	tests := []suiteTest{
 		// Double tests
 		{
 			name: "DABS",
@@ -1677,7 +1688,12 @@ func TestSuite(t *testing.T) {
 		// 2ROT
 		// 2VALUE
 		// 2VARIABLE
+	}
+	runTests(t, tests)
+}
 
+func TestMemorySuite(t *testing.T) {
+	tests := []suiteTest{
 		{
 			name: "ALLOCATE",
 			setup: `
@@ -1718,7 +1734,10 @@ func TestSuite(t *testing.T) {
 		},
 		// FREE does not have any tests
 	}
+	runTests(t, tests)
+}
 
+func runTests(t *testing.T, tests []suiteTest) {
 	r := asm.Runner{}
 	r.SetDefaults()
 	err := r.SetupPort()
