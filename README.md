@@ -166,9 +166,9 @@ Words built with ASSEMBLY should not access the return stack.
 
 Example:
 ```forth
-STRING" move r0, "
+c" move r0, "
 0x10
-STRING" \njump next"
+c" \njump next"
 3 \ we want to compile the 3 items on the stack
 ASSEMBLY MY-EXAMPLE
 ```

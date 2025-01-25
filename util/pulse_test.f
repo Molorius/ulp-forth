@@ -16,11 +16,11 @@
 ;
 
 \ create the assembly to toggle a pin as fast as possible
-string" reg_wr 257, 28, 28, 1\nreg_wr 258, 28, 28, 1\n"
-string" __safe_jump:\n"
+c" reg_wr 257, 28, 28, 1\nreg_wr 258, 28, 28, 1\n"
+c" __safe_jump:\n"
 2 \ number of assembly objects to compile
-string" reg_wr 257, 28, 28, 1\nreg_wr 258, 28, 28, 1\n"
-string" __safe_jump:\n"
+c" reg_wr 257, 28, 28, 1\nreg_wr 258, 28, 28, 1\n"
+c" __safe_jump:\n"
 2 \ number of assembly objects to compile
 assembly-both asm-pulse
 token_next_skip_load last set-ulp-asm-next
