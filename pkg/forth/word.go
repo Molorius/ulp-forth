@@ -220,6 +220,9 @@ func (w *WordPrimitive) BuildAssembly(u *Ulp) (string, error) {
 	asm := make([]string, 0)
 	switch u.compileTarget {
 	case UlpCompileTargetToken:
+		if len(w.Ulp.Asm) == 0 {
+			return "", EntryError(w.Entry, "does not have any subroutine threaded assembly")
+		}
 		asm = append(asm, w.Ulp.Asm...)
 		switch w.Ulp.Next {
 		case TokenNextNonstandard:
@@ -233,6 +236,9 @@ func (w *WordPrimitive) BuildAssembly(u *Ulp) (string, error) {
 			return "", fmt.Errorf("Unknown compile target %d, please file a bug report", w.Ulp.Next)
 		}
 	case UlpCompileTargetSubroutine:
+		if len(w.UlpSrt.Asm) == 0 {
+			return "", EntryError(w.Entry, "does not have any subroutine threaded assembly")
+		}
 		asm = append(asm, w.UlpSrt.Asm...)
 		if !w.UlpSrt.NonStandardNext {
 			standardNext := []string{

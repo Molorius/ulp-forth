@@ -17,10 +17,13 @@
 
 \ create the assembly to toggle a pin as fast as possible
 string" reg_wr 257, 28, 28, 1\nreg_wr 258, 28, 28, 1\n"
-string" unique_label_to_skip_assembly_optimizations_in_pulse_test_f:\n"
-string" jump __next_skip_load"
-3 \ 3 assembly objects to compile
-assembly asm-pulse \ create the assembly word named "asm-pulse"
+string" __safe_jump:\n"
+2 \ number of assembly objects to compile
+string" reg_wr 257, 28, 28, 1\nreg_wr 258, 28, 28, 1\n"
+string" __safe_jump:\n"
+2 \ number of assembly objects to compile
+assembly-both asm-pulse
+token_next_skip_load last set-ulp-asm-next
 
 : main
     pin_init
