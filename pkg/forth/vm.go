@@ -8,6 +8,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 package forth
 
 import (
+	"bytes"
 	"embed"
 	"errors"
 	"fmt"
@@ -202,7 +203,19 @@ func (vm *VirtualMachine) ReplRun() error {
 }
 
 // Execute the given bytes.
-func (vm *VirtualMachine) Execute(bytes []byte) error {
+func (vm *VirtualMachine) Execute(b []byte) error {
+	lines := bytes.Split(b, []byte("\n"))
+	for i, l := range lines {
+		err := vm.executeLine(l)
+		if err != nil {
+			return errors.Join(fmt.Errorf("error on line %d", i), err)
+		}
+	}
+	return nil
+}
+
+// Execute the given line.
+func (vm *VirtualMachine) executeLine(bytes []byte) error {
 	err := vm.ParseArea.Fill(bytes)
 	if err != nil {
 		return err

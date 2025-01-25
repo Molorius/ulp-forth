@@ -745,6 +745,7 @@ error if it cannot be cannot be cross compiled.
 * `S"`
 * `S>D`
 * `SPACE`
+* `SPACES`
 * `STATE`
 * `SWAP`
 * `THEN`
@@ -809,15 +810,20 @@ all can be in the future.
 * `2CONSTANT`
 * `2LITERAL`
 * `2VARIABLE`
-* `D-`
 * `D+`
+* `D-`
 * `D0<`
+* `D<`
 * `D0=`
 * `D>S`
 * `DABS`
 * `DMAX`
 * `DMIN`
 * `DNEGATE`
+* `M+`
+
+# Standard Double extension words
+
 * `DU<`
 
 # Optimizations

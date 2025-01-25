@@ -5,6 +5,7 @@
 
 : DNEGATE 0. 2SWAP D- ;
 : DABS DUP 0< IF DNEGATE THEN ;
+: M+ S>D D+ ;
 
 : D= ( x1 x2 y1 y2 -- bool )
     ROT ( x1 y1 y2 x2 )

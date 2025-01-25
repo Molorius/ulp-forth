@@ -25,6 +25,15 @@
 
 DEFER EMIT \ let us change EMIT
 : SPACE BL EMIT ;
+: SPACES ( n -- )
+    DUP 0> IF
+        0 DO
+            SPACE
+        LOOP
+    ELSE
+        DROP
+    THEN
+;
 : CR 10 13 EMIT EMIT ;
 
 : U.NOSPACE ( u -- )
