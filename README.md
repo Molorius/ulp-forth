@@ -827,6 +827,7 @@ all can be in the future.
 
 # Standard Double extension words
 
+* `2ROT`
 * `2VALUE`
 * `DU<`
 

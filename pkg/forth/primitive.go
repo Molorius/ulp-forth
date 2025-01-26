@@ -2095,6 +2095,76 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
+			name: "ROLL",
+			flag: Flag{
+				isPure: true,
+			},
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				n, err := vm.Stack.PopNumber()
+				if err != nil {
+					return PopError(err, entry)
+				}
+				shifts := int(n)
+				values := make([]Cell, shifts)
+				for i := 0; i < int(n); i++ {
+					j := shifts - i - 1
+					cell, err := vm.Stack.Pop()
+					if err != nil {
+						return PopError(err, entry)
+					}
+					values[j] = cell
+				}
+				top, err := vm.Stack.Pop()
+				if err != nil {
+					return PopError(err, entry)
+				}
+				for _, c := range values {
+					err = vm.Stack.Push(c)
+					if err != nil {
+						return PushError(err, entry)
+					}
+				}
+				err = vm.Stack.Push(top)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				return nil
+			},
+			ulpAsm: PrimitiveUlp{
+				Asm: []string{
+					"ld r0, r3, 0",
+					"add r2, r3, r0",
+					"ld r1, r2, 1",
+					"st r1, r3, 0",
+					"__roll_0:",
+					"add r2, r3, r0",
+					"ld r1, r2, 0",
+					"st r1, r2, 1",
+					"sub r0, r0, 1",
+					"jumpr __roll_0, -1, lt",
+					"add r3, r3, 1",
+				},
+				Next: TokenNextNormal,
+			},
+			ulpAsmSrt: PrimitiveUlpSrt{
+				Asm: []string{
+					"st r2, r3, -1",
+					"ld r0, r3, 0",
+					"add r2, r3, r0",
+					"ld r1, r2, 1",
+					"st r1, r3, 0",
+					"__roll_0:",
+					"add r2, r3, r0",
+					"ld r1, r2, 0",
+					"st r1, r2, 1",
+					"sub r0, r0, 1",
+					"jumpr __roll_0, -1, lt",
+					"ld r2, r3, -1",
+					"add r3, r3, 1",
+				},
+			},
+		},
+		{
 			name: "DROP",
 			flag: Flag{
 				isPure: true,

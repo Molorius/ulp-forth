@@ -1509,7 +1509,14 @@ func TestCoreExtensionSuite(t *testing.T) {
 		},
 		// REFILL not implemented
 		// RESTORE-INPUT not implemented
-		// ROLL not implemented
+		{
+			name: "ROLL",
+			code: `
+				T{ 1 2 3 2 ROLL -> 2 3 1 }T
+				T{ 1 2 1 ROLL -> 2 1 }T
+				T{ 4 5 6 0 ROLL -> 4 5 6 }T
+			`,
+		},
 		// S\" not implemented
 		// SAVE-INPUT not implemented
 		// SOURCE-ID not implemented
@@ -1887,7 +1894,13 @@ func TestDoubleSuite(t *testing.T) {
 
 func TestDoubleExtensionSuite(t *testing.T) {
 	tests := []suiteTest{
-		// 2ROT not implemented
+		{
+			name: "2ROT",
+			code: `
+				T{       1.       2. 3. 2ROT ->       2. 3.       1. }T
+				T{ MAX-2INT MIN-2INT 1. 2ROT -> MIN-2INT 1. MAX-2INT }T
+			`,
+		},
 		{
 			name: "2VALUE",
 			setup: `

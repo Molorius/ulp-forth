@@ -94,3 +94,7 @@
     POSTPONE @
     POSTPONE ;
 ;
+
+: 2ROT
+    5 ROLL 5 ROLL
+;
