@@ -221,7 +221,7 @@ func (vm *VirtualMachine) executeLine(bytes []byte) error {
 		return err
 	}
 	for {
-		word, err := vm.ParseArea.Word(' ')
+		word, err := vm.ParseArea.Word(' ', false)
 		if err != nil {
 			return err
 		}

@@ -265,6 +265,7 @@
 : COUNT ( c-addr -- c-addr+1 n ) DUP CHAR+ SWAP C@ ;
 : STRING" '"' WORD ; ( -- c-addr ) \ read a string and put it on the stack as a counted string
 : LSTRING" '"' LWORD ; ( -- addr u ) \ read a string and put it on the stack as a string and length
+: LSTRING\" '"' LWORDESCAPED ;
 : C" \ this is an extended C" to allow it to run while interpreting
     STRING" \ always parse the counted string
     STATE @ IF \ but if we're compiling,
@@ -276,6 +277,13 @@
     LSTRING" \ always parse the string
     STATE @ IF \ but if we're compiling,
         SWAP POSTPONE LITERAL POSTPONE LITERAL \ compile the output
+    THEN
+; IMMEDIATE
+
+: S\" \ this is the extended mechanics of S\" to allow it to run while interpreting
+    LSTRING\"
+    STATE @ IF
+        SWAP POSTPONE LITERAL POSTPONE LITERAL
     THEN
 ; IMMEDIATE
 

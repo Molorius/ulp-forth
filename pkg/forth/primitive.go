@@ -93,7 +93,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return JoinEntryError(err, entry, "could not pop delimiter")
 				}
-				str, err := vm.ParseArea.Word(byte(n))
+				str, err := vm.ParseArea.Word(byte(n), false)
 				if err != nil {
 					return JoinEntryError(err, entry, "could not parse string")
 				}
@@ -127,9 +127,86 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if err != nil {
 					return JoinEntryError(err, entry, "could not pop delimiter")
 				}
-				str, err := vm.ParseArea.Word(byte(n))
+				str, err := vm.ParseArea.Word(byte(n), false)
 				if err != nil {
 					return JoinEntryError(err, entry, "could not parse string")
+				}
+				var de DictionaryEntry
+				counted := false
+				cells, err := bytesToCells(str, counted)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not convert bytes to cells")
+				}
+				w := WordForth{cells, &de}
+				de = DictionaryEntry{
+					Word: &w,
+					Flag: Flag{Data: true},
+				}
+				c := CellAddress{
+					Entry:     &de,
+					Offset:    0,
+					UpperByte: false,
+				}
+				err = vm.Stack.Push(c)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not push address")
+				}
+				err = vm.Stack.Push(CellNumber{uint16(len(str))})
+				if err != nil {
+					return JoinEntryError(err, entry, "could not push length")
+				}
+				return nil
+			},
+		},
+		{
+			name: "LWORDESCAPED", // returns a string and length
+			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				delim16, err := vm.Stack.PopNumber()
+				if err != nil {
+					return JoinEntryError(err, entry, "could not pop delimiter")
+				}
+				delim := byte(delim16)
+				bytes, err := vm.ParseArea.Word(delim, true)
+				if err != nil {
+					return JoinEntryError(err, entry, "could not parse string")
+				}
+				str := make([]byte, 0)
+				translation := map[byte][]byte{
+					'a':  {7},
+					'b':  {8},
+					'e':  {27},
+					'f':  {12},
+					'l':  {10},
+					'm':  {13, 10},
+					'n':  {10}, // just LF
+					'q':  {34},
+					'r':  {13},
+					't':  {9},
+					'v':  {11},
+					'z':  {0},
+					'"':  {34},
+					'\\': {92},
+					// nonstandard: allow parsing a different delimiter
+					delim: {delim},
+				}
+				var i int
+				for i = 0; i < len(bytes)-1; i++ {
+					b := bytes[i]
+					if b == '\\' {
+						i += 1
+						next := bytes[i]
+						replace, ok := translation[next]
+						if ok {
+							str = append(str, replace...)
+						} else {
+							return EntryError(entry, "unknown escape character %c %d", next, next)
+						}
+					} else {
+						str = append(str, b)
+					}
+				}
+				if i == len(bytes)-1 {
+					str = append(str, bytes[i]) // append whatever the final byte is
 				}
 				var de DictionaryEntry
 				counted := false

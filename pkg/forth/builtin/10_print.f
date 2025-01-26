@@ -65,8 +65,7 @@ DEFER EMIT \ let us change EMIT
     DROP \ remove c-addr
 ;
 
-: .DELIM ( c "ccc<paren>" -- )
-    LWORD
+: .DELIM ( caddr u -- )
     STATE @ IF
         SWAP POSTPONE LITERAL POSTPONE LITERAL
         POSTPONE TYPE
@@ -77,12 +76,17 @@ DEFER EMIT \ let us change EMIT
 
 \ Can be used to print a string while interpreting or compiling.
 : ."
-    '"' .DELIM
+    '"' LWORD .DELIM
 ; IMMEDIATE
 
 \ Can be used to print a string while interpreting or compiling.
 : .(
-    ')' .DELIM
+    ')' LWORD .DELIM
+; IMMEDIATE
+
+\ Can be used to print a string while interpreting or compiling.
+: .\"
+    '"' LWORDESCAPED .DELIM
 ; IMMEDIATE
 
 \ set EMIT to the system printchar by default

@@ -1517,10 +1517,28 @@ func TestCoreExtensionSuite(t *testing.T) {
 				T{ 4 5 6 0 ROLL -> 4 5 6 }T
 			`,
 		},
-		// S\" not implemented
+		{
+			name: "S\\\"", // S\"
+			setup: `
+				T{ : GC4 S\" XY" ; ->   }T
+				T{ : GC5 S\" A String"2DROP ; -> }T \ There is no space between the " and 2DROP
+				\ This test is from an extended mechanic, S\" can be interpreted
+				T{ S\" A String"2DROP -> }T    \ There is no space between the " and 2DROP
+				T{ S\" \q" swap c@ -> 1 22 }T
+				
+			`,
+			code: `
+				T{ GC4 SWAP DROP  -> 2 }T
+				T{ GC4 DROP DUP C@ SWAP CHAR+ C@ -> 58 59 }T
+				T{ GC5 -> }T
+				T{ S\" \\ " type -> }T
+				T{ S\" \\\"" type -> }T
+			`,
+			expect: `\ \"`,
+		},
 		// SAVE-INPUT not implemented
 		// SOURCE-ID not implemented
-		// TO not implemented
+		// TO see VALUE 2VALUE
 		{
 			name: "TRUE",
 			code: `

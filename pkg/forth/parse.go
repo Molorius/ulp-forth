@@ -48,7 +48,7 @@ func (p *ParseArea) Restore() error {
 	return nil
 }
 
-func (p *ParseArea) Word(delimiter byte) ([]byte, error) {
+func (p *ParseArea) Word(delimiter byte, escape bool) ([]byte, error) {
 	// trim starting whitespace
 	startIndex := p.index
 	for ; startIndex < len(p.area); startIndex++ {
@@ -63,6 +63,7 @@ func (p *ParseArea) Word(delimiter byte) ([]byte, error) {
 		p.index = endIndex
 		return nil, nil
 	}
+	escapeNext := false
 L:
 	for ; endIndex < len(p.area); endIndex++ {
 		c := p.area[endIndex]
@@ -73,7 +74,18 @@ L:
 			}
 		default:
 			if c == delimiter {
-				break L
+				if escape {
+					if !escapeNext {
+						break L
+					}
+				} else {
+					break L
+				}
+			}
+			if !escapeNext && c == '\\' {
+				escapeNext = true
+			} else {
+				escapeNext = false
 			}
 		}
 	}
