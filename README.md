@@ -732,7 +732,6 @@ error if it cannot be cannot be cross compiled.
 * `MIN`
 * `MOD`
 * `MOVE`
-  * Does not handle cases where the data overlaps.
 * `NEGATE`
 * `OR`
 * `OVER`

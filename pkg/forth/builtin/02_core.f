@@ -495,13 +495,26 @@ NEW-DATASPACE \ run it right away
 ;
 
 : MOVE ( addr1 addr2 u -- )
-    0 ?DO
-        ( addr1 addr2 )
-        OVER @ ( addr1 addr2 val1 )
-        OVER ! ( addr1 addr2 ) \ store val1
-        1+ SWAP 1+ SWAP ( addr1+1 addr2+1 )
+    ?DUP 0= IF \ if u is 0
+        2DROP EXIT \ exit immediately
+    THEN
+    SWAP OVER ( addr1 u addr2 u )
+    >R >R ( addr1 u ) ( R: u addr2 )
+    SWAP OVER ( u addr1 u )
+    \ put the contents in addr1 on the stack
+    + 1- SWAP ( addr1+u-1 u )
+    0 DO
+        ( objn ... addr1+u-1 )
+        DUP @ ( objn ... addr1+u-1 obj0 )
+        SWAP 1- ( objn ... obj0 addr1+u-2 )
     LOOP
-    2DROP
+    DROP R> R> ( objn ... addr2 u )
+    \ put the contents of the stack in addr2
+    0 DO
+        SWAP OVER !
+        1+
+    LOOP
+    DROP
 ;
 
 : FILL ( caddr u char -- )

@@ -891,12 +891,11 @@ UNSIGNED: 0 FFFF
 				T{ SBUF FBUF 3 MOVE -> }T
 				T{ SEEBUF -> 12 34 56 }T
 
-				// TODO fix the overlapping case
-				// T{ FBUF FBUF 1+ 2 MOVE -> }T
-				// T{ SEEBUF -> 12 12 34 }T
+				T{ FBUF FBUF 1+ 2 MOVE -> }T
+				T{ SEEBUF -> 12 12 34 }T
 
-				// T{ FBUF CHAR+ FBUF 2 CHARS MOVE -> }T
-				// T{ SEEBUF -> 12 34 34 }T
+				T{ FBUF 1+ FBUF 2 MOVE -> }T
+				T{ SEEBUF -> 12 34 34 }T
 			`,
 		},
 		{
