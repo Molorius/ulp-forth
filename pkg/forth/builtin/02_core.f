@@ -468,6 +468,18 @@ NEW-DATASPACE \ run it right away
     2DROP
 ;
 
+: FILL ( caddr u char -- )
+    SWAP ( caddr char u )
+    >R SWAP R> ( char caddr u )
+    0 ?DO
+        ( char caddr )
+        2DUP ( char caddr char caddr )
+        C! ( char caddr )
+        CHAR+ ( char caddr+1 )
+    LOOP
+    2DROP
+;
+
 : CREATE
     NEW-DATASPACE \ create a fresh section of aligned data space
     HERE \ get the data space pointer

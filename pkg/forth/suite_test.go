@@ -684,7 +684,22 @@ UNSIGNED: 0 FFFF
 		},
 		// EXECUTE see ' [']
 		// EXIT see UNLOOP
-		// FILL is not implemented
+		{
+			name: "FILL",
+			setup: `
+				T{ 20 CHARS BUFFER: FBUF -> }T
+				T{ : SEEBUF FBUF C@ FBUF CHAR+ C@ FBUF CHAR+ CHAR+ C@ ; -> }T
+			`,
+			code: `
+				T{ FBUF 0 20 FILL -> }T
+				T{ SEEBUF -> 00 00 00 }T
+				T{ FBUF 1 20 FILL -> }T
+				T{ SEEBUF -> 20 00 00 }T
+
+				T{ FBUF 3 20 FILL -> }T
+				T{ SEEBUF -> 20 20 20 }T
+			`,
+		},
 		// FIND is not implemented
 		// FM/MOD is not implemented
 		// HERE see , ALLOT C,
@@ -1149,7 +1164,16 @@ UNSIGNED: 0 FFFF
 
 func TestCoreExtensionSuite(t *testing.T) {
 	tests := []suiteTest{
-		// .( not implemented
+		{
+			name: ".(",
+			setup: `
+				T{ : pb1 .( You should see 2345: ).( 2345); -> }T
+			`,
+			code: `
+				T{ pb1 -> }T
+			`,
+			expect: "You should see 2345: 2345",
+		},
 		// .R not implemented
 		{
 			name: "0<>",

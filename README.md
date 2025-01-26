@@ -715,6 +715,7 @@ error if it cannot be cannot be cross compiled.
   * Can only run on host.
 * `EXECUTE`
 * `EXIT`
+* `FILL`
 * `FIND`
   * Can only run on host.
 * `HERE`
@@ -767,6 +768,7 @@ error if it cannot be cannot be cross compiled.
 # Standard Core extension words
 Missing words may be implemented in the future.
 
+* `.(`
 * `0<>`
 * `0>`
 * `2>R`
