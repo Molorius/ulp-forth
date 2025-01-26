@@ -51,10 +51,24 @@ func cellsToBytes(cells []Cell) ([]byte, error) {
 	return out, nil
 }
 
-func countedCellsToString(cells []Cell) (string, error) {
-	bytes, err := cellsToBytes(cells)
+func addrToString(addr CellAddress) (string, error) {
+	word, ok := addr.Entry.Word.(*WordForth)
+	if !ok {
+		return "", fmt.Errorf("can only read string of forth word found %T", addr.Entry.Word)
+	}
+	cells := word.Cells
+	offset := addr.Offset
+	upper := addr.UpperByte
+	return countedCellsToString(cells, offset, upper)
+}
+
+func countedCellsToString(cells []Cell, offset int, upper bool) (string, error) {
+	bytes, err := cellsToBytes(cells[offset:])
 	if err != nil {
 		return "", err
+	}
+	if upper {
+		bytes = bytes[1:]
 	}
 	length := bytes[0]
 	return bytesToString(bytes[1:], int(length))

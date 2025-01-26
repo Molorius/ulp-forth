@@ -20,7 +20,7 @@
 
 \ ' (tick) parses the next name and places the execution token of that name
 \ onto the stack.
-BL WORD ' --CREATE-FORTH ] BL WORD FIND-WORD EXIT [
+BL WORD ' --CREATE-FORTH ] BL WORD -1 FIND-WORD DROP EXIT [
 
 \ POSTPONE parses the next name and compiles the compilation semantics of that word
 \ onto the latest word. Immediate.

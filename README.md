@@ -797,9 +797,11 @@ Missing words may be implemented in the future.
 * `OF`
 * `PICK`
 * `ROLL`
+* `TO`
 * `TRUE`
 * `TUCK`
 * `U>`
+* `VALUE`
 * `WITHIN`
 * `[COMPILE]`
 * `\`
@@ -826,6 +828,7 @@ all can be in the future.
 
 # Standard Double extension words
 
+* `2VALUE`
 * `DU<`
 
 # Optimizations

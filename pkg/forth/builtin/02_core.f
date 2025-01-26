@@ -210,6 +210,42 @@
     POSTPONE ;
 ;
 
+: VALUE
+    1 ALLOCATE DROP
+    SWAP OVER !
+    :
+    POSTPONE LITERAL
+    POSTPONE @
+    POSTPONE ;
+;
+
+: TO
+    ' \ find the next word
+    >BODY DUP \ get the first address
+    DUP LAST-ADDRESS SWAP - 1+ \ find the length of this allocated space
+    1 = IF \ if it's a VALUE
+        STATE @ IF
+            POSTPONE LITERAL POSTPONE !
+        ELSE
+            !
+        THEN
+    ELSE \ if it's a 2VALUE
+        STATE @ IF
+            DUP 1+
+            POSTPONE LITERAL POSTPONE !
+            POSTPONE LITERAL POSTPONE !
+        ELSE
+            SWAP OVER 1+
+            !
+            !
+        THEN
+    THEN
+; IMMEDIATE
+
+: FIND ( caddr -- caddr 0 | xt 1 | xt -1 )
+    FALSE FIND-WORD
+;
+
 : ACTION-OF
     STATE @ IF
         POSTPONE ['] POSTPONE DEFER@

@@ -79,3 +79,18 @@
 
 : 2VARIABLE 2 BUFFER: ;
 : GLOBAL-2VARIABLE 2 GLOBAL-BUFFER: ;
+
+: 2VALUE ( x y "<spaces>name" -- )
+    2 ALLOCATE DROP ( x y addr )
+    SWAP OVER 1+ ( x addr y addr+1 )
+    ! ( x addr )
+    SWAP OVER ( addr x addr )
+    ! ( addr )
+    DUP 1+ SWAP ( addr+1 addr )
+    :
+    POSTPONE LITERAL
+    POSTPONE @
+    POSTPONE LITERAL
+    POSTPONE @
+    POSTPONE ;
+;

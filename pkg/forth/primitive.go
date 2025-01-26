@@ -74,7 +74,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if !ok {
 					return EntryError(entry, "requires an address cell")
 				}
-				name, err := countedCellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+				name, err := addrToString(cellAddr)
 				if err != nil {
 					return JoinEntryError(err, entry, "could not parse name")
 				}
@@ -169,7 +169,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if !ok {
 					return EntryError(entry, "requires an address cell")
 				}
-				name, err := countedCellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+				name, err := addrToString(cellAddr)
 				if err != nil {
 					return JoinEntryError(err, entry, "could not parse name")
 				}
@@ -539,8 +539,13 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 			},
 		},
 		{
-			name: "FIND-WORD",
+			name: "FIND-WORD", // ( caddr errorIfMissing -- caddr 0 | xt 1 | xt -1 )
 			goFunc: func(vm *VirtualMachine, entry *DictionaryEntry) error {
+				num, err := vm.Stack.PopNumber()
+				if err != nil {
+					return PopError(err, entry)
+				}
+				errorIfMissing := num != 0
 				cell, err := vm.Stack.Pop()
 				if err != nil {
 					return PopError(err, entry)
@@ -549,16 +554,36 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if !ok {
 					return EntryError(entry, "requires an address cell")
 				}
-				name, err := countedCellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+				name, err := addrToString(cellAddr)
 				if err != nil {
 					return JoinEntryError(err, entry, "could not convert input to string")
 				}
 				found, err := vm.Dictionary.FindName(string(name))
-				if err != nil {
-					return JoinEntryError(err, entry, "could not find name: %s", name)
+				missing := err != nil
+				if missing {
+					if errorIfMissing {
+						return JoinEntryError(err, entry, "could not find name: %s", name)
+					}
+					err = vm.Stack.Push(cellAddr)
+					if err != nil {
+						return PushError(err, entry)
+					}
+					err = vm.Stack.Push(CellNumber{0})
+					if err != nil {
+						return PushError(err, entry)
+					}
+					return nil
 				}
 				newCell := CellAddress{found, 0, false}
 				err = vm.Stack.Push(newCell)
+				if err != nil {
+					return PushError(err, entry)
+				}
+				ret := -1
+				if found.Flag.Immediate {
+					ret = 1
+				}
+				err = vm.Stack.Push(CellNumber{uint16(ret)})
 				if err != nil {
 					return PushError(err, entry)
 				}
@@ -688,7 +713,7 @@ func PrimitiveSetup(vm *VirtualMachine) error {
 				if !ok {
 					return EntryError(entry, "requires a name")
 				}
-				name, err := countedCellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+				name, err := addrToString(cellAddr)
 				if err != nil {
 					return JoinEntryError(err, entry, "could not parse name")
 				}
@@ -2618,7 +2643,7 @@ func parseWord(vm *VirtualMachine, entry *DictionaryEntry) (string, error) {
 	if !ok {
 		return "", EntryError(entry, "name argument needs to be an address to a string")
 	}
-	name, err := countedCellsToString(cellAddr.Entry.Word.(*WordForth).Cells)
+	name, err := addrToString(cellAddr)
 	if err != nil {
 		return "", JoinEntryError(err, entry, "could not parse name")
 	}
@@ -2638,7 +2663,7 @@ func parseAssembly(vm *VirtualMachine, entry *DictionaryEntry) ([]string, error)
 		}
 		switch c := cell.(type) {
 		case CellAddress:
-			substr, err := countedCellsToString(c.Entry.Word.(*WordForth).Cells)
+			substr, err := addrToString(c)
 			if err != nil {
 				return nil, JoinEntryError(err, entry, "could not convert input to string")
 			}

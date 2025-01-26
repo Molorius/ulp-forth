@@ -700,7 +700,17 @@ UNSIGNED: 0 FFFF
 				T{ SEEBUF -> 20 20 20 }T
 			`,
 		},
-		// FIND is not implemented
+		{
+			name: "FIND",
+			setup: `
+				HERE 3 C, CHAR G C, CHAR T C, CHAR 1 C, CONSTANT GT1STRING
+				HERE 3 C, CHAR G C, CHAR T C, CHAR 2 C, CONSTANT GT2STRING
+				HERE 3 ALLOT CONSTANT GT3STRING \ empty string size 3
+				T{ GT1STRING FIND -> ' GT1 -1    }T
+				T{ GT2STRING FIND -> ' GT2 1     }T
+				T{ GT3STRING FIND -> GT3STRING 0 }T
+			`,
+		},
 		// FM/MOD is not implemented
 		// HERE see , ALLOT C,
 		// HOLD is not implemented
@@ -1537,7 +1547,32 @@ func TestCoreExtensionSuite(t *testing.T) {
 			`,
 		},
 		// UNUSED not implemented
-		// VALUE not implemented
+		{
+			name: "VALUE",
+			setup: `
+				T{  111 VALUE v1 -> }T
+				T{ -999 VALUE v2 -> }T
+				T{ : vd1 v1 ;    -> }T
+				T{ : vd2 TO v2 ; -> }T
+
+				T{ 123 VALUE v3 ->     }T
+				T{ v3           -> 123 }T
+				T{ 456 TO v3    ->     }T
+				T{ v3           -> 456 }T
+			`,
+			code: `
+				T{ v1 ->  111 }T
+				T{ v2 -> -999 }T
+				T{ 222 TO v1 -> }T
+				T{ v1 -> 222 }T
+				T{ vd1 -> 222 }T
+
+				T{ v2 -> -999 }T
+				T{ -333 vd2 -> }T
+				T{ v2 -> -333 }T
+				T{ v1 ->  222 }T
+			`,
+		},
 		// WITHIN does not have test cases
 		{
 			name: "[COMPILE]",
@@ -1854,7 +1889,24 @@ func TestDoubleSuite(t *testing.T) {
 func TestDoubleExtensionSuite(t *testing.T) {
 	tests := []suiteTest{
 		// 2ROT not implemented
-		// 2VALUE not implemented
+		{
+			name: "2VALUE",
+			setup: `
+				T{ 1 2 2VALUE t2val -> }T
+				: sett2val t2val 2SWAP TO t2val ;
+
+				T{ 1 2 2VALUE t2val2 -> }T
+				T{ t2val2 -> 1 2 }T
+				T{ 3 4 to t2val2 -> }T
+				T{ t2val2 -> 3 4 }T
+			`,
+			code: `
+				T{ t2val -> 1 2 }T
+				T{ 3 4 TO t2val -> }T
+				T{ t2val -> 3 4 }T
+				T{ 5 6 sett2val t2val -> 3 4 5 6 }T
+			`,
+		},
 		{
 			name: "DU<",
 			code: `
