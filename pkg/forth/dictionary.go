@@ -14,11 +14,10 @@ import (
 
 // A Dictionary entry. Contains the name, the word itself, and the flags.
 type DictionaryEntry struct {
-	Name      string
-	NameLower string
-	ulpName   string // the name we're going to compile this to
-	Word      Word
-	Flag      Flag
+	Name    string
+	ulpName string // the name we're going to compile this to
+	Word    Word
+	Flag    Flag
 }
 
 func (d DictionaryEntry) String() string {
@@ -44,13 +43,15 @@ func (d *DictionaryEntry) BodyLabel() string {
 // The Forth Dictionary. This architecture uses individual entries
 // representing words rather than a flat cell structure.
 type Dictionary struct {
-	Entries []*DictionaryEntry
-	vm      *VirtualMachine
+	Entries  []*DictionaryEntry
+	vm       *VirtualMachine
+	entryMap map[string][]*DictionaryEntry
 }
 
 // Set up the empty dictionary.
 func (d *Dictionary) Setup(vm *VirtualMachine) error {
 	d.Entries = make([]*DictionaryEntry, 0)
+	d.entryMap = make(map[string][]*DictionaryEntry)
 	d.vm = vm
 	return nil
 }
@@ -66,20 +67,37 @@ func (d *Dictionary) AddEntry(entry *DictionaryEntry) error {
 			fmt.Fprintf(d.vm.Out, "Redefining %s ", name)
 		}
 	}
-	entry.NameLower = strings.ToLower(name)
+	lower := d.standardizeName(name)
 	d.Entries = append(d.Entries, entry)
+	lst, ok := d.entryMap[lower]
+	if !ok {
+		lst = make([]*DictionaryEntry, 0)
+	}
+	lst = append(lst, entry)
+	d.entryMap[lower] = lst
 	return nil
+}
+
+// standardizeName takes in the name of a word and
+// returns the standardized version. Currently this is
+// the lower case version for case-insensitivity but
+// it could be changes to a case-sensitive meaning.
+func (d *Dictionary) standardizeName(name string) string {
+	return strings.ToLower(name)
 }
 
 func (d *Dictionary) FindName(name string) (*DictionaryEntry, error) {
 	if d.Entries == nil {
 		return nil, fmt.Errorf("Dictionary not set up when finding name, please file a bug report.")
 	}
-	nameLower := strings.ToLower(name) // case insensitive finding
-	for i := len(d.Entries) - 1; i >= 0; i-- {
-		entry := d.Entries[i]
-		if !entry.Flag.Hidden && entry.NameLower == nameLower {
-			return entry, nil
+	nameLower := d.standardizeName(name)
+	same, ok := d.entryMap[nameLower]
+	if ok {
+		for i := len(same) - 1; i >= 0; i-- {
+			entry := same[i]
+			if !entry.Flag.Hidden {
+				return entry, nil
+			}
 		}
 	}
 	return nil, fmt.Errorf("%s not found in dictionary.", name)

@@ -354,12 +354,10 @@ func (n *VMNumber) Setup(vm *VirtualMachine, name string, shared bool) error {
 		Entry: &allocEntry,
 	}
 	n.Word.Cells[0] = CellNumber{0} // initialize to 0
-	nameLower := strings.ToLower(name)
 	allocEntry = DictionaryEntry{
-		Name:      name,
-		NameLower: strings.ToLower(name),
-		Word:      &n.Word,
-		Flag:      Flag{Data: true},
+		Name: name,
+		Word: &n.Word,
+		Flag: Flag{Data: true},
 	}
 	// then create the actual dictionary entry
 	exit, err := vm.Dictionary.FindName("EXIT")
@@ -374,12 +372,11 @@ func (n *VMNumber) Setup(vm *VirtualMachine, name string, shared bool) error {
 	dWord.Cells[0] = CellLiteral{CellAddress{&allocEntry, 0, false}} // put address on stack
 	dWord.Cells[1] = CellAddress{exit, 0, false}                     // then exit
 	dEntry = DictionaryEntry{
-		Name:      name,
-		NameLower: nameLower,
-		Word:      &dWord,
+		Name: name,
+		Word: &dWord,
 	}
 	// add the actual entry to the dictionary
-	vm.Dictionary.Entries = append(vm.Dictionary.Entries, &dEntry)
+	vm.Dictionary.AddEntry(&dEntry)
 	return nil
 }
 
