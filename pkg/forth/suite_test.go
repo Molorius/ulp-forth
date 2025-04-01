@@ -1764,6 +1764,18 @@ func TestDoubleSuite(t *testing.T) {
 			`,
 		},
 		{
+			name: "D0>",
+			code: `
+				T{                0. D0> -> <FALSE> }T
+				T{                1. D0> -> <TRUE>  }T
+				T{  MIN-INT        0 D0> -> <TRUE>  }T
+				T{        0  MAX-INT D0> -> <TRUE>  }T
+				T{          MAX-2INT D0> -> <TRUE>  }T
+				T{               -1. D0> -> <FALSE> }T
+				T{          MIN-2INT D0> -> <FALSE> }T
+			`,
+		},
+		{
 			name: "D0=",
 			code: `
 				T{               1. D0= -> <FALSE> }T

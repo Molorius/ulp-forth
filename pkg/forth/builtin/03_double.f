@@ -41,7 +41,13 @@
 ;
 
 : D0>
-    NIP 0>
+    DUP 0< IF
+        2DROP FALSE EXIT
+    THEN
+    0> IF
+        DROP TRUE EXIT
+    THEN
+    0<>
 ;
 
 : D<>

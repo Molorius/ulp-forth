@@ -1,6 +1,7 @@
 ulp-forth
 .vscode/
 dist/
+.DS_Store
 out.bin
 out.nonportable.S
 out.S
