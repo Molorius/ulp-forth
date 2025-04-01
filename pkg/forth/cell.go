@@ -37,7 +37,7 @@ type CellNumber struct {
 }
 
 func (c CellNumber) Execute(vm *VirtualMachine) error {
-	return fmt.Errorf("Cannot directly execute a number")
+	return fmt.Errorf("cannot directly execute a number")
 }
 
 func (c CellNumber) String() string {
@@ -52,7 +52,7 @@ func (c CellNumber) AddToList(u *Ulp) error {
 }
 
 func (c CellNumber) BuildExecution(u *Ulp) (string, error) {
-	return "", fmt.Errorf("Cannot directly execute number")
+	return "", fmt.Errorf("cannot directly execute number")
 }
 
 func (c CellNumber) OutputReference(u *Ulp) (string, error) {
@@ -75,7 +75,7 @@ func (c CellAddress) Execute(vm *VirtualMachine) error {
 	switch w := c.Entry.Word.(type) {
 	case *WordForth:
 		if c.Offset >= len(w.Cells) {
-			return fmt.Errorf("Trying to get data from outside of allocated data.")
+			return fmt.Errorf("trying to get data from outside of allocated data")
 		}
 		if c.Entry.Flag.Data {
 			return vm.Stack.Push(w.Cells[c.Offset])
@@ -83,11 +83,11 @@ func (c CellAddress) Execute(vm *VirtualMachine) error {
 		return w.ExecuteOffset(vm, c.Offset)
 	case *WordPrimitive:
 		if c.Offset != 0 {
-			return fmt.Errorf("Cannot execute a primitive word at an offset.")
+			return fmt.Errorf("cannot execute a primitive word at an offset")
 		}
 		return w.Execute(vm)
 	default:
-		return fmt.Errorf("Cannot execute word type %t", c.Entry.Word)
+		return fmt.Errorf("cannot execute word type %t", c.Entry.Word)
 	}
 }
 
@@ -108,7 +108,7 @@ func (c CellAddress) BuildExecution(u *Ulp) (string, error) {
 	case UlpCompileTargetSubroutine:
 		return fmt.Sprintf("jump %s", name), nil
 	default:
-		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
+		return "", fmt.Errorf("unknown compile target %d, please file a bug report", u.compileTarget)
 	}
 }
 
@@ -200,12 +200,12 @@ func (c CellLiteral) BuildExecution(u *Ulp) (string, error) {
 	case UlpCompileTargetSubroutine:
 		return fmt.Sprintf("move r0, %s\r\n%sjump __add_to_stack", name, safeCall()), nil
 	default:
-		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
+		return "", fmt.Errorf("unknown compile target %d, please file a bug report", u.compileTarget)
 	}
 }
 
 func (c CellLiteral) OutputReference(u *Ulp) (string, error) {
-	return "", fmt.Errorf("Cannot refer to a CellLiteral, please file a bug report")
+	return "", fmt.Errorf("cannot refer to a CellLiteral, please file a bug report")
 }
 
 func (c CellLiteral) IsRecursive(check *WordForth) bool {
@@ -232,7 +232,7 @@ func (c *CellDestination) BuildExecution(u *Ulp) (string, error) {
 }
 
 func (c *CellDestination) OutputReference(u *Ulp) (string, error) {
-	return "", fmt.Errorf("Cannot refer to a destination, please file a bug report")
+	return "", fmt.Errorf("cannot refer to a destination, please file a bug report")
 }
 
 func (c *CellDestination) IsRecursive(check *WordForth) bool {
@@ -281,12 +281,12 @@ func (c *CellBranch) BuildExecution(u *Ulp) (string, error) {
 	case UlpCompileTargetSubroutine:
 		return fmt.Sprintf("move r2, %s\r\njump r2", c.dest.name(u)), nil
 	default:
-		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
+		return "", fmt.Errorf("unknown compile target %d, please file a bug report", u.compileTarget)
 	}
 }
 
 func (c *CellBranch) OutputReference(u *Ulp) (string, error) {
-	return "", fmt.Errorf("Cannot refer to a branch, please file a bug report")
+	return "", fmt.Errorf("cannot refer to a branch, please file a bug report")
 }
 
 func (c *CellBranch) IsRecursive(check *WordForth) bool {
@@ -330,12 +330,12 @@ func (c *CellBranch0) BuildExecution(u *Ulp) (string, error) {
 	case UlpCompileTargetSubroutine:
 		return fmt.Sprintf("move r1, %s\r\n%sjump __branch_if", c.dest.name(u), safeCall()), nil
 	default:
-		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
+		return "", fmt.Errorf("unknown compile target %d, please file a bug report", u.compileTarget)
 	}
 }
 
 func (c *CellBranch0) OutputReference(u *Ulp) (string, error) {
-	return "", fmt.Errorf("Cannot refer to a conditional branch, please file a bug report")
+	return "", fmt.Errorf("cannot refer to a conditional branch, please file a bug report")
 }
 
 func (c *CellBranch0) IsRecursive(check *WordForth) bool {
@@ -353,7 +353,7 @@ type CellTailCall struct {
 }
 
 func (c *CellTailCall) Execute(vm *VirtualMachine) error {
-	return fmt.Errorf("Cannot directly execute a tail call, please file a bug repot")
+	return fmt.Errorf("cannot directly execute a tail call, please file a bug repot")
 }
 
 func (c *CellTailCall) AddToList(u *Ulp) error {
@@ -369,12 +369,12 @@ func (c *CellTailCall) BuildExecution(u *Ulp) (string, error) {
 		// put the address after the docol
 		return fmt.Sprintf("move r2, %s\r\njump r2", c.dest.Entry.BodyLabel()), nil
 	default:
-		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
+		return "", fmt.Errorf("unknown compile target %d, please file a bug report", u.compileTarget)
 	}
 }
 
 func (c *CellTailCall) OutputReference(u *Ulp) (string, error) {
-	return "", fmt.Errorf("Cannot refer to a tail call, please file a bug report")
+	return "", fmt.Errorf("cannot refer to a tail call, please file a bug report")
 }
 
 func (c *CellTailCall) IsRecursive(check *WordForth) bool {

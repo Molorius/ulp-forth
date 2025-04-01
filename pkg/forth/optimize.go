@@ -101,10 +101,10 @@ func (o *Optimizer) removeDeferred() error {
 			}
 			data, ok := address.Entry.Word.(*WordForth)
 			if !ok {
-				return fmt.Errorf("error reading a deferred word, please file a bug report.")
+				return fmt.Errorf("error reading a deferred word, please file a bug report")
 			}
 			if len(data.Cells) < 1 {
-				return fmt.Errorf("deferred word not allocated, please file a bug report.")
+				return fmt.Errorf("deferred word not allocated, please file a bug report")
 			}
 			embedded := data.Cells[0]
 			exit := w.Cells[len(w.Cells)-1]

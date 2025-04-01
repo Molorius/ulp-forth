@@ -29,56 +29,7 @@ const (
 	UlpCompileTargetSubroutine
 )
 
-type ulpAsm struct {
-	name string
-	asm  []string
-}
-
-func (uAsm ulpAsm) build() string {
-	var sb strings.Builder
-	sb.WriteString(uAsm.name)
-	sb.WriteString(":\r\n")
-	for _, asm := range uAsm.asm {
-		if !strings.Contains(asm, ":") {
-			sb.WriteString("    ")
-		}
-		sb.WriteString(asm)
-		sb.WriteString("\r\n")
-	}
-	return sb.String()
-}
-
-type ulpForthCell struct {
-	cell Cell
-	name string
-}
-
-type ulpForth struct {
-	name  string
-	cells []ulpForthCell
-}
-
-func (uForth ulpForth) build() string {
-	var sb strings.Builder
-	sb.WriteString(uForth.name)
-	sb.WriteString(":\r\n")
-	for _, cell := range uForth.cells {
-		if strings.Contains(cell.name, ":") {
-			sb.WriteString("  ")
-		} else {
-			sb.WriteString("    .int ")
-		}
-		sb.WriteString(cell.name)
-		sb.WriteString("\r\n")
-	}
-	return sb.String()
-}
-
 type Ulp struct {
-	// output strings
-	assembly []ulpAsm
-	forth    []ulpForth
-	data     map[string]string
 	outCount int
 
 	// output definitions
@@ -88,51 +39,19 @@ type Ulp struct {
 	literals      map[string]string
 
 	// current state of compilation
-	compileType   UlpCompileType
 	compileTarget UlpCompileTarget
-}
-
-func (u *Ulp) build() string {
-	var sb strings.Builder
-	// header
-	sb.WriteString(u.buildInterpreter())
-	// assembly
-	sb.WriteString("\r\n.text\r\n")
-	sb.WriteString("__asmwords_start:\r\n")
-	for _, asm := range u.assembly {
-		sb.WriteString(asm.build())
-	}
-	sb.WriteString("__asmwords_end:\r\n\r\n")
-	// forth
-	sb.WriteString(".data\r\n")
-	sb.WriteString("__forthwords_start:\r\n")
-	for _, forth := range u.forth {
-		sb.WriteString(forth.build())
-	}
-	sb.WriteString("__forthwords_end:\r\n\r\n")
-	// data
-	sb.WriteString("__forthdata_start:\r\n")
-	for _, d := range u.data {
-		sb.WriteString(d)
-		sb.WriteString("\r\n")
-	}
-	sb.WriteString("__forthdata_end:\r\n")
-	return sb.String()
 }
 
 // Build the assembly using the word passed in as the main function.
 // Note that the virtual machine will be unusable after this.
 func (u *Ulp) BuildAssembly(vm *VirtualMachine, word string) (string, error) {
 	// put back into interpret state and compile the main ulp program
-	u.assembly = make([]ulpAsm, 0)
-	u.forth = make([]ulpForth, 0)
-	u.data = make(map[string]string)
 
 	vm.State.Set(uint16(StateInterpret))
 	// create the VM.INIT word without an EXIT
 	err := vm.Execute([]byte(" BL WORD VM.INIT --CREATE-FORTH ] VM.STACK.INIT " + word + " BEGIN HALT AGAIN [ LAST HIDE "))
 	if err != nil {
-		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)
+		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling"), err)
 	}
 	u.compileTarget = UlpCompileTargetToken
 	return u.buildAssemblyHelper(vm, u.buildInterpreter())
@@ -143,7 +62,7 @@ func (u *Ulp) BuildAssemblySrt(vm *VirtualMachine, word string) (string, error) 
 	// create the VM.INIT word without an EXIT
 	err := vm.Execute([]byte(" BL WORD VM.INIT --CREATE-FORTH ] " + word + " BEGIN HALT AGAIN [ LAST HIDE "))
 	if err != nil {
-		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling."), err)
+		return "", errors.Join(fmt.Errorf("could not compile the supporting words for ulp cross-compiling"), err)
 	}
 	u.compileTarget = UlpCompileTargetSubroutine
 	return u.buildAssemblyHelper(vm, u.buildInterpreterSrt())
@@ -273,7 +192,7 @@ func (u *Ulp) buildLiterals() (string, error) {
 	case UlpCompileTargetSubroutine:
 		return "", nil // literals are compiled along the way, not as a final list
 	default:
-		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
+		return "", fmt.Errorf("unknown compile target %d, please file a bug report", u.compileTarget)
 	}
 }
 

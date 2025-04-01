@@ -33,7 +33,7 @@ func (w *WordForth) ExecuteOffset(vm *VirtualMachine, offset int) error {
 	previous := vm.IP // keep the previous address for error popping
 	err := vm.ReturnStack.Push(previous)
 	if err != nil {
-		return errors.Join(fmt.Errorf("%s could not push instruction pointer to return stack.", w.Entry), err)
+		return errors.Join(fmt.Errorf("%s could not push instruction pointer to return stack", w.Entry), err)
 	}
 	if len(w.Cells) == 0 {
 		return EntryError(w.Entry, "This forth word doesn't have a definition")
@@ -45,12 +45,12 @@ func (w *WordForth) ExecuteOffset(vm *VirtualMachine, offset int) error {
 		if vm.IP.Entry != w.Entry { // we somehow left this word
 			vm.IP = previous                    // reset the instruction pointer
 			vm.ReturnStack.SetDepth(startDepth) // attempt to reset the stack depth to "fix" part of the problem
-			return fmt.Errorf("%s instruction pointer somehow left the calling word.", w.Entry)
+			return fmt.Errorf("%s instruction pointer somehow left the calling word", w.Entry)
 		}
 		if vm.IP.Offset < 0 || vm.IP.Offset >= len(w.Cells) { // the instruction pointer is out of bounds
 			vm.IP = previous                    // reset the instruction pointer
 			vm.ReturnStack.SetDepth(startDepth) // attempt to reset the stack depth to "fix" part of the problem
-			return fmt.Errorf("%s instruction pointer went outside of definition.", w.Entry)
+			return fmt.Errorf("%s instruction pointer went outside of definition", w.Entry)
 		}
 		currentOffset := vm.IP.Offset
 		nxt := w.Cells[currentOffset]
@@ -233,7 +233,7 @@ func (w *WordPrimitive) BuildAssembly(u *Ulp) (string, error) {
 		case TokenNextSkipLoad:
 			asm = append(asm, "jump __next_skip_load")
 		default:
-			return "", fmt.Errorf("Unknown compile target %d, please file a bug report", w.Ulp.Next)
+			return "", fmt.Errorf("unknown compile target %d, please file a bug report", w.Ulp.Next)
 		}
 	case UlpCompileTargetSubroutine:
 		if len(w.UlpSrt.Asm) == 0 {
@@ -248,7 +248,7 @@ func (w *WordPrimitive) BuildAssembly(u *Ulp) (string, error) {
 			asm = append(asm, standardNext...)
 		}
 	default:
-		return "", fmt.Errorf("Unknown compile target %d, please file a bug report", u.compileTarget)
+		return "", fmt.Errorf("unknown compile target %d, please file a bug report", u.compileTarget)
 	}
 	asmStr := strings.Join(asm, "\r\n")
 	out := label + bodyLabel + asmStr

@@ -58,7 +58,7 @@ func (d *Dictionary) Setup(vm *VirtualMachine) error {
 
 func (d *Dictionary) AddEntry(entry *DictionaryEntry) error {
 	if d.Entries == nil {
-		return fmt.Errorf("Dictionary not set up when adding entry, please file a bug report.")
+		return fmt.Errorf("dictionary not set up when adding entry, please file a bug report")
 	}
 	name := entry.Name
 	if name != "" {
@@ -88,7 +88,7 @@ func (d *Dictionary) standardizeName(name string) string {
 
 func (d *Dictionary) FindName(name string) (*DictionaryEntry, error) {
 	if d.Entries == nil {
-		return nil, fmt.Errorf("Dictionary not set up when finding name, please file a bug report.")
+		return nil, fmt.Errorf("dictionary not set up when finding name, please file a bug report")
 	}
 	nameLower := d.standardizeName(name)
 	same, ok := d.entryMap[nameLower]
@@ -100,14 +100,14 @@ func (d *Dictionary) FindName(name string) (*DictionaryEntry, error) {
 			}
 		}
 	}
-	return nil, fmt.Errorf("%s not found in dictionary.", name)
+	return nil, fmt.Errorf("%s not found in dictionary", name)
 }
 
 func (d *Dictionary) LastForthWord() (*WordForth, error) {
 	lastEntry := d.Entries[len(d.Entries)-1]
 	last, ok := lastEntry.Word.(*WordForth)
 	if !ok {
-		return nil, fmt.Errorf("The last word in dictionary is not a Forth word.")
+		return nil, fmt.Errorf("the last word in dictionary is not a Forth word")
 	}
 	return last, nil
 }

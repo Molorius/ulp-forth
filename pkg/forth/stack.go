@@ -38,7 +38,7 @@ func (s *Stack) Push(c Cell) error {
 func (s *Stack) Pop() (Cell, error) {
 	last := len(s.stack) - 1
 	if last < 0 {
-		return nil, fmt.Errorf("Attempted to pop empty stack.")
+		return nil, fmt.Errorf("attempted to pop empty stack")
 	}
 	c := s.stack[last]
 	s.stack = s.stack[:last]
@@ -53,7 +53,7 @@ func (s *Stack) PopNumber() (uint16, error) {
 	}
 	cellNumber, ok := cell.(CellNumber)
 	if !ok {
-		return 0, fmt.Errorf("Could not convert cell to number: %s type %T", cell, cell)
+		return 0, fmt.Errorf("could not convert cell to number: %s type %T", cell, cell)
 	}
 	return cellNumber.Number, nil
 }
@@ -66,7 +66,7 @@ func (s *Stack) Depth() int {
 // Set the stack depth. Must not be greater than current depth.
 func (s *Stack) SetDepth(depth int) error {
 	if depth > len(s.stack) {
-		return fmt.Errorf("Cannot arbitrarily increase stack depth.")
+		return fmt.Errorf("cannot arbitrarily increase stack depth")
 	}
 	s.stack = s.stack[:depth]
 	return nil

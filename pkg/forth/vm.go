@@ -106,7 +106,7 @@ var builtinsEsp32 embed.FS
 func (vm *VirtualMachine) buildEmbed(f embed.FS, name string) error {
 	dirEntries, err := f.ReadDir(name)
 	if err != nil {
-		return errors.Join(fmt.Errorf("Error while opening embedded directory."), err)
+		return errors.Join(fmt.Errorf("error while opening embedded directory"), err)
 	}
 	for _, entry := range dirEntries {
 		// don't look in subdirectories (for now)
@@ -162,7 +162,7 @@ func (w writerNoNewline) Write(p []byte) (int, error) {
 func (vm *VirtualMachine) ReplSetup() error {
 	rl, err := readline.New("")
 	if err != nil {
-		return errors.Join(fmt.Errorf("Unable to start readline, please file a bug report."), err)
+		return errors.Join(fmt.Errorf("unable to start readline, please file a bug report"), err)
 	}
 	vm.repl = rl
 	return nil
@@ -264,7 +264,7 @@ func (vm *VirtualMachine) executeLine(bytes []byte) error {
 		case StateExit:
 			return nil // the repl will exit after reading the state
 		default:
-			return fmt.Errorf("Unknown state %d", state)
+			return fmt.Errorf("unknown state %d", state)
 		}
 	}
 }
